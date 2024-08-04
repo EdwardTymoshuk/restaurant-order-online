@@ -1,6 +1,8 @@
 import Header from '@/components/Header'
+import MainContainer from '@/components/MainContainer'
 import type { Metadata } from 'next'
 import { Inter, Roboto } from 'next/font/google'
+import { Toaster } from 'sonner'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -20,7 +22,10 @@ export default function RootLayout({
     <html lang='en'>
       <body className={roboto.className}>
         <Header />
-        {children}
+        <MainContainer>
+          {children}
+        </MainContainer>
+        <Toaster position='top-center' richColors />
       </body>
     </html>
   )
