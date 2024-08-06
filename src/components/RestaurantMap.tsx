@@ -19,7 +19,7 @@ const RestaurantMap: React.FC<RestaurantMapProps> = ({
 	className = '',
 }) => {
 	return (
-		<div className={cn('h-80 w-full', className)}>
+		<div className={cn('h-full w-full', className)}>
 			<GoogleMap
 				mapContainerStyle={{ width: '100%', height: '100%' }}
 				center={center}

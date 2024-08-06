@@ -7,6 +7,7 @@ import RestaurantMap from '@/components/RestaurantMap'
 import { TimeSelector } from '@/components/TimeSelector'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CLOSING_HOUR, MINIMUM_WAIT_TIME_MINUTES, OPENING_HOUR, OPENING_MINUTES_DELAY, RESTAURANT_COORDINATES } from '@/constants'
+import Link from 'next/link'
 import { useEffect, useState } from "react"
 import { MdOutlineDeliveryDining, MdOutlineKeyboardArrowRight, MdOutlineRestaurantMenu } from "react-icons/md"
 
@@ -88,27 +89,19 @@ export default function Home() {
     return true
   }
 
-  const handleOrder = () => {
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
-      alert('Замовлення прийнято!')
-    }, 2000)
-  }
-
   return (
-    <Tabs defaultValue="delivery" className="my-8 mx-auto w-full px-8">
+    <Tabs defaultValue="delivery" className="my-8 mx-auto w-full">
       <TabsList className='p-2 h-fit flex flex-row justify-around bg-transparent'>
         <TabsTrigger
-          className='text-lg data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none'
+          className='text-lg md:text-2xl data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none'
           value="delivery"
         >
-          <MdOutlineDeliveryDining size={32} />DOSTAWA
+          <MdOutlineDeliveryDining className='text-2xl md:text-4xl' />DOSTAWA
         </TabsTrigger>
         <TabsTrigger
-          className='text-lg data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none' value="take-out"
+          className='text-lg md:text-2xl data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none' value="take-out"
         >
-          <MdOutlineRestaurantMenu size={32} />ODBIÓR
+          <MdOutlineRestaurantMenu className='text-2xl md:text-4xl' />ODBIÓR
         </TabsTrigger>
       </TabsList>
       <TabsContent value="delivery">
@@ -117,29 +110,34 @@ export default function Home() {
       </TabsContent>
       <TabsContent value="take-out">
         <PageSubHeader title='Wybierz czas odbioru zamówienia' />
-        <div className="flex flex-col space-y-4">
-          <TimeSelector
-            selectedTime={selectedTime}
-            onTimeChange={handleTimeChange}
-            setNearestHour={getNearestHour} // Повертає Date
-            filterTime={filterTime}
-          />
-          <div className='w-full'>
-            <LoadingButton
-              className='w-full px-4 py-2 rounded shadow transition'
-              onClick={handleOrder}
-              isLoading={loading}
-            >
-              Do zamówienia <MdOutlineKeyboardArrowRight />
-            </LoadingButton>
+        <div className='flex flex-col md:flex-row w-full gap-8'>
+          <div className="flex flex-col space-y-4 w-full md:w-3/4">
+            <TimeSelector
+              selectedTime={selectedTime}
+              onTimeChange={handleTimeChange}
+              setNearestHour={getNearestHour} // Повертає Date
+              filterTime={filterTime}
+            />
+            <div className='w-full'>
+              <LoadingButton
+                isLoading={loading}
+                className="w-full"
+              >
+                <Link href='/order' className='flex items-center'>
+                  Do zamówienia <MdOutlineKeyboardArrowRight />
+                </Link>
+              </LoadingButton>
+            </div>
+          </div>
+          <div className='w-full h-96'>
+            <RestaurantMap
+              className='my-4'
+              center={RESTAURANT_COORDINATES}
+              zoom={15}
+              markers={[RESTAURANT_COORDINATES]}
+            />
           </div>
         </div>
-        <RestaurantMap
-          className='my-4'
-          center={RESTAURANT_COORDINATES}
-          zoom={15}
-          markers={[RESTAURANT_COORDINATES]}
-        />
       </TabsContent>
     </Tabs>
   )

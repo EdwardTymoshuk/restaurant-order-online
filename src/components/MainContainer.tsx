@@ -9,7 +9,7 @@ const MainContainer = ({
 	children: ReactNode
 }) => {
 	return (
-		<main className={cn('flex min-h-screen flex-col items-center pt-20', className)} >
+		<main className={cn('flex flex-col min-h-screen w-full max-w-6xl items-center pt-20 mx-auto px-8', className)} >
 			{children}
 		</main>
 	)

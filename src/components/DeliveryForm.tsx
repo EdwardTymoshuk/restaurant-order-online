@@ -99,87 +99,92 @@ export default function DeliveryForm() {
 					</div>
 				}
 			>
-				<div className="flex flex-col space-y-8">
-					{addressVerified && (
-						<div className="text-center flex flex-col">
-							<span className='text-4xl text-text-foreground'>Wybrany adres:</span>
-							<span className='text-xl text-primary'>{selectedAddress}</span>
-						</div>
-					)}
-					<Form {...form}>
-						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-							<FormField
-								control={form.control}
-								name="address"
-								render={({ field, fieldState }) => (
-									<FormItem>
-										<FormLabel className='text-lg'>Adres:</FormLabel>
-										<FormControl>
-											<Autocomplete
-												onLoad={setAutocomplete}
-												onPlaceChanged={() => {
-													if (autocomplete) {
-														const place = autocomplete.getPlace()
-														if (place?.formatted_address) {
-															const isValid = hasStreetNumber(
-																place.address_components
-															)
-															setAddressValid(isValid)
-															if (!isValid) {
-																toast.error("Proszę wprowadzić numer budynku.")
+				<div className="flex flex-col md:flex-row gap-4 lg:gap-8 space-y-8">
+					<div className='w-full md:w-3/4'>
+						{addressVerified && (
+							<div className="text-center flex flex-col">
+								<span className='text-4xl text-text-foreground'>Wybrany adres:</span>
+								<span className='text-xl text-primary'>{selectedAddress}</span>
+							</div>
+						)}
+
+						<Form {...form}>
+							<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+								<FormField
+									control={form.control}
+									name="address"
+									render={({ field, fieldState }) => (
+										<FormItem>
+											<FormLabel className='text-lg'>Adres:</FormLabel>
+											<FormControl>
+												<Autocomplete
+													onLoad={setAutocomplete}
+													onPlaceChanged={() => {
+														if (autocomplete) {
+															const place = autocomplete.getPlace()
+															if (place?.formatted_address) {
+																const isValid = hasStreetNumber(
+																	place.address_components
+																)
+																setAddressValid(isValid)
+																if (!isValid) {
+																	toast.error("Proszę wprowadzić numer budynku.")
+																}
+																form.setValue("address", place.formatted_address)
 															}
-															form.setValue("address", place.formatted_address)
 														}
-													}
-												}}
-											>
-												<Input
-													{...field}
-													className={`${fieldState.invalid || !addressValid
-														? "border-red-500"
-														: ""
-														}`}
-													placeholder="Wprowadź adres"
-												/>
-											</Autocomplete>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-							{
-								!addressVerified ?
-									<LoadingButton
-										isLoading={loading}
-										type="submit"
-										className="w-full"
-									>
-										Sprawdź
-									</LoadingButton> :
-									<LoadingButton
-										isLoading={loading}
-										className="w-full"
-									>
-										<Link href='/order' className='flex items-center'>
-											Do zamówienia <MdOutlineKeyboardArrowRight />
-										</Link>
-									</LoadingButton>
-							}
-						</form>
-					</Form>
-					<RestaurantMap
-						center={RESTAURANT_COORDINATES}
-						zoom={11.3}
-						markers={[RESTAURANT_COORDINATES, deliveryAddressCoordinates].filter(Boolean) as Coordinates[]}
-						circleRadius={DELIVERY_RADIUS_METERS}
-						circleOptions={{
-							fillColor: "#ABD95A",
-							fillOpacity: 0.2,
-							strokeColor: "#ABD95A",
-							strokeOpacity: 0.2,
-							strokeWeight: 1,
-						}}
-					/>
+													}}
+												>
+													<Input
+														{...field}
+														className={`${fieldState.invalid || !addressValid
+															? "border-red-500"
+															: ""
+															}`}
+														placeholder="Wprowadź adres"
+													/>
+												</Autocomplete>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+								{
+									!addressVerified ?
+										<LoadingButton
+											isLoading={loading}
+											type="submit"
+											className="w-full"
+										>
+											Sprawdź
+										</LoadingButton> :
+										<LoadingButton
+											isLoading={loading}
+											className="w-full"
+										>
+											<Link href='/order' className='flex items-center'>
+												Do zamówienia <MdOutlineKeyboardArrowRight />
+											</Link>
+										</LoadingButton>
+								}
+							</form>
+						</Form>
+					</div>
+					<div className='h-96 w-full'>
+						<RestaurantMap
+							center={RESTAURANT_COORDINATES}
+							zoom={11.3}
+							markers={[RESTAURANT_COORDINATES, deliveryAddressCoordinates].filter(Boolean) as Coordinates[]}
+							circleRadius={DELIVERY_RADIUS_METERS}
+							circleOptions={{
+								fillColor: "#ABD95A",
+								fillOpacity: 0.2,
+								strokeColor: "#ABD95A",
+								strokeOpacity: 0.2,
+								strokeWeight: 1,
+							}}
+						/>
+					</div>
 				</div>
 			</LoadScriptNext>
 		</>
