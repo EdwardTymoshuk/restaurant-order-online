@@ -1,32 +1,4 @@
-import { CarouselImage, MenuItemType, NavBarItem, Opinion } from '@/app/types'
-
-
-export const NAVBAR_ITEMS: NavBarItem[] = [
-	{
-		label: 'GŁÓWNA',
-		link: '/',
-	},
-	{
-		label: 'O NAS',
-		link: '/about'
-	},
-	{
-		label: 'OFERTA',
-		link: '/offer'
-	},
-	{
-		label: 'MENU',
-		link: '/menu'
-	},
-	{
-		label: 'GALERIA',
-		link: '/galery'
-	},
-	{
-		label: 'KONTAKT',
-		link: '/contact'
-	},
-]
+import { CarouselImage, MenuItemType, Opinion } from '@/app/types'
 
 export const CAROUSEL_MAIN_IMAGES: CarouselImage[] = [
 	{ src: '/img/carousel-1.jpg' },

@@ -83,7 +83,7 @@ const config = {
         special: ['Sacramento', 'cursive'],
       },
       screens: {
-        'sm-plus': { 'min': '768px', 'max': '862px' },
+        'sm-plus': { 'min': '768px', 'max': '894px' },
       },
     },
   },
