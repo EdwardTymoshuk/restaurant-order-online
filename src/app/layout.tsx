@@ -1,5 +1,6 @@
 import Header from '@/components/Header'
 import MainContainer from '@/components/MainContainer'
+import { CartProvider } from '@/context/CartContext'
 import type { Metadata } from 'next'
 import { Inter, Roboto } from 'next/font/google'
 import { Toaster } from 'sonner'
@@ -21,11 +22,13 @@ export default function RootLayout({
   return (
     <html lang='en'>
       <body className={roboto.className}>
-        <Header />
-        <MainContainer>
-          {children}
-        </MainContainer>
-        <Toaster position='top-center' richColors />
+        <CartProvider>
+          <Header />
+          <MainContainer>
+            {children}
+          </MainContainer>
+          <Toaster position='top-center' richColors />
+        </CartProvider>
       </body>
     </html>
   )

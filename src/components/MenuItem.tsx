@@ -7,9 +7,12 @@ import {
 	CardFooter,
 	CardHeader
 } from "@/components/ui/card"
+import { useCart } from '@/context/CartContext'
 import Image from 'next/image'
 import React, { useState } from 'react'
 import { CiShoppingBasket } from 'react-icons/ci'
+import { FaCheck } from 'react-icons/fa' // Імпорт іконки галочки
+import { v4 as uuidv4 } from 'uuid'
 import { Button } from './ui/button'
 
 type MenuItemProps = Partial<MenuItemType> & {
@@ -18,7 +21,30 @@ type MenuItemProps = Partial<MenuItemType> & {
 
 const MenuItem: React.FC<MenuItemProps> = ({ name, price, description, image, orientation = 'vertical' }) => {
 	const [imageError, setImageError] = useState(false)
+	const [addedToCart, setAddedToCart] = useState(false) // Додаємо стан для відслідковування додання до кошика
 	const isVertical = orientation === 'vertical'
+
+	const { dispatch } = useCart()
+
+	const addToCart = () => {
+		if (name && price) {
+			dispatch({
+				type: 'ADD_ITEM',
+				payload: {
+					id: uuidv4(),
+					name,
+					price,
+					quantity: 1
+				},
+			})
+
+			// Зміна стану при успішному доданні до кошика
+			setAddedToCart(true)
+			setTimeout(() => setAddedToCart(false), 1000) // Повернення до початкового стану через 1 секунду
+		} else {
+			console.error('Item name or price is missing.')
+		}
+	}
 
 	return (
 		<Card className={`w-full max-w-full border-0 shadow-none flex ${isVertical ? 'flex-col' : 'flex-row items-center'} justify-between`}>
@@ -46,7 +72,13 @@ const MenuItem: React.FC<MenuItemProps> = ({ name, price, description, image, or
 			</CardContent>
 			<CardFooter className={`px-2 pb-2 mt-auto flex flex-col h-full justify-evenly ${!isVertical && 'my-auto pb-0'}`}>
 				<span className='text-secondary'>{price} zł</span>
-				<Button variant='secondary' className='h-6'><CiShoppingBasket /></Button>
+				<Button
+					variant='secondary'
+					className={`h-6 transition-colors duration-300 ${addedToCart ? 'text-success scale-105' : ''}`}
+					onClick={addToCart}
+				>
+					{addedToCart ? <FaCheck /> : <CiShoppingBasket />}
+				</Button>
 			</CardFooter>
 		</Card>
 	)

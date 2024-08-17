@@ -56,7 +56,27 @@ const config = {
           primary: 'hsl(var(--text-primary))',
           secondary: 'hsl(var(--text-secondary))',
           foreground: 'hsl(var(--text-foreground))'
-        }
+        },
+        danger: {
+          DEFAULT: "hsl(var(--danger))",
+          light: "hsl(var(--danger-light))",
+          dark: "hsl(var(--danger-dark))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          light: "hsl(var(--success-light))",
+          dark: "hsl(var(--success-dark))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          light: "hsl(var(--warning-light))",
+          dark: "hsl(var(--warning-dark))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          light: "hsl(var(--info-light))",
+          dark: "hsl(var(--info-dark))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

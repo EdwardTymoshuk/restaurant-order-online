@@ -34,6 +34,22 @@
     --text-primary: 0 0% 100%;
     --text-secondary: 212.3, 13.7%, 18.6%;
     --text-foreground: 211.8, 13.5%, 49.4%;
+
+    --danger: 0 68% 58%;
+    --danger-light: 3 100% 74%;
+    --danger-dark: 348 100% 31%;
+
+    --success: 120 39% 56%;
+    --success-light: 120 58% 84%;
+    --success-dark: 120 42% 47%;
+
+    --warning: 40 90% 62%;
+    --warning-light: 43 100% 94%;
+    --warning-dark: 40 78% 56%;
+
+    --info: 195 62% 65%;
+    --info-light: 195 72% 90%;
+    --info-dark: 195 65% 55%;
   }
 
   .dark {
