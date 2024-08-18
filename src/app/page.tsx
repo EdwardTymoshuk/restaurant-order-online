@@ -1,11 +1,11 @@
 'use client'
 
-import DeliveryForm from '@/components/DeliveryForm'
-import LoadingButton from '@/components/LoadingButton'
-import PageSubHeader from '@/components/PageSubHeader'
-import RestaurantMap from '@/components/RestaurantMap'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CLOSING_HOUR, DELIVERY_RADIUS_METERS, MINIMUM_WAIT_TIME_MINUTES, OPENING_HOUR, OPENING_MINUTES_DELAY, RESTAURANT_COORDINATES } from '@/constants'
+import DeliveryForm from '@/app/components/DeliveryForm'
+import LoadingButton from '@/app/components/LoadingButton'
+import PageSubHeader from '@/app/components/PageSubHeader'
+import RestaurantMap from '@/app/components/RestaurantMap'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
+import { CLOSING_HOUR, DELIVERY_RADIUS_METERS, MINIMUM_WAIT_TIME_MINUTES, OPENING_HOUR, OPENING_MINUTES_DELAY, RESTAURANT_COORDINATES } from '@/config/constants'
 import { Coordinates } from '@/lib/utils'
 import { LoadScriptNext } from "@react-google-maps/api"
 import { useRouter } from 'next/navigation'

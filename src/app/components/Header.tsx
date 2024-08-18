@@ -1,6 +1,6 @@
 'use client'
 
-import CartSheet from '@/components/CartSheet'
+import CartSheet from '@/app/components/CartSheet'
 import Link from 'next/link'
 
 const Header = () => {

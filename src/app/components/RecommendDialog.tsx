@@ -1,8 +1,8 @@
 'use client'
 
-import RecommendedProducts from '@/components/RecommendedProducts'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import RecommendedProducts from '@/app/components/RecommendedProducts'
+import { Button } from '@/app/components/ui/button'
+import { Dialog, DialogContent } from '@/app/components/ui/dialog'
 import { MdKeyboardArrowRight } from 'react-icons/md'
 
 interface RecommendDialogProps {
