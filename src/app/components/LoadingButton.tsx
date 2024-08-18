@@ -1,5 +1,5 @@
 // LoadingButton.tsx
-import { Button, ButtonProps } from "@/components/ui/button"
+import { Button, ButtonProps } from "@/app/components/ui/button"
 import React from "react"
 import { Oval } from "react-loader-spinner"
 

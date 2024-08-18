@@ -1,15 +1,15 @@
 'use client'
 
-import { MenuItemType } from '@/app/types'
-import MenuItem from '@/components/MenuItem'
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel'
+import MenuItem from '@/app/components/MenuItem'
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/app/components/ui/carousel'
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/components/ui/select"
+} from "@/app/components/ui/select"
+import { MenuItemType } from '@/app/types'
 import { CAROUSEL_MAIN_IMAGES, MENU_ITEMS } from '@/config'
 import Autoplay from "embla-carousel-autoplay"
 import Image from 'next/image'

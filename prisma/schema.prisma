@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model MenuItem {
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  price         Float
+  description   String?
+  image         String?
+  category      String
+  isRecommended Boolean     @default(false)
+  isOrderable   Boolean     @default(true)
+  orders        OrderItem[] // Зв'язок з замовленнями
+
+  @@index([name, category])
+}
+
+model Order {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  items     OrderItem[]
+  status    OrderStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model OrderItem {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  quantity   Int
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  menuItemId String   @db.ObjectId
+  order      Order    @relation(fields: [orderId], references: [id])
+  orderId    String   @db.ObjectId
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  READY
+  DELIVERED
+  COMPLETED
+  CANCELLED
+}

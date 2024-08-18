@@ -6,9 +6,9 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { RESTAURANT_COORDINATES } from "@/constants"
+} from "@/app/components/ui/form"
+import { Input } from "@/app/components/ui/input"
+import { RESTAURANT_COORDINATES } from "@/config/constants"
 import {
 	Coordinates,
 	getCoordinates,
@@ -133,8 +133,8 @@ export default function DeliveryForm({
 										<Input
 											{...field}
 											className={`${fieldState.invalid || !addressValid
-													? "border-red-500"
-													: ""
+												? "border-red-500"
+												: ""
 												}`}
 											placeholder="Wprowadź adres"
 										/>

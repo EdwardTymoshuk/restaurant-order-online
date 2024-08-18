@@ -1,13 +1,13 @@
 'use client'
 
-import { MenuItemType } from '@/app/types'
 import {
 	Card,
 	CardContent,
 	CardFooter,
 	CardHeader
-} from "@/components/ui/card"
-import { useCart } from '@/context/CartContext'
+} from "@/app/components/ui/card"
+import { useCart } from '@/app/context/CartContext'
+import { MenuItemType } from '@/app/types'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import React, { useState } from 'react'
