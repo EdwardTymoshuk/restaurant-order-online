@@ -54,4 +54,5 @@ export interface MenuItemType {
 	category: MenuItemCategory,
 	image: string,
 	isOrderable?: boolean,
-}	
+	isRecommended?: boolean,
+}

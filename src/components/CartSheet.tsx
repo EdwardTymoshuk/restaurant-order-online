@@ -8,10 +8,12 @@ import { useState } from 'react'
 import { BsCart4 } from "react-icons/bs"
 import { IoTrashOutline } from "react-icons/io5"
 import { MdKeyboardArrowRight } from "react-icons/md"
+import RecommendDialog from './RecommendDialog'
 
 const CartSheet = () => {
 	const { state, dispatch } = useCart()
 	const [isDialogOpen, setIsDialogOpen] = useState(false)
+	const [isRecommendDialogOpen, setIsRecommendDialogOpen] = useState(false)
 
 	const removeItem = (id: string) => {
 		dispatch({ type: 'REMOVE_ITEM', payload: id })
@@ -24,6 +26,15 @@ const CartSheet = () => {
 
 	const handleClearCartClick = () => {
 		setIsDialogOpen(true)
+	}
+
+	const handleRecommendDialogOpen = () => {
+		setIsRecommendDialogOpen(true)
+	}
+
+	const handleContinue = () => {
+		// Логіка для продовження оформлення замовлення після дозамовлення
+		setIsRecommendDialogOpen(false)
 	}
 
 	return (
@@ -60,7 +71,6 @@ const CartSheet = () => {
 													src={item.image}
 													alt={item.name}
 													className="h-full w-full object-cover object-center"
-													onError={(e) => (e.currentTarget.src = '/path/to/placeholder-image.jpg')}
 												/>
 											) : (
 												<div className="h-full w-full bg-gray-200 flex items-center justify-center text-sm text-gray-500">
@@ -97,7 +107,9 @@ const CartSheet = () => {
 								<p>{state.totalAmount} zł</p>
 							</div>
 							<div className="mt-6">
-								<Button variant='secondary' className='w-full'>Do podsumowania<MdKeyboardArrowRight /></Button>
+								<Button variant='secondary' className='w-full' onClick={handleRecommendDialogOpen}>
+									Do podsumowania <MdKeyboardArrowRight />
+								</Button>
 							</div>
 							<div className="mt-6 flex justify-center text-sm text-gray-500">
 								<Button
@@ -124,7 +136,7 @@ const CartSheet = () => {
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Czy na pewno chcesz wyczyścić koszyk?</DialogTitle>
-						<DialogDescription>Ta operacja usunie wszystkie produkty z Twojego koszyka.</DialogDescription>
+						<DialogDescription className='text-text-foreground'>Ta operacja usunie wszystkie produkty z Twojego koszyka.</DialogDescription>
 					</DialogHeader>
 					<div className="flex justify-end space-x-4">
 						<Button variant="secondary" onClick={() => setIsDialogOpen(false)}>Anuluj</Button>
@@ -132,6 +144,13 @@ const CartSheet = () => {
 					</div>
 				</DialogContent>
 			</Dialog>
+
+			{/* Діалогове вікно з рекомендованими товарами */}
+			<RecommendDialog
+				isOpen={isRecommendDialogOpen}
+				onOpenChange={setIsRecommendDialogOpen}
+				onContinue={handleContinue}
+			/>
 		</Sheet>
 	)
 }

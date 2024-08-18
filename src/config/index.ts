@@ -47,6 +47,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Śniadania',
 		image: '/img/menu/sniadanie-polskie.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'SHAKSHUKA VEGE (500 G)',
@@ -55,6 +56,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Śniadania',
 		image: '/img/menu/shakshuka-wege.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'SHAKSHUKA MIĘSNA (500 G)',
@@ -63,6 +65,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Śniadania',
 		image: '/img/menu/shakshuka-miesna.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Śniadanie mięsne (450 g)',
@@ -71,6 +74,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Śniadania',
 		image: '/img/menu/sniadanie-miesne.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Chałka z grillowanym kurczakiem (400 g)',
@@ -79,6 +83,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Śniadania',
 		image: '/img/menu/chalka-z-grillowanym-kurczakiem.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Chałka z krewetkami (350 g)',
@@ -87,6 +92,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Śniadania',
 		image: '/img/menu/chalka-z-krewetkami.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Chałka vege z guacamole (350 g)',
@@ -95,6 +101,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Śniadania',
 		image: '/img/menu/chalka-vege-z-guacamole.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Naleśniki (350 g)',
@@ -103,6 +110,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Śniadania',
 		image: '/img/menu/nalesniki.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	// STARTERS
 	{
@@ -112,22 +120,25 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Przystawki',
 		image: '/img/menu/sledz-w-sosie-tzatziki.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Antipasti: Guacamole (70 g)',
 		price: 17,
 		description: '',
 		category: 'Przystawki',
-		image: '/img/menu/sledz-w-sosie-tzatziki.jpg',
+		image: '/img/menu/guacamole.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Antipasti: Pasta z makreli (70 g)',
 		price: 17,
 		description: '',
 		category: 'Przystawki',
-		image: '/img/menu/sledz-w-sosie-tzatziki.jpg',
+		image: '/img/menu/pasta-z-makreli.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Chrupiące dary morza',
@@ -136,6 +147,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Przystawki',
 		image: '/img/menu/crispy-gifts-of-the-sea.jpg',
 		isOrderable: true,
+		isRecommended: true,
 	},
 	{
 		name: 'Aromatyczne krewetki (160 g)',
@@ -144,6 +156,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Przystawki',
 		image: '/img/menu/aromatic-shrimps.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Bruschetta z wędzonym serem (160 g)',
@@ -152,6 +165,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Przystawki',
 		image: '/img/menu/bruschetta-z-wedzonym-serem.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Bruschetta z szynką parmeńską (160 g)',
@@ -160,6 +174,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Przystawki',
 		image: '/img/menu/bruschetta-z-szynka-parmenska.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Bruschetta z krewetkami (160 g)',
@@ -168,6 +183,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Przystawki',
 		image: '/img/menu/bruschetta-z-krewetkami.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Tatar z łososia (500 g)',
@@ -176,6 +192,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Przystawki',
 		image: '/img/menu/tatar-z-lososia.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Tatar wołowy (200 g)',
@@ -184,6 +201,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Przystawki',
 		image: '/img/menu/tatar-wolowy.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	// SOUPS
 	{
@@ -193,6 +211,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Zupy',
 		image: '/img/menu/krem-z-pomidorow.jpg',
 		isOrderable: true,
+		isRecommended: true,
 	},
 	{
 		name: 'Zupa rybna (350 ml)',
@@ -201,8 +220,9 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Zupy',
 		image: '/img/menu/zupa-rybna.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
-	// BOWLES
+	// BOWLS
 	{
 		name: 'Bowl z grillowanym kurczakiem (450 g)',
 		price: 42,
@@ -210,6 +230,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Bowle',
 		image: '/img/menu/bowl-z-grillowanym-kurczakiem.jpg',
 		isOrderable: true,
+		isRecommended: true,
 	},
 	{
 		name: 'Bowl z grillowanymi krewetkami (450 g)',
@@ -218,6 +239,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Bowle',
 		image: '/img/menu/bowl-z-grillowanymi-krewetkami.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	//VEGE
 	{
@@ -227,6 +249,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Vege',
 		image: '/img/menu/bowl-vegan.jpg',
 		isOrderable: true,
+		isRecommended: true,
 	},
 	{
 		name: 'Gnocchi Vege (400 g)',
@@ -235,6 +258,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Vege',
 		image: '/img/menu/gnocchi-vege.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Frytki Belgijskie (250 g)',
@@ -243,6 +267,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Vege',
 		image: '/img/menu/frytki-belgijskie.jpg',
 		isOrderable: true,
+		isRecommended: true,
 	},
 	// FISH DISHES
 	{
@@ -252,6 +277,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dania rybne',
 		image: '/img/menu/klasyczny-smazony-filet-z-dorsza.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Pieczony filet z łososia (400 g)',
@@ -260,6 +286,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dania rybne',
 		image: '/img/menu/pieczony-filet-z-lososia.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Pieczona tuszka pstrąga (500 g)',
@@ -268,6 +295,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dania rybne',
 		image: '/img/menu/pieczona-tuszka-pstraga.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Dorsz burger (450 g)',
@@ -276,6 +304,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dania rybne',
 		image: '/img/menu/dorsz-burger.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	// SEAFOOD
 	{
@@ -285,6 +314,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Owoce morza',
 		image: '/img/menu/paella-z-owocami-morza.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Mule w sosie maślano-winny (400 g)',
@@ -293,6 +323,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Owoce morza',
 		image: '/img/menu/mule-w-sosie-maslano-winny.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Spaghetti nero di sepia (450 g)',
@@ -301,6 +332,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Owoce morza',
 		image: '/img/menu/spaghetti-nero-di-sepia.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Plater owoców morza (700 g)',
@@ -309,6 +341,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Owoce morza',
 		image: '/img/menu/plater-owocow-morza.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Plater rozpusty (700 g)',
@@ -317,6 +350,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Owoce morza',
 		image: '/img/menu/plater-rozpusty.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	// MEAT DISHES
 	{
@@ -326,6 +360,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dania mięsne',
 		image: '/img/menu/riggatoni-z-kurczakiem.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Wolno pieczone żeberka wieprzowe (700 g)',
@@ -334,6 +369,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dania mięsne',
 		image: '/img/menu/wolno-pieczone-zeberka-wieprzowe.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Roladka z kurczaka owinięta szynką parmeńską (450 g)',
@@ -342,6 +378,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dania mięsne',
 		image: '/img/menu/roladka-z-kurczaka.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Poliki wołowe (450 g)',
@@ -350,6 +387,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dania mięsne',
 		image: '/img/menu/poliki-wolowe.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Polędwiczki wieprzowe (450 g)',
@@ -358,6 +396,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dania mięsne',
 		image: '/img/menu/poledwiczki-wieprzowe.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Burger wołowy (550 g)',
@@ -366,6 +405,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dania mięsne',
 		image: '/img/menu/burger-wolowy.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Burger z chrupiącym kurczakiem (500 g)',
@@ -374,16 +414,8 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dania mięsne',
 		image: '/img/menu/burger-z-chrupiacym-kurczakiem.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
-	{
-		name: 'Burger z chrupiącym kurczakiem (500 g)',
-		price: 56,
-		description: 'Cheddar / pomidor / sałata / sos aioli / prażona cebulka / frytki / ketchup',
-		category: 'Dania mięsne',
-		image: '/img/menu/burger-z-chrupiacym-kurczakiem.jpg',
-		isOrderable: true,
-	},
-	// EXTRAS
 	{
 		name: 'Frytki z ketchupem (250 g)',
 		price: 17,
@@ -391,6 +423,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dodatki',
 		image: '/img/menu/frytki-z-ketchupem.jpg',
 		isOrderable: true,
+		isRecommended: true,
 	},
 	{
 		name: 'Krążki cebulowe (200 g)',
@@ -399,6 +432,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dodatki',
 		image: '/img/menu/krazki-cebulowe.jpg',
 		isOrderable: true,
+		isRecommended: true,
 	},
 	{
 		name: 'Surówka coleslaw (150 g)',
@@ -407,6 +441,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dodatki',
 		image: '/img/menu/surowka-coleslaw.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Sałatka warzywna (200 g)',
@@ -415,6 +450,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dodatki',
 		image: '/img/menu/salatka-warzywna.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Łódeczki ziemniaczane z aioli (250 g)',
@@ -423,14 +459,16 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dodatki',
 		image: '/img/menu/lodeczki-ziemniaczane-z-aioli.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Sos (50 g)',
 		price: 5,
 		description: 'bbq / sweet chilli / cream / aioli / ketchup / mayo',
 		category: 'Dodatki',
-		image: '/img/menu/lodeczki-ziemniaczane-z-aioli.jpg',
+		image: '/img/menu/sos.jpg',
 		isOrderable: true,
+		isRecommended: true,
 	},
 	// KIDS MENU
 	{
@@ -440,6 +478,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dla dzieci',
 		image: '/img/menu/zupa-pomidorowa.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Naleśniki (200 g)',
@@ -448,6 +487,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dla dzieci',
 		image: '/img/menu/nalesniki.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Rigatoni pomodoro (150 g)',
@@ -456,6 +496,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dla dzieci',
 		image: '/img/menu/rigatoni-pomodoro.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Pulpeciki w jasnym sosie (250 g)',
@@ -464,6 +505,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dla dzieci',
 		image: '/img/menu/pulpeciki-w-jasnym-sosie.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Złociste fileciki z kurczaka (250 g)',
@@ -472,6 +514,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dla dzieci',
 		image: '/img/menu/zlociste-fileciki-z-kurczaka.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Złociste fileciki z dorsza (250 g)',
@@ -480,6 +523,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Dla dzieci',
 		image: '/img/menu/zlociste-fileciki-z-dorsza.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	// DESSERTS
 	{
@@ -489,6 +533,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Desery',
 		image: '/img/menu/deser-dnia.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Gałka lodów do deseru (30 g)',
@@ -497,6 +542,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Desery',
 		image: '/img/menu/galka-lodow.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
 	{
 		name: 'Bita śmietana do deseru (20 g)',
@@ -505,8 +551,8 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Desery',
 		image: '/img/menu/bita-smietana.jpg',
 		isOrderable: true,
+		isRecommended: false,
 	},
-
 	//DRINKS
 	//CLASIC DRINKS
 	{
@@ -516,6 +562,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Klasyczne koktaile',
 		image: '/img/menu/aperol-jack.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Świeże Prosseco z Nalewaka (120 ml)',
@@ -524,6 +571,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Klasyczne koktaile',
 		image: '/img/menu/prosseco-z-nalewaka.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Sangria z Owocami (300 ml)',
@@ -532,6 +580,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Klasyczne koktaile',
 		image: '/img/menu/sangria-z-owocami.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Lemoniada Klasyczna (300 ml)',
@@ -540,6 +589,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Klasyczne koktaile',
 		image: '/img/menu/lemoniada-klasyczna.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Lemoniada Miodowa (300 ml)',
@@ -548,6 +598,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Klasyczne koktaile',
 		image: '/img/menu/lemoniada-miodowa.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	// HOT DRINKS
 	{
@@ -557,6 +608,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Na ciepło',
 		image: '/img/menu/wino-grzane.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Cherry Lady (300 ml)',
@@ -565,6 +617,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Na ciepło',
 		image: '/img/menu/cherry-lady.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Herbata rozgrzewająca (300 ml)',
@@ -573,6 +626,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Na ciepło',
 		image: '/img/menu/herbata-rozgrzewajaca.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Aperol w ciepłej odsłonie na bazie białego wina i soku z aromatycznej pomarańczy (200 ml)',
@@ -581,6 +635,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Na ciepło',
 		image: '/img/menu/aperol-na-cieplo.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	//TEA
 	{
@@ -590,6 +645,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Herbata',
 		image: '/img/menu/herbata-eilles.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	//COFFEE
 	{
@@ -599,6 +655,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Kawa',
 		image: '/img/menu/espresso.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Espresso macchiato (50 ml)',
@@ -607,6 +664,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Kawa',
 		image: '/img/menu/espresso-macchiato.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Espresso doppio (80 ml)',
@@ -615,6 +673,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Kawa',
 		image: '/img/menu/espresso-doppio.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Americano (200 ml / 300 ml)',
@@ -623,6 +682,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Kawa',
 		image: '/img/menu/americano.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Kawa biała (200 ml / 300 ml)',
@@ -631,6 +691,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Kawa',
 		image: '/img/menu/kawa-biala.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Cappuccino (300 ml)',
@@ -639,6 +700,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Kawa',
 		image: '/img/menu/cappuccino.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Latte (300 ml)',
@@ -647,6 +709,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Kawa',
 		image: '/img/menu/latte.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Flat white (200 ml)',
@@ -655,6 +718,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Kawa',
 		image: '/img/menu/flat-white.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Mocca z czekoladą / Chocolate Mocca (300 ml)',
@@ -663,6 +727,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Kawa',
 		image: '/img/menu/mocca.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Kawa mrożona z lodami śmietankowymi (300 ml)',
@@ -671,6 +736,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Kawa',
 		image: '/img/menu/kawa-mrozona.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Gorący napój czekoladowy z bitą śmietaną lub piankami Marschmallow (300 ml)',
@@ -679,6 +745,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Kawa',
 		image: '/img/menu/hot-chocolate.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 
@@ -688,6 +755,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Kawa',
 		image: '/img/menu/baileys-coffee.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Wedel Coffee (250 ml)',
@@ -696,6 +764,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Kawa',
 		image: '/img/menu/wedel-coffee.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Amaretto Coffee (250 ml)',
@@ -704,6 +773,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Kawa',
 		image: '/img/menu/amaretto-coffee.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	//COLD DRINKS
 	{
@@ -713,6 +783,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Napoje zimne',
 		image: '/img/menu/krystaliczne-zrodlo.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Pepsi / Pepsi Max / Mirinda / 7UP / Schweppes',
@@ -721,6 +792,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Napoje zimne',
 		image: '/img/menu/pepsi.jpg',
 		isOrderable: false,
+		isRecommended: true,
 	},
 	{
 		name: 'Lipton Ice Tea brzoskwiniowa / zielona herbata',
@@ -729,6 +801,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Napoje zimne',
 		image: '/img/menu/lipton-ice-tea.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Sok Toma jabłkowy / pomarańczowy',
@@ -737,6 +810,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Napoje zimne',
 		image: '/img/menu/sok-toma.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Nektar porzeczkowy',
@@ -745,6 +819,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Napoje zimne',
 		image: '/img/menu/nektar-porzeczkowy.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Sok świeżo wyciskany – zapytaj o dostępność kelnera',
@@ -753,6 +828,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Napoje zimne',
 		image: '/img/menu/sok-swiezo-wyciskany.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	// BOTTLED BEAR
 	{
@@ -762,6 +838,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Piwo butelkowe',
 		image: '/img/menu/lech.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Lech Easy (0,4 l)',
@@ -770,6 +847,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Piwo butelkowe',
 		image: '/img/menu/lech-easy.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Kozel jasny / Kozel ciemny (0,5 l)',
@@ -778,6 +856,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Piwo butelkowe',
 		image: '/img/menu/kozel.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Hardmade Peach / Hardmade Yuzu (0,4 l)',
@@ -786,6 +865,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Piwo butelkowe',
 		image: '/img/menu/hardmade.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Książęce Złote pszeniczne (0,5 l)',
@@ -794,6 +874,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Piwo butelkowe',
 		image: '/img/menu/ksiazece-zlote.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Książęce Ciemne Łagodne (0,5 l)',
@@ -802,6 +883,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Piwo butelkowe',
 		image: '/img/menu/ksiazece-ciemne.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Książęce Czerwony Lager (0,5 l)',
@@ -810,6 +892,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Piwo butelkowe',
 		image: '/img/menu/ksiazece-czerwony.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Książęce IPA (0,5 l)',
@@ -818,6 +901,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Piwo butelkowe',
 		image: '/img/menu/ksiazece-ipa.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Książęce Porter (0,5 l)',
@@ -826,6 +910,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Piwo butelkowe',
 		image: '/img/menu/ksiazece-porter.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Grolsch (0,45 l)',
@@ -834,6 +919,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Piwo butelkowe',
 		image: '/img/menu/grolsch.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Pilsner Urquell (0,5 l)',
@@ -842,6 +928,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Piwo butelkowe',
 		image: '/img/menu/pilsner-urquell.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Sopockie piwo (0,5 l)',
@@ -850,6 +937,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Piwo butelkowe',
 		image: '/img/menu/sopockie-piwo.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	// NON ALCOHOLIC BEAR 
 	{
@@ -859,6 +947,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Piwo bezalkoholowe',
 		image: '/img/menu/kozel-non-alcoholic.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Lech Free Lager 0,5 l',
@@ -867,6 +956,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Piwo bezalkoholowe',
 		image: '/img/menu/lech-free.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Lech Free Pomelo Grejpfrut 0,5 l',
@@ -875,6 +965,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Piwo bezalkoholowe',
 		image: '/img/menu/lech-free-pomelo.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Lech Active Liczi i cytryna 0,5 l',
@@ -883,6 +974,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Piwo bezalkoholowe',
 		image: '/img/menu/lech-active.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	// WHITE WINE
 	{
@@ -892,6 +984,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Wina Białe',
 		image: '/img/menu/el-campo-chardonnay.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'EL CAMPO SAUVIGNON BLANC / W / CHILE (DRY) (150 ml)',
@@ -900,6 +993,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Wina Białe',
 		image: '/img/menu/el-campo-sauvignon-blanc.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'ABTEI HIMMEROD RIESLING FEINHERB / PW / NIEMCY (SEMI-DRY) (150 ml)',
@@ -908,6 +1002,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Wina Białe',
 		image: '/img/menu/abtei-himmerod-riesling.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'ABTESAVEE SEA SAUVIGNON BLANC / W / NOWA ZELANDIA (DRY) (150 ml)',
@@ -916,6 +1011,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Wina Białe',
 		image: '/img/menu/abtesavee-sea-sauvignon-blanc.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	// RED WINE
 	{
@@ -925,6 +1021,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Wina Czerwone',
 		image: '/img/menu/laya.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'PRIMITIVO DI MANDURIA ARCHIDAMO /W/WŁOCHY (DRY)',
@@ -933,6 +1030,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Wina Czerwone',
 		image: '/img/menu/primitivo-di-manduria.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	// COCTAILS
 	{
@@ -942,6 +1040,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Drinki',
 		image: '/img/menu/aperol-spritz.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Gin & Tonic (250 ml)',
@@ -950,6 +1049,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Drinki',
 		image: '/img/menu/gin-tonic.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Letnie Orzeźwienie (250 ml)',
@@ -958,6 +1058,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Drinki',
 		image: '/img/menu/letnie-orzezwienie.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Martini Tonic (250 ml)',
@@ -966,6 +1067,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Drinki',
 		image: '/img/menu/martini-tonic.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Negroni (200 ml)',
@@ -974,6 +1076,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Drinki',
 		image: '/img/menu/negroni.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Mimosa (140 ml)',
@@ -982,6 +1085,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Drinki',
 		image: '/img/menu/mimosa.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	// WHISKY
 	{
@@ -991,6 +1095,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/ballantines.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Jack Daniel’s (40 ml)',
@@ -999,6 +1104,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/jack-daniels.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Jameson (40 ml)',
@@ -1007,6 +1113,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/jameson.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Bulleit Bourbon Frontier Whiskey (40 ml)',
@@ -1015,6 +1122,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/bulleit-bourbon.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Chivas Regal 12 letnia (40 ml)',
@@ -1023,6 +1131,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/chivas-regal-12.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Hankey Bannister (40 ml)',
@@ -1031,6 +1140,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/hankey-bannister.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Hankey Bannister Heritage Blend (40 ml)',
@@ -1039,6 +1149,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/hankey-bannister-heritage.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Monkey Shoulder Blended Malt (40 ml)',
@@ -1047,6 +1158,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/monkey-shoulder.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Johnnie Walker Black 12 letnia (40 ml)',
@@ -1055,6 +1167,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/johnnie-walker-black.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Kavalan Classic Single Malt (40 ml)',
@@ -1063,6 +1176,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/kavalan-classic.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'anCnoc 12 letnia (40 ml)',
@@ -1071,6 +1185,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/ancnoc-12.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Ardbeg 10 letnia (40 ml)',
@@ -1079,6 +1194,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/ardbeg-10.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Old Pulteney 12 letnia (40 ml)',
@@ -1087,6 +1203,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/old-pulteney-12.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Balblair 2003 Vintage (40 ml)',
@@ -1095,6 +1212,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/balblair-2003.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Aberfeldy 12 letnia (40 ml)',
@@ -1103,6 +1221,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/aberfeldy-12.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'The Arran Malt Amarone (40 ml)',
@@ -1111,6 +1230,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/arran-malt-amarone.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Glenmorangie 10 letnia (40 ml)',
@@ -1119,6 +1239,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/glenmorangie-10.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Togouchi Old Blended Whisky 18 letnia (40 ml)',
@@ -1127,6 +1248,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/togouchi-18.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Bruichladdich The Classic Laddie Scottish Barley (40 ml)',
@@ -1135,6 +1257,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/bruichladdich-classic-laddie.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Lagavulin 16 letnia (40 ml)',
@@ -1143,6 +1266,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/lagavulin-16.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Singleton (40 ml)',
@@ -1151,6 +1275,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/singleton.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Talisker (40 ml)',
@@ -1159,6 +1284,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Whisky',
 		image: '/img/menu/talisker.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	// RUM
 	{
@@ -1168,6 +1294,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Rum',
 		image: '/img/menu/captain-morgan.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Captain Morgan Dark (40 ml)',
@@ -1176,6 +1303,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Rum',
 		image: '/img/menu/captain-morgan-dark.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Captain Morgan Spice (40 ml)',
@@ -1184,6 +1312,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Rum',
 		image: '/img/menu/captain-morgan-spice.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Captain Morgan Apple (40 ml)',
@@ -1192,6 +1321,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Rum',
 		image: '/img/menu/captain-morgan-apple.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	// TEQUILA
 	{
@@ -1201,6 +1331,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Tequila',
 		image: '/img/menu/jose-cuervo-gold.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Jose Cuervo Silver (40 ml)',
@@ -1209,6 +1340,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Tequila',
 		image: '/img/menu/jose-cuervo-silver.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	// COGNAC / BRANDY
 	{
@@ -1218,6 +1350,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Cognac / Brandy',
 		image: '/img/menu/metaxa-5.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Metaxa 7 (40 ml)',
@@ -1226,6 +1359,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Cognac / Brandy',
 		image: '/img/menu/metaxa-7.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Hennessy (40 ml)',
@@ -1234,6 +1368,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Cognac / Brandy',
 		image: '/img/menu/hennessy.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	// GIN
 	{
@@ -1243,6 +1378,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Gin',
 		image: '/img/menu/gordons.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Gordon’s Pink (40 ml)',
@@ -1251,6 +1387,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Gin',
 		image: '/img/menu/gordons-pink.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Gordon’s Sicilian (40 ml)',
@@ -1259,6 +1396,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Gin',
 		image: '/img/menu/gordons-sicilian.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Tanqueray London Dry (40 ml)',
@@ -1267,6 +1405,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Gin',
 		image: '/img/menu/tanqueray-london-dry.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Tanqueray Sevilla (40 ml)',
@@ -1275,6 +1414,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Gin',
 		image: '/img/menu/tanqueray-sevilla.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Bombay Sapphire (40 ml)',
@@ -1283,6 +1423,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Gin',
 		image: '/img/menu/bombay-sapphire.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Magellan (40 ml)',
@@ -1291,6 +1432,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Gin',
 		image: '/img/menu/magellan.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Bulldog London Dry (40 ml)',
@@ -1299,6 +1441,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Gin',
 		image: '/img/menu/bulldog-london-dry.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Cubical Kiss Premium Dry Gin (40 ml)',
@@ -1307,6 +1450,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Gin',
 		image: '/img/menu/cubical-kiss.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Vine Gin de France Floraison (40 ml)',
@@ -1315,6 +1459,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Gin',
 		image: '/img/menu/vine-gin-de-france.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Hendrick’s Scotland Gin (40 ml)',
@@ -1323,6 +1468,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Gin',
 		image: '/img/menu/hendricks.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Monkey 47 Schwarzwald Dry Gin (40 ml)',
@@ -1331,6 +1477,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Gin',
 		image: '/img/menu/monkey-47-dry.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Monkey 47 Schwarzwald Sloe Gin (40 ml)',
@@ -1339,6 +1486,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Gin',
 		image: '/img/menu/monkey-47-sloe.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Copper Head Gin (40 ml)',
@@ -1347,6 +1495,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Gin',
 		image: '/img/menu/copper-head.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	// VODKA
 	{
@@ -1356,6 +1505,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Wódka',
 		image: '/img/menu/absolut.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Ketel one cytrynowy (40 ml)',
@@ -1364,6 +1514,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Wódka',
 		image: '/img/menu/ketel-one-cytrynowy.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Ketel one (40 ml)',
@@ -1372,6 +1523,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Wódka',
 		image: '/img/menu/ketel-one.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Cana Rio Cachaca (40 ml)',
@@ -1380,6 +1532,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Wódka',
 		image: '/img/menu/cana-rio-cachaca.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Chopin (40 ml)',
@@ -1388,6 +1541,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Wódka',
 		image: '/img/menu/chopin.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Wyborowa (40 ml)',
@@ -1396,6 +1550,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Wódka',
 		image: '/img/menu/wyborowa.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Soplica smakowa (40 ml)',
@@ -1404,6 +1559,7 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Wódka',
 		image: '/img/menu/soplica.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
 	{
 		name: 'Orkisz (40 ml)',
@@ -1412,6 +1568,6 @@ export const MENU_ITEMS: MenuItemType[] = [
 		category: 'Wódka',
 		image: '/img/menu/orkisz.jpg',
 		isOrderable: false,
+		isRecommended: false,
 	},
-
 ]
