@@ -3,19 +3,18 @@
 import Header from '@/app/components/Header'
 import MainContainer from '@/app/components/MainContainer'
 import { CartProvider } from '@/app/context/CartContext'
-import { Inter, Roboto } from 'next/font/google'
-import { Toaster } from 'sonner'
-import './globals.css'
-
-import { trpc, trpcClient } from '@/utils/trps'
+import { trpc } from '@/utils/trps'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { Inter, Roboto } from 'next/font/google'
 import { useState } from 'react'
+import { Toaster } from 'sonner'
+import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 const roboto = Roboto({ weight: '400', subsets: ['latin'] })
 
-export default function RootLayout({
+function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
@@ -26,18 +25,19 @@ export default function RootLayout({
     <html lang='en'>
       <body className={roboto.className}>
         <CartProvider>
-          <trpc.Provider client={trpcClient} queryClient={queryClient}>
-            <QueryClientProvider client={queryClient}>
-              <Header />
-              <MainContainer>
-                {children}
-              </MainContainer>
-              <Toaster position='top-center' richColors />
-              <ReactQueryDevtools initialIsOpen={false} />
-            </QueryClientProvider>
-          </trpc.Provider>
+          <QueryClientProvider client={queryClient}>
+            <Header />
+            <MainContainer>
+              {children}
+            </MainContainer>
+            <Toaster position='top-center' richColors />
+            <ReactQueryDevtools initialIsOpen={false} />
+          </QueryClientProvider>
         </CartProvider>
       </body>
     </html>
   )
 }
+
+// Обгортаємо ваш RootLayout з `withTRPC`
+export default trpc.withTRPC(RootLayout)

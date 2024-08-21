@@ -48,11 +48,12 @@ export type MenuItemCategory =
 	'Wódka'
 
 export interface MenuItemType {
+	id: string,
 	name: string,
 	price: number,
-	description: string,
+	description: string | null | undefined,
 	category: MenuItemCategory,
-	image: string,
+	image: string | null | undefined,
 	isOrderable?: boolean,
 	isRecommended?: boolean,
 }

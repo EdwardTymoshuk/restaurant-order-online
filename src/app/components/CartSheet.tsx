@@ -15,13 +15,21 @@ const CartSheet = () => {
 	const [isDialogOpen, setIsDialogOpen] = useState(false)
 	const [isRecommendDialogOpen, setIsRecommendDialogOpen] = useState(false)
 
+	const incrementQuantity = (id: string) => {
+		dispatch({ type: 'INCREASE_QUANTITY', payload: id })
+	}
+
+	const decrementQuantity = (id: string) => {
+		dispatch({ type: 'DECREASE_QUANTITY', payload: id })
+	}
+
 	const removeItem = (id: string) => {
 		dispatch({ type: 'REMOVE_ITEM', payload: id })
 	}
 
 	const clearCart = () => {
 		dispatch({ type: 'CLEAR_CART' })
-		setIsDialogOpen(false) // Закрити модальне вікно після очищення кошика
+		setIsDialogOpen(false)
 	}
 
 	const handleClearCartClick = () => {
@@ -33,9 +41,11 @@ const CartSheet = () => {
 	}
 
 	const handleContinue = () => {
-		// Логіка для продовження оформлення замовлення після дозамовлення
 		setIsRecommendDialogOpen(false)
 	}
+
+	// Підрахунок загальної кількості товарів у кошику
+	const totalItemsInCart = state.items.reduce((total, item) => total + item.quantity, 0)
 
 	return (
 		<Sheet>
@@ -43,9 +53,9 @@ const CartSheet = () => {
 				<Button variant="ghost" className="flex items-center space-x-2 hover:bg-transparent p-0 m-0 ring-0">
 					<div className="relative scale-75 group">
 						<BsCart4 className="h-8 w-8 text-text-secondary group-hover:text-secondary" />
-						{state.items.length > 0 && (
+						{totalItemsInCart > 0 && (
 							<span className="absolute -top-2 left-4 rounded-full bg-secondary group-hover:brightness-125 p-0.5 px-2 text-sm text-text-primary transition-all">
-								{state.items.length}
+								{totalItemsInCart}
 							</span>
 						)}
 					</div>
@@ -87,7 +97,24 @@ const CartSheet = () => {
 												</div>
 											</div>
 											<div className="flex flex-1 items-end justify-between text-sm">
-												<p className="text-gray-500">Qty {item.quantity}</p>
+												<div className="flex items-center space-x-2">
+													<Button
+														variant='outline'
+														size='sm'
+														onClick={() => decrementQuantity(item.id)}
+														disabled={item.quantity === 1}
+													>
+														-
+													</Button>
+													<p className="text-gray-500">{item.quantity}</p>
+													<Button
+														variant='outline'
+														size='sm'
+														onClick={() => incrementQuantity(item.id)}
+													>
+														+
+													</Button>
+												</div>
 												<Button
 													variant='link'
 													size='link'
@@ -130,7 +157,6 @@ const CartSheet = () => {
 			{/* Модальне вікно для підтвердження очищення кошика */}
 			<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
 				<DialogTrigger asChild>
-					{/* Зробіть кнопку невидимою, оскільки ми відкриваємо діалог через onClick */}
 					<div className="hidden"></div>
 				</DialogTrigger>
 				<DialogContent>

@@ -1,19 +1,14 @@
+// src/server/trpc.ts
 import { initTRPC } from '@trpc/server'
+import superjson from 'superjson'
 
-const t = initTRPC.create()
+// Ініціалізація tRPC з superjson
+const t = initTRPC.create({
+	transformer: superjson, // Для підтримки складних типів даних, як-от Date
+	errorFormatter({ shape }) {
+		return shape
+	},
+})
 
 export const router = t.router
 export const publicProcedure = t.procedure
-
-export const appRouter = router({
-	// приклад простого роуту
-	getMenuItems: publicProcedure.query(() => {
-		// Логіка отримання меню з бази даних
-		return [
-			{ id: 1, name: 'Pizza', price: 12 },
-			{ id: 2, name: 'Burger', price: 8 },
-		]
-	}),
-})
-
-export type AppRouter = typeof appRouter

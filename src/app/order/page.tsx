@@ -9,8 +9,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/app/components/ui/select"
-import { MenuItemType } from '@/app/types'
-import { CAROUSEL_MAIN_IMAGES, MENU_ITEMS } from '@/config'
+import { MenuItemCategory, MenuItemType } from '@/app/types'
+import { CAROUSEL_MAIN_IMAGES } from '@/config'
+import { trpc } from '@/utils/trps'
 import Autoplay from "embla-carousel-autoplay"
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
@@ -20,15 +21,25 @@ const Page = () => {
 	const [sortOption, setSortOption] = useState<string | undefined>(undefined)
 	const [categoryFilter, setCategoryFilter] = useState<string | undefined>(undefined)
 
-	useEffect(() => {
-		// Filter by orderable and category
-		let itemsFiltered = MENU_ITEMS.filter(item => item.isOrderable)
+	const { data: menuItems = [] } = trpc.menu.getMenuItems.useQuery()
 
+	useEffect(() => {
+		// Запобігаємо виконанню, якщо menuItems ще не завантажені
+		if (!menuItems || menuItems.length === 0) return
+
+		let itemsFiltered = menuItems
+			.map(item => ({
+				...item,
+				category: item.category as MenuItemCategory,
+			}))
+			.filter(item => item.isOrderable)
+
+		// Фільтрація за категорією
 		if (categoryFilter && categoryFilter !== 'all') {
 			itemsFiltered = itemsFiltered.filter(item => item.category === categoryFilter)
 		}
 
-		// Sort items
+		// Сортування
 		switch (sortOption) {
 			case 'Nazwa rosnąco':
 				itemsFiltered.sort((a, b) => a.name.localeCompare(b.name))
@@ -46,14 +57,11 @@ const Page = () => {
 				break
 		}
 
-		// Log filtered items for debugging
-		console.log("Filtered items:", itemsFiltered)
-
+		// Установка відсортованих елементів
 		setSortedItems(itemsFiltered)
-	}, [sortOption, categoryFilter])
+	}, [menuItems, sortOption, categoryFilter])
 
-	// Extract orderable categories for the filter dropdown
-	const categories = Array.from(new Set(MENU_ITEMS.filter(item => item.isOrderable).map(item => item.category)))
+	const categories = Array.from(new Set(menuItems.map(item => item.category)))
 
 	return (
 		<div className="container mx-auto px-4 py-4 space-y-4">
@@ -90,7 +98,6 @@ const Page = () => {
 						<SelectValue placeholder='Sortuj' />
 					</SelectTrigger>
 					<SelectContent>
-						<SelectItem value="all">Wszystko</SelectItem>
 						<SelectItem value="Nazwa rosnąco">Nazwa rosnąco</SelectItem>
 						<SelectItem value="Nazwa malejąco">Nazwa malejąco</SelectItem>
 						<SelectItem value="Cena rosnąco">Cena rosnąco</SelectItem>
@@ -112,11 +119,13 @@ const Page = () => {
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-16">
 				{sortedItems.map(item => (
 					<MenuItem
-						key={item.name}
+						id={item.id}
+						key={item.id}
 						name={item.name}
 						price={item.price}
-						description={item.description}
-						image={item.image}
+						description={item.description || ''}
+						image={item.image || ''}
+						category={item.category}
 						orientation='horizontal'
 					/>
 				))}
