@@ -35,18 +35,24 @@ const initialState: CartState = {
 function cartReducer(state: CartState, action: CartAction): CartState {
 	switch (action.type) {
 		case 'ADD_ITEM': {
+			// Перевірка наявності продукту з таким же id у кошику
 			const existingItemIndex = state.items.findIndex(item => item.id === action.payload.id)
 
 			if (existingItemIndex >= 0) {
+				// Якщо продукт з таким id вже є в кошику, збільшуємо його кількість
 				const updatedItems = [...state.items]
 				const existingItem = updatedItems[existingItemIndex]
-				updatedItems[existingItemIndex] = { ...existingItem, quantity: existingItem.quantity + action.payload.quantity }
+				updatedItems[existingItemIndex] = {
+					...existingItem,
+					quantity: existingItem.quantity + action.payload.quantity
+				}
 				return {
 					...state,
 					items: updatedItems,
 					totalAmount: state.totalAmount + action.payload.price * action.payload.quantity,
 				}
 			} else {
+				// Якщо продукту ще немає в кошику, додаємо його
 				return {
 					...state,
 					items: [...state.items, action.payload],
@@ -92,6 +98,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 			return state
 	}
 }
+
 
 const CartContext = createContext<{ state: CartState; dispatch: React.Dispatch<CartAction> }>({
 	state: initialState,

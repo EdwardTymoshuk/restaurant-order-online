@@ -146,21 +146,21 @@ export default function Home() {
             <Tabs defaultValue="delivery" onValueChange={setActiveTab}>
               <TabsList className='p-2 h-fit flex flex-row justify-around bg-transparent relative'>
                 <TabsTrigger
-                  className='flex flex-col items-center text-lg md:text-2xl data-[state=active]:text-primary data-[state=active]:shadow-none rounded-none relative z-10'
+                  className='flex flex-col items-center text-lg md:text-2xl data-[state=active]:text-secondary data-[state=active]:shadow-none rounded-none relative z-10'
                   value="delivery"
                 >
                   <MdOutlineDeliveryDining className='text-4xl' />
                   <span className="relative">DOSTAWA</span>
                 </TabsTrigger>
                 <TabsTrigger
-                  className='flex flex-col items-center text-lg md:text-2xl data-[state=active]:text-primary data-[state=active]:shadow-none rounded-none relative z-10'
+                  className='flex flex-col items-center text-lg md:text-2xl data-[state=active]:text-secondary data-[state=active]:shadow-none rounded-none relative z-10'
                   value="take-out"
                 >
                   <MdOutlineRestaurantMenu className='text-4xl' />
                   <span className="relative">ODBIÓR</span>
                 </TabsTrigger>
                 <span
-                  className='absolute bottom-0 left-0 h-[2px] bg-primary transition-all duration-300 ease-out'
+                  className='absolute bottom-0 left-0 h-[2px] bg-secondary transition-all duration-300 ease-out'
                   style={{
                     width: '25%',
                     transform: activeTab === 'delivery' ? 'translateX(60%)' : 'translateX(250%)',
@@ -187,7 +187,7 @@ export default function Home() {
                   <LoadingButton
                     isLoading={loading}
                     type="button"
-                    className="w-full"
+                    className="w-full bg-secondary"
                     onClick={handleOrderClick}
                   >
                     Do zamówienia <MdOutlineKeyboardArrowRight />

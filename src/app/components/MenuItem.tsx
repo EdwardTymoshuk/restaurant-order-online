@@ -13,10 +13,11 @@ import Image from 'next/image'
 import React, { useState } from 'react'
 import { CiShoppingBasket } from 'react-icons/ci'
 import { FaCheck } from 'react-icons/fa'
-import { v4 as uuidv4 } from 'uuid'
+import { toast } from 'sonner'
 import { Button } from './ui/button'
 
 type MenuItemProps = Partial<MenuItemType> & {
+	id: string,
 	name: string,
 	price: number,
 	description?: string,
@@ -25,19 +26,28 @@ type MenuItemProps = Partial<MenuItemType> & {
 	className?: string, // Додаємо пропс для прийому додаткових класів
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ name, price, description, image, orientation = 'vertical', className }) => {
+const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image, orientation = 'vertical', className }) => {
 	const [imageError, setImageError] = useState(false)
 	const [addedToCart, setAddedToCart] = useState(false)
 	const isVertical = orientation === 'vertical'
 
-	const { dispatch } = useCart()
+	const { state, dispatch } = useCart()
 
 	const addToCart = () => {
+		// Перевірка, чи продукт уже є в кошику
+		const existingItem = state.items.find(item => item.id === id)
+
+		if (existingItem) {
+			// Якщо продукт уже є в кошику, показуємо toast і не спрацьовує анімація
+			toast.info('Masz juź w swoim koszyka wybraną pozycję.')
+			return
+		}
+
 		if (name && price) {
 			dispatch({
 				type: 'ADD_ITEM',
 				payload: {
-					id: uuidv4(),
+					id,
 					name,
 					price,
 					quantity: 1
@@ -65,8 +75,8 @@ const MenuItem: React.FC<MenuItemProps> = ({ name, price, description, image, or
 						<Image
 							src={image}
 							alt={name ?? 'Menu item image'}
-							layout='fill'
-							objectFit='cover'
+							fill
+							style={{ objectFit: 'cover' }}
 							className='rounded-md'
 							onError={() => setImageError(true)}
 						/>

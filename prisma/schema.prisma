@@ -16,7 +16,7 @@ model MenuItem {
   category      String
   isRecommended Boolean     @default(false)
   isOrderable   Boolean     @default(true)
-  orders        OrderItem[] // Зв'язок з замовленнями
+  orders        OrderItem[]
 
   @@index([name, category])
 }
