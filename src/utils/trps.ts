@@ -6,7 +6,7 @@ import superjson from 'superjson'
 export const trpc = createTRPCNext<AppRouter>({
 	config() {
 		return {
-			transformer: superjson, // Використання суперджсон для трансформації даних
+			transformer: superjson,
 			links: [
 				httpBatchLink({
 					url: '/api/trpc',

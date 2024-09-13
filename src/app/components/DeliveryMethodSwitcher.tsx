@@ -11,14 +11,14 @@ import { useCheckout } from '../context/CheckoutContext'
 import { Button } from './ui/button'
 
 interface DeliveryMethodSwitcherProps {
-	deliveryMethod: 'delivery' | 'take-out'
-	setDeliveryMethod: (method: 'delivery' | 'take-out') => void
+	deliveryMethod: 'DELIVERY' | 'TAKE_OUT'
+	setDeliveryMethod: (method: 'DELIVERY' | 'TAKE_OUT') => void
 	setAddress: (address: string) => void
 	onValidate: (isValid: boolean) => void
 }
 
 interface OptionsProps {
-	value: 'delivery' | 'take-out',
+	value: 'DELIVERY' | 'TAKE_OUT',
 	label: string,
 	icon: React.ReactNode,
 }
@@ -40,8 +40,8 @@ const DeliveryMethodSwitcher: React.FC<DeliveryMethodSwitcherProps> = ({ deliver
 	})
 
 	const options: OptionsProps[] = [
-		{ value: 'delivery', label: 'Dostawa', icon: <MdOutlineDeliveryDining /> },
-		{ value: 'take-out', label: 'Odbiór', icon: <MdOutlineRestaurantMenu /> },
+		{ value: 'DELIVERY', label: 'Dostawa', icon: <MdOutlineDeliveryDining /> },
+		{ value: 'TAKE_OUT', label: 'Odbiór', icon: <MdOutlineRestaurantMenu /> },
 	]
 
 	const { setDeliveryData, deliveryData } = useCheckout()
@@ -67,7 +67,7 @@ const DeliveryMethodSwitcher: React.FC<DeliveryMethodSwitcherProps> = ({ deliver
 	}, [])
 
 	// useEffect(() => {
-	// 	if (deliveryMethod === 'delivery') {
+	// 	if (deliveryMethod === 'DELIVERY') {
 	// 		handleOrderClick()
 	// 	}
 	// }, [deliveryMethod])
@@ -112,7 +112,7 @@ const DeliveryMethodSwitcher: React.FC<DeliveryMethodSwitcherProps> = ({ deliver
 		}
 	}
 
-	const onChange = (value: 'delivery' | 'take-out') => {
+	const onChange = (value: 'DELIVERY' | 'TAKE_OUT') => {
 		setDeliveryMethod(value)
 	}
 
@@ -123,7 +123,7 @@ const DeliveryMethodSwitcher: React.FC<DeliveryMethodSwitcherProps> = ({ deliver
 				activeValue={deliveryMethod}
 				onChange={onChange}
 			/>
-			{deliveryMethod === 'delivery' && (
+			{deliveryMethod === 'DELIVERY' && (
 				<div>
 					<div className="space-y-4 py-4">
 						<form className="space-y-4">

@@ -4,6 +4,7 @@ import { Button } from '@/app/components/ui/button'
 import { Input } from '@/app/components/ui/input'
 import { useCart } from '@/app/context/CartContext'
 import { getCoordinates, isAddressInDeliveryArea } from '@/lib/deliveryUtils'
+import { trpc } from '@/utils/trps'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -58,11 +59,12 @@ type TakeOutFormData = z.infer<typeof takeOutSchema>
 const Page = () => {
 
 	const { state } = useCart()
-	const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'take-out'>('take-out')
+	const [deliveryMethod, setDeliveryMethod] = useState<'DELIVERY' | 'TAKE_OUT'>('TAKE_OUT')
 	const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null)
 	const [isLoading, setIsLoading] = useState(false)
 
 	const router = useRouter()
+	const createOrderMutation = trpc.order.create.useMutation()
 
 	const { register: registerDelivery, handleSubmit: handleSubmitDelivery, formState: formStateDelivery, setValue: setValueDelivery, getValues: getValuesDelivery, reset: resetDelivery } = useForm<DeliveryFormData>({
 		resolver: zodResolver(deliverySchema),
@@ -92,7 +94,7 @@ const Page = () => {
 	})
 
 	useEffect(() => {
-		const savedMethod = localStorage.getItem('deliveryMethod') as 'delivery' | 'take-out'
+		const savedMethod = localStorage.getItem('deliveryMethod') as 'DELIVERY' | 'TAKE_OUT'
 		if (savedMethod) {
 			setDeliveryMethod(savedMethod)
 		}
@@ -143,7 +145,7 @@ const Page = () => {
 	}
 
 	const handleTimeChange = (timeOption: 'asap' | Date) => {
-		if (deliveryMethod === 'take-out') {
+		if (deliveryMethod === 'TAKE_OUT') {
 			setValueTakeOut('deliveryTime', timeOption)
 		} else {
 			setValueDelivery('deliveryTime', timeOption)
@@ -152,44 +154,92 @@ const Page = () => {
 
 	const handlePaymentMethodSelect = (method: string) => {
 		setSelectedPaymentMethod(method)
-		deliveryMethod === 'take-out' ?
+		deliveryMethod === 'TAKE_OUT' ?
 			setValueTakeOut('paymentMethod', method) :
 			setValueDelivery('paymentMethod', method)
 
 	}
 
 	const onDeliverySubmit = async (data: DeliveryFormData) => {
-		setIsLoading(true)
-		let isValid = await handleCheckAddress()
+		try {
+			setIsLoading(true)
 
-		if (!data.paymentMethod) {
-			toast.error('Nie wybrano metody opłaty')
+			let isValid = await handleCheckAddress()
+
+			if (!data.paymentMethod) {
+				toast.error('Nie wybrano metody opłaty')
+				setIsLoading(false)
+				return
+			}
+
+			if (isValid === false) {
+				setIsLoading(false)
+				return
+			}
+
+			localStorage.setItem('deliveryAddress', '')
+
+			const order = await createOrderMutation.mutateAsync({
+				name: data.name,
+				phone: data.phone,
+				city: data.city,
+				postalCode: data.postalCode,
+				street: data.street,
+				buildingNumber: data.buildingNumber,
+				apartment: data.apartment,
+				paymentMethod: data.paymentMethod,
+				deliveryMethod: deliveryMethod,
+				deliveryTime: data.deliveryTime === 'asap' ? new Date() : data.deliveryTime,
+				items: state.items.map((item) => ({
+					menuItemId: item.id,
+					quantity: item.quantity,
+				})),
+				totalAmount: state.totalAmount,
+				method: 'DELIVERY',
+			})
+
+			toast.success('Замовлення успішно створено!')
+			resetDelivery()
+			resetTakeOut()
+		} catch (error) {
+			toast.error('Помилка при створенні замовлення')
+		} finally {
 			setIsLoading(false)
-			return
 		}
-
-		if (isValid === false) {
-			setIsLoading(false)
-			return
-		}
-
-		localStorage.setItem('deliveryAddress', '')
-
-		toast.success('Zamówienie z dostawą zostało złożone!')
-		console.log('Delivery order:', { ...data, orderItems: state.items, totalAmount: state.totalAmount })
-
-		resetDelivery()
-		resetTakeOut()
-		setIsLoading(false)
-		// router.push('/thank-you')
 	}
 
 	const onTakeOutSubmit = async (data: TakeOutFormData) => {
-		setIsLoading(true)
-		toast.success('Zamówienie z odbiorem osobistym zostało złożone!')
-		console.log('Take-out order:', { ...data, deliveryMethod, orderItems: state.items, totalAmount: state.totalAmount })
-		setIsLoading(false)
-		// router.push('/thank-you')
+		try {
+			setIsLoading(true)
+
+			if (!data.paymentMethod) {
+				toast.error('Nie wybrano metody opłaty')
+				setIsLoading(false)
+				return
+			}
+
+			const order = await createOrderMutation.mutateAsync({
+				name: data.name,
+				phone: data.phone,
+				paymentMethod: data.paymentMethod,
+				deliveryMethod: deliveryMethod,
+				deliveryTime: data.deliveryTime === 'asap' ? new Date() : data.deliveryTime,
+				items: state.items.map((item) => ({
+					menuItemId: item.id,
+					quantity: item.quantity,
+				})),
+				totalAmount: state.totalAmount,
+				method: 'TAKE_OUT',
+			})
+
+			toast.success('Замовлення успішно створено!')
+			resetDelivery()
+			resetTakeOut()
+		} catch (error) {
+			toast.error('Помилка при створенні замовлення')
+		} finally {
+			setIsLoading(false)
+		}
 	}
 
 	return (
@@ -207,14 +257,14 @@ const Page = () => {
 						<h3 className="text-xl text-secondary font-semibold">Metoda dostawy</h3>
 						<Switcher
 							options={[
-								{ value: 'delivery', label: 'Dostawa', icon: <MdOutlineDeliveryDining /> },
-								{ value: 'take-out', label: 'Odbiór', icon: <MdOutlineRestaurantMenu /> },
+								{ value: 'DELIVERY', label: 'Dostawa', icon: <MdOutlineDeliveryDining /> },
+								{ value: 'TAKE_OUT', label: 'Odbiór', icon: <MdOutlineRestaurantMenu /> },
 							]}
 							activeValue={deliveryMethod}
 							onChange={setDeliveryMethod}
 						/>
 					</div>
-					{deliveryMethod === 'delivery' && (
+					{deliveryMethod === 'DELIVERY' && (
 						<form id='deliveryForm' onSubmit={handleSubmitDelivery(onDeliverySubmit)} className="space-y-8">
 							<div className="space-y-4 w-full">
 								<div className="space-y-2">
@@ -393,7 +443,7 @@ const Page = () => {
 						</form>
 					)}
 
-					{deliveryMethod === 'take-out' && (
+					{deliveryMethod === 'TAKE_OUT' && (
 						<form id='takeOutForm' onSubmit={handleSubmitTakeOut(onTakeOutSubmit)} className="space-y-8">
 
 							<div className="space-y-4 w-full">
@@ -535,7 +585,7 @@ const Page = () => {
 						<span>Total</span>
 						<span>{state.totalAmount} zł</span>
 					</div>
-					<LoadingButton form={deliveryMethod === 'delivery' ? 'deliveryForm' : 'takeOutForm'} variant='secondary' isLoading={isLoading} className="w-full" type="submit">Złóż zamówienie</LoadingButton>
+					<LoadingButton form={deliveryMethod === 'DELIVERY' ? 'deliveryForm' : 'takeOutForm'} variant='secondary' isLoading={isLoading} className="w-full" type="submit">Złóż zamówienie</LoadingButton>
 				</div>
 			</div>
 		</div>
