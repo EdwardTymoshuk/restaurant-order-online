@@ -1,4 +1,5 @@
-import { Coordinates, cn } from '@/lib/utils'
+import { Coordinates } from '@/lib/deliveryUtils'
+import { cn } from '@/lib/utils'
 import { Circle, GoogleMap, Marker } from "@react-google-maps/api"
 
 interface RestaurantMapProps {

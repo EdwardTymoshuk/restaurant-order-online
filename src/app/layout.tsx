@@ -2,13 +2,11 @@
 
 import Header from '@/app/components/Header'
 import MainContainer from '@/app/components/MainContainer'
-import { CartProvider } from '@/app/context/CartContext'
 import { trpc } from '@/utils/trps'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { QueryClient } from '@tanstack/react-query'
 import { Inter, Roboto } from 'next/font/google'
 import { useState } from 'react'
-import { Toaster } from 'sonner'
+import Providers from './components/Providers'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -24,16 +22,12 @@ function RootLayout({
   return (
     <html lang='en'>
       <body className={roboto.className}>
-        <CartProvider>
-          <QueryClientProvider client={queryClient}>
-            <Header />
-            <MainContainer>
-              {children}
-            </MainContainer>
-            <Toaster position='top-center' richColors />
-            <ReactQueryDevtools initialIsOpen={false} />
-          </QueryClientProvider>
-        </CartProvider>
+        <Providers>
+          <Header />
+          <MainContainer>
+            {children}
+          </MainContainer>
+        </Providers>
       </body>
     </html>
   )

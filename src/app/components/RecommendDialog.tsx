@@ -4,6 +4,7 @@ import RecommendedProducts from '@/app/components/RecommendedProducts'
 import { Button } from '@/app/components/ui/button'
 import { Dialog, DialogContent } from '@/app/components/ui/dialog'
 import { MdKeyboardArrowRight } from 'react-icons/md'
+import { SheetClose } from './ui/sheet'
 
 interface RecommendDialogProps {
 	isOpen: boolean
@@ -19,7 +20,9 @@ const RecommendDialog: React.FC<RecommendDialogProps> = ({ isOpen, onOpenChange,
 					<RecommendedProducts />
 				</div>
 				<div className="flex justify-end space-x-4 mt-4">
-					<Button variant="secondary" onClick={onContinue}>Kontynuuj <MdKeyboardArrowRight /></Button>
+					<SheetClose>
+						<Button variant="secondary" onClick={onContinue}>Kontynuuj <MdKeyboardArrowRight /></Button>
+					</SheetClose>
 				</div>
 			</DialogContent>
 		</Dialog>
