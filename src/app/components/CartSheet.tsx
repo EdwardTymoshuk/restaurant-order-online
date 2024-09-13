@@ -1,19 +1,21 @@
 'use client'
 
 import { Button } from '@/app/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/app/components/ui/dialog'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/app/components/ui/sheet'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/app/components/ui/dialog'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/app/components/ui/sheet'
 import { useCart } from '@/app/context/CartContext'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { BsCart4 } from "react-icons/bs"
 import { IoTrashOutline } from "react-icons/io5"
 import { MdKeyboardArrowRight } from "react-icons/md"
 import RecommendDialog from './RecommendDialog'
 
-const CartSheet = () => {
+const CartSheet = ({ onClose }: { onClose: () => void }) => {
 	const { state, dispatch } = useCart()
 	const [isDialogOpen, setIsDialogOpen] = useState(false)
 	const [isRecommendDialogOpen, setIsRecommendDialogOpen] = useState(false)
+
+	const router = useRouter()
 
 	const incrementQuantity = (id: string) => {
 		dispatch({ type: 'INCREASE_QUANTITY', payload: id })
@@ -41,6 +43,8 @@ const CartSheet = () => {
 	}
 
 	const handleContinue = () => {
+		router.push('/checkout')
+		onClose() // Закриває Sheet
 		setIsRecommendDialogOpen(false)
 	}
 
@@ -48,19 +52,7 @@ const CartSheet = () => {
 	const totalItemsInCart = state.items.reduce((total, item) => total + item.quantity, 0)
 
 	return (
-		<Sheet>
-			<SheetTrigger asChild>
-				<Button variant="ghost" className="flex items-center space-x-2 hover:bg-transparent p-0 m-0 ring-0">
-					<div className="relative scale-75 group">
-						<BsCart4 className="h-8 w-8 text-text-secondary group-hover:text-secondary" />
-						{totalItemsInCart > 0 && (
-							<span className="absolute -top-2 left-4 rounded-full bg-secondary group-hover:brightness-125 p-0.5 px-2 text-sm text-text-primary transition-all">
-								{totalItemsInCart}
-							</span>
-						)}
-					</div>
-				</Button>
-			</SheetTrigger>
+		<Sheet open={true} onOpenChange={onClose}> {/* Передайте функцію закриття */}
 			<SheetContent side="right" className="w-full max-w-md bg-white shadow-xl overflow-y-auto">
 				<SheetHeader className="border-b border-gray-200 py-6">
 					<div className="flex items-start">
@@ -156,9 +148,6 @@ const CartSheet = () => {
 
 			{/* Модальне вікно для підтвердження очищення кошика */}
 			<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-				<DialogTrigger asChild>
-					<div className="hidden"></div>
-				</DialogTrigger>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Czy na pewno chcesz wyczyścić koszyk?</DialogTitle>

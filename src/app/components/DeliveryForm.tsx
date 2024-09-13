@@ -1,24 +1,19 @@
+'use client'
+
 import {
 	Form,
 	FormControl,
-	FormDescription,
 	FormField,
 	FormItem,
-	FormLabel,
 	FormMessage,
 } from "@/app/components/ui/form"
 import { Input } from "@/app/components/ui/input"
-import { RESTAURANT_COORDINATES } from "@/config/constants"
-import {
-	Coordinates,
-	getCoordinates,
-	hasStreetNumber,
-	haversineDistance,
-} from "@/lib/utils"
+import { DELIVERY_RADIUS_METERS, RESTAURANT_COORDINATES } from '@/config/constants'
+import { Coordinates, getCoordinates, hasStreetNumber, haversineDistance } from "@/lib/deliveryUtils"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Autocomplete } from "@react-google-maps/api"
-import Link from "next/link"
-import { useEffect, useState } from "react"
+import Link from 'next/link'
+import { useState } from 'react'
 import { useForm } from "react-hook-form"
 import { MdOutlineKeyboardArrowRight } from "react-icons/md"
 import { toast } from "sonner"
@@ -32,10 +27,10 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>
 
 interface DeliveryFormProps {
-	formData: FormData
-	onFormDataChange: (data: FormData) => void
+	formData: FormData // Додайте це
+	onFormDataChange: (data: FormData) => void // Додайте це
 	addressVerified: boolean
-	setAddressVerified: (verified: boolean) => void // Ensure this prop is defined
+	setAddressVerified: (verified: boolean) => void
 }
 
 export default function DeliveryForm({
@@ -53,22 +48,15 @@ export default function DeliveryForm({
 
 	const form = useForm<FormData>({
 		resolver: zodResolver(formSchema),
-		defaultValues: {
-			address: formData.address,
-		},
+		defaultValues: formData,
 	})
-
-	// Update local form state if formData changes
-	useEffect(() => {
-		form.setValue("address", formData.address)
-	}, [formData, form])
 
 	const onSubmit = async (values: FormData) => {
 		setLoading(true)
-		setAddressVerified(false) // Reset verified state on submit
+		setAddressVerified(false)
 		if (!addressValid) {
 			setLoading(false)
-			toast.error("Wprowadź nr budynku.")
+			toast.error("Wprowadź numer budynku.")
 			return
 		}
 
@@ -83,23 +71,23 @@ export default function DeliveryForm({
 
 		setDeliveryAddressCoordinates(deliveryCoordinates)
 
-		const distance = haversineDistance(
-			RESTAURANT_COORDINATES,
-			deliveryCoordinates
-		)
+		console.log(deliveryAddressCoordinates)
 
-		if (distance <= 5) {
+		const distance = haversineDistance(RESTAURANT_COORDINATES, deliveryCoordinates)
+
+		console.log(distance)
+
+		if (distance <= DELIVERY_RADIUS_METERS) {
 			setLoading(false)
 			setAddressVerified(true)
-			onFormDataChange({ address }) // Update parent state
-			toast.success("Gratulujemy! Twój adres jest w zasięgu naszej dostawy.")
+			localStorage.setItem('deliveryAddress', address)
+			toast.success("Gratulacje! Twój adres znajduje się w zasięgu naszej dostawy.")
 		} else {
 			setLoading(false)
-			toast.warning(
-				"Niestety twój adres nie jest w zasięgu naszej dostawy."
-			)
+			toast.warning("Niestety, twój adres nie znajduje się w zasięgu naszej dostawy.")
 		}
 	}
+
 
 	return (
 		<div className="flex flex-col space-y-8">
@@ -110,7 +98,6 @@ export default function DeliveryForm({
 						name="address"
 						render={({ field, fieldState }) => (
 							<FormItem>
-								<FormLabel className="text-lg">Adres:</FormLabel>
 								<FormControl>
 									<Autocomplete
 										onLoad={setAutocomplete}
@@ -118,34 +105,24 @@ export default function DeliveryForm({
 											if (autocomplete) {
 												const place = autocomplete.getPlace()
 												if (place?.formatted_address) {
-													const isValid = hasStreetNumber(
-														place.address_components
-													)
+													const isValid = hasStreetNumber(place.address_components)
 													setAddressValid(isValid)
 													if (!isValid) {
 														toast.error("Proszę wprowadzić numer budynku.")
 													}
 													form.setValue("address", place.formatted_address)
+													onFormDataChange({ address: place.formatted_address })
 												}
 											}
 										}}
 									>
 										<Input
 											{...field}
-											className={`${fieldState.invalid || !addressValid
-												? "border-red-500"
-												: ""
-												}`}
+											className={`${fieldState.invalid || !addressValid ? "border-danger" : ""}`}
 											placeholder="Wprowadź adres"
 										/>
 									</Autocomplete>
 								</FormControl>
-								{addressVerified && (
-									<FormDescription>
-										<span className="text-primary">Wybrany adres:</span>{" "}
-										{formData.address}
-									</FormDescription>
-								)}
 								<FormMessage />
 							</FormItem>
 						)}

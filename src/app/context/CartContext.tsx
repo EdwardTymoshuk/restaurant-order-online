@@ -1,8 +1,8 @@
+// CartContext.tsx
 'use client'
 
-import React, { createContext, useContext, useReducer } from 'react'
+import React, { createContext, useContext, useEffect, useReducer } from 'react'
 
-// Типи для товарів у кошику
 interface CartItem {
 	id: string
 	name: string
@@ -11,48 +11,39 @@ interface CartItem {
 	image?: string
 }
 
-// Стейт для корзини
 interface CartState {
 	items: CartItem[]
 	totalAmount: number
 }
 
-// Дії для кошика
 type CartAction =
 	| { type: 'ADD_ITEM'; payload: CartItem }
 	| { type: 'REMOVE_ITEM'; payload: string }
 	| { type: 'INCREASE_QUANTITY'; payload: string }
 	| { type: 'DECREASE_QUANTITY'; payload: string }
 	| { type: 'CLEAR_CART' }
+	| { type: 'SET_CART'; payload: CartState }
 
-// Початковий стан кошика
 const initialState: CartState = {
 	items: [],
 	totalAmount: 0,
 }
 
-// Функція для оновлення стейту кошика
-function cartReducer(state: CartState, action: CartAction): CartState {
+const CartContext = createContext<{ state: CartState; dispatch: React.Dispatch<CartAction> } | undefined>(undefined)
+
+const cartReducer = (state: CartState, action: CartAction): CartState => {
 	switch (action.type) {
 		case 'ADD_ITEM': {
-			// Перевірка наявності продукту з таким же id у кошику
-			const existingItemIndex = state.items.findIndex(item => item.id === action.payload.id)
-
-			if (existingItemIndex >= 0) {
-				// Якщо продукт з таким id вже є в кошику, збільшуємо його кількість
+			const itemIndex = state.items.findIndex(item => item.id === action.payload.id)
+			if (itemIndex >= 0) {
 				const updatedItems = [...state.items]
-				const existingItem = updatedItems[existingItemIndex]
-				updatedItems[existingItemIndex] = {
-					...existingItem,
-					quantity: existingItem.quantity + action.payload.quantity
-				}
+				updatedItems[itemIndex].quantity += action.payload.quantity
 				return {
 					...state,
 					items: updatedItems,
 					totalAmount: state.totalAmount + action.payload.price * action.payload.quantity,
 				}
 			} else {
-				// Якщо продукту ще немає в кошику, додаємо його
 				return {
 					...state,
 					items: [...state.items, action.payload],
@@ -61,54 +52,104 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 			}
 		}
 		case 'REMOVE_ITEM': {
-			const updatedItems = state.items.filter(item => item.id !== action.payload)
 			const itemToRemove = state.items.find(item => item.id === action.payload)
+			if (!itemToRemove) return state
 			return {
 				...state,
-				items: updatedItems,
-				totalAmount: itemToRemove ? state.totalAmount - itemToRemove.price * itemToRemove.quantity : state.totalAmount,
+				items: state.items.filter(item => item.id !== action.payload),
+				totalAmount: state.totalAmount - (itemToRemove.price * itemToRemove.quantity),
 			}
 		}
 		case 'INCREASE_QUANTITY': {
 			const updatedItems = state.items.map(item =>
-				item.id === action.payload ? { ...item, quantity: item.quantity + 1 } : item
+				item.id === action.payload
+					? { ...item, quantity: item.quantity + 1 }
+					: item
 			)
 			const item = state.items.find(item => item.id === action.payload)
+			if (!item) return state
 			return {
 				...state,
 				items: updatedItems,
-				totalAmount: item ? state.totalAmount + item.price : state.totalAmount,
+				totalAmount: state.totalAmount + item.price,
 			}
 		}
 		case 'DECREASE_QUANTITY': {
 			const updatedItems = state.items.map(item =>
-				item.id === action.payload && item.quantity > 1 ? { ...item, quantity: item.quantity - 1 } : item
+				item.id === action.payload && item.quantity > 1
+					? { ...item, quantity: item.quantity - 1 }
+					: item
 			)
 			const item = state.items.find(item => item.id === action.payload)
+			if (!item) return state
 			return {
 				...state,
 				items: updatedItems,
-				totalAmount: item ? state.totalAmount - item.price : state.totalAmount,
+				totalAmount: state.totalAmount - item.price,
 			}
 		}
 		case 'CLEAR_CART': {
-			return initialState
+			return {
+				items: [],
+				totalAmount: 0,
+			}
+		}
+		case 'SET_CART': {
+			return action.payload
 		}
 		default:
 			return state
 	}
 }
 
-
-const CartContext = createContext<{ state: CartState; dispatch: React.Dispatch<CartAction> }>({
-	state: initialState,
-	dispatch: () => undefined,
-})
-
-export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 	const [state, dispatch] = useReducer(cartReducer, initialState)
 
-	return <CartContext.Provider value={{ state, dispatch }}>{children}</CartContext.Provider>
+	useEffect(() => {
+		const loadCartFromLocalStorage = () => {
+			try {
+				const storedCart = localStorage.getItem('cart')
+				console.log(storedCart)
+				if (storedCart) {
+					const cartData = JSON.parse(storedCart)
+					if (Array.isArray(cartData.items) && typeof cartData.totalAmount === 'number') {
+						dispatch({ type: 'SET_CART', payload: cartData })
+					} else {
+						console.warn('Invalid cart data structure in localStorage.')
+						localStorage.removeItem('cart') // Clear invalid data
+					}
+				}
+			} catch (error) {
+				console.error('Failed to parse cart data from localStorage:', error)
+				localStorage.removeItem('cart') // Clear corrupted data
+			}
+		}
+
+		loadCartFromLocalStorage()
+	}, [])
+
+	useEffect(() => {
+		try {
+			localStorage.setItem('cart', JSON.stringify(state))
+		} catch (error) {
+			console.error('Failed to save cart data to localStorage:', error)
+		}
+	}, [state])
+
+	return (
+		<CartContext.Provider value={{ state, dispatch }}>
+			{children}
+		</CartContext.Provider>
+	)
 }
 
-export const useCart = () => useContext(CartContext)
+const useCart = () => {
+	const context = useContext(CartContext)
+	if (context === undefined) {
+		throw new Error('useCart must be used within a CartProvider')
+	}
+	return context
+}
+
+export { CartProvider, useCart }
+

@@ -5,11 +5,11 @@ import LoadingButton from '@/app/components/LoadingButton'
 import PageSubHeader from '@/app/components/PageSubHeader'
 import RestaurantMap from '@/app/components/RestaurantMap'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
-import { CLOSING_HOUR, DELIVERY_RADIUS_METERS, MINIMUM_WAIT_TIME_MINUTES, OPENING_HOUR, OPENING_MINUTES_DELAY, RESTAURANT_COORDINATES } from '@/config/constants'
-import { Coordinates } from '@/lib/utils'
+import { DELIVERY_RADIUS_METERS, RESTAURANT_COORDINATES } from '@/config/constants'
+import { Coordinates } from '@/lib/deliveryUtils'
 import { LoadScriptNext } from "@react-google-maps/api"
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { MdOutlineDeliveryDining, MdOutlineKeyboardArrowRight, MdOutlineRestaurantMenu } from "react-icons/md"
 import { LineWave } from 'react-loader-spinner'
 
@@ -19,82 +19,11 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('delivery')
   const [formData, setFormData] = useState({ address: '' }) // State for form data
   const [addressVerified, setAddressVerified] = useState(false) // State for address verification
+  const [addressCoordinates, setAddressCoordinates] = useState<Coordinates | null>(null)
 
   const router = useRouter()
 
   const libraries: ("places")[] = ["places"]
-
-  useEffect(() => {
-    const nearestTime = getNearestHour()
-    setSelectedTime(nearestTime)
-  }, [])
-
-  const handleTimeChange = (date: Date | null) => {
-    if (date) {
-      setSelectedTime(date)
-    }
-  }
-
-  const getNearestHour = (): Date => {
-    const now = new Date()
-    let nearestAvailableTime: Date
-
-    if (
-      now.getHours() >= CLOSING_HOUR ||
-      now.getHours() < OPENING_HOUR ||
-      (now.getHours() === OPENING_HOUR && now.getMinutes() < OPENING_MINUTES_DELAY)
-    ) {
-      nearestAvailableTime = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-        OPENING_HOUR,
-        OPENING_MINUTES_DELAY + MINIMUM_WAIT_TIME_MINUTES,
-        0,
-        0
-      )
-      if (now.getHours() >= CLOSING_HOUR) {
-        nearestAvailableTime.setDate(now.getDate() + 1)
-      }
-    } else {
-      nearestAvailableTime = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-        now.getHours(),
-        Math.ceil(now.getMinutes() / 30) * 30 + MINIMUM_WAIT_TIME_MINUTES,
-        0,
-        0
-      )
-    }
-
-    return nearestAvailableTime
-  }
-
-  const filterTime = (time: Date) => {
-    const now = new Date()
-    const nearestAvailableTime = getNearestHour()
-    const selectedDate = new Date(selectedTime ?? now)
-    const hour = time.getHours()
-    const minutes = time.getMinutes()
-
-    if (
-      selectedDate.toDateString() === now.toDateString() &&
-      (hour < nearestAvailableTime.getHours() ||
-        (hour === nearestAvailableTime.getHours() &&
-          minutes < nearestAvailableTime.getMinutes()))
-    ) {
-      return false
-    }
-
-    if (hour < OPENING_HOUR || hour >= CLOSING_HOUR) {
-      return false
-    }
-    if (hour === OPENING_HOUR && minutes < OPENING_MINUTES_DELAY) {
-      return false
-    }
-    return true
-  }
 
   const handleOrderClick = async () => {
     setLoading(true)
