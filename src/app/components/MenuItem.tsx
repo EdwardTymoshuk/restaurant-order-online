@@ -12,8 +12,7 @@ import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import React, { useState } from 'react'
 import { CiShoppingBasket } from 'react-icons/ci'
-import { FaCheck } from 'react-icons/fa'
-import { toast } from 'sonner'
+import { FaCheck, FaMinus, FaPlus } from 'react-icons/fa'
 import { Button } from './ui/button'
 
 type MenuItemProps = Partial<MenuItemType> & {
@@ -23,26 +22,21 @@ type MenuItemProps = Partial<MenuItemType> & {
 	description?: string,
 	image?: string,
 	orientation?: 'vertical' | 'horizontal',
-	className?: string, // Додаємо пропс для прийому додаткових класів
+	className?: string,
 }
 
 const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image, orientation = 'vertical', className }) => {
 	const [imageError, setImageError] = useState(false)
-	const [addedToCart, setAddedToCart] = useState(false)
+	const [addedToCart, setAddedToCart] = useState(false) // Для анімації чеку
 	const isVertical = orientation === 'vertical'
 
 	const { state, dispatch } = useCart()
 
+	// Перевіряємо, чи продукт вже є в кошику, і якщо є - отримуємо його кількість
+	const existingItem = state.items.find(item => item.id === id)
+	const itemQuantity = existingItem ? existingItem.quantity : 0
+
 	const addToCart = () => {
-		// Перевірка, чи продукт уже є в кошику
-		const existingItem = state.items.find(item => item.id === id)
-
-		if (existingItem) {
-			// Якщо продукт уже є в кошику, показуємо toast і не спрацьовує анімація
-			toast.info('Masz juź w swoim koszyka wybraną pozycję.')
-			return
-		}
-
 		if (name && price) {
 			dispatch({
 				type: 'ADD_ITEM',
@@ -55,9 +49,22 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 			})
 
 			setAddedToCart(true)
-			setTimeout(() => setAddedToCart(false), 1000)
+			setTimeout(() => setAddedToCart(false), 500)
 		} else {
 			console.error('Item name or price is missing.')
+		}
+	}
+
+	// Функції для зміни кількості товару
+	const incrementQuantity = () => {
+		dispatch({ type: 'INCREASE_QUANTITY', payload: id })
+	}
+
+	const decrementQuantity = () => {
+		if (itemQuantity > 1) {
+			dispatch({ type: 'DECREASE_QUANTITY', payload: id })
+		} else {
+			dispatch({ type: 'REMOVE_ITEM', payload: id })
 		}
 	}
 
@@ -101,15 +108,43 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 				'my-auto pb-0': !isVertical,
 			})}>
 				<span className='text-secondary'>{price} zł</span>
-				<Button
-					variant='secondary'
-					className={cn('h-6 transition-colors duration-300', {
-						'text-success scale-105': addedToCart,
-					})}
-					onClick={addToCart}
-				>
-					{addedToCart ? <FaCheck /> : <CiShoppingBasket />}
-				</Button>
+
+				{/* Якщо товар доданий до кошика, відображаємо кількість */}
+				{itemQuantity > 0 && !addedToCart ? (
+					<div className='flex items-center space-x-2'>
+						{/* Кнопка для зменшення кількості */}
+						<Button
+							variant='secondary'
+							className={cn('h-6 w-6 flex items-center justify-center px-2', {
+								'opacity-50 cursor-not-allowed': itemQuantity <= 1
+							})}
+							onClick={decrementQuantity}
+							disabled={itemQuantity <= 1}
+						>
+							<FaMinus />
+						</Button>
+						{/* Виводимо кількість товару */}
+						<span className="text-sm">{itemQuantity}</span>
+						{/* Кнопка для збільшення кількості */}
+						<Button
+							variant='secondary'
+							className='h-6 w-6 flex items-center justify-center px-2'
+							onClick={incrementQuantity}
+						>
+							<FaPlus />
+						</Button>
+					</div>
+				) : (
+					<Button
+						variant='secondary'
+						className={cn('h-6 transition-colors duration-300', {
+							'text-success scale-105': addedToCart, // Додаємо анімацію
+						})}
+						onClick={addToCart}
+					>
+						{addedToCart ? <FaCheck /> : <CiShoppingBasket />}
+					</Button>
+				)}
 			</CardFooter>
 		</Card>
 	)

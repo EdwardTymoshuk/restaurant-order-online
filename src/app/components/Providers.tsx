@@ -7,6 +7,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { ReactNode } from 'react'
 import { Toaster } from 'sonner'
+import { MenuProvider } from '../context/MenuContext'
+import { OrderProvider } from '../context/OrderContext'
 
 const Providers: React.FC<{ children: ReactNode }> = ({ children }) => {
 	const queryClient = new QueryClient()
@@ -15,7 +17,11 @@ const Providers: React.FC<{ children: ReactNode }> = ({ children }) => {
 		<QueryClientProvider client={queryClient}>
 			<CartProvider>
 				<CheckoutProvider>
-					{children}
+					<MenuProvider>
+						<OrderProvider>
+							{children}
+						</OrderProvider>
+					</MenuProvider>
 				</CheckoutProvider>
 			</CartProvider>
 			<Toaster position='top-center' richColors />

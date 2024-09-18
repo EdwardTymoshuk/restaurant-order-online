@@ -6,11 +6,13 @@ import { useCart } from '@/app/context/CartContext'
 import { getCoordinates, isAddressInDeliveryArea } from '@/lib/deliveryUtils'
 import { trpc } from '@/utils/trps'
 import { zodResolver } from '@hookform/resolvers/zod'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
-import { BsCashCoin } from 'react-icons/bs'
-import { FaApplePay, FaGooglePay, FaRegCreditCard } from 'react-icons/fa6'
+import { BsCashCoin, BsFillBootstrapFill } from 'react-icons/bs'
+import { FaApple, FaGoogle } from 'react-icons/fa'
+import { FaRegCreditCard } from 'react-icons/fa6'
 import { MdKeyboardArrowLeft, MdOutlineDeliveryDining, MdOutlineRestaurantMenu } from 'react-icons/md'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -19,6 +21,7 @@ import PageSubHeader from '../components/PageSubHeader'
 import Switcher from '../components/Switcher'
 import TimeDeliverySwitcher from '../components/TimeDeliverySwitcher'
 import { Separator } from '../components/ui/separator'
+import { useOrder } from '../context/OrderContext'
 
 // Схема для доставки
 const deliverySchema = z.object({
@@ -58,13 +61,15 @@ type TakeOutFormData = z.infer<typeof takeOutSchema>
 
 const Page = () => {
 
-	const { state } = useCart()
+	const { state, dispatch } = useCart()
+	const { setOrderData } = useOrder()
 	const [deliveryMethod, setDeliveryMethod] = useState<'DELIVERY' | 'TAKE_OUT'>('TAKE_OUT')
 	const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null)
 	const [isLoading, setIsLoading] = useState(false)
 
 	const router = useRouter()
 	const createOrderMutation = trpc.order.create.useMutation()
+	const [isPending, startTransition] = useTransition()
 
 	const { register: registerDelivery, handleSubmit: handleSubmitDelivery, formState: formStateDelivery, setValue: setValueDelivery, getValues: getValuesDelivery, reset: resetDelivery } = useForm<DeliveryFormData>({
 		resolver: zodResolver(deliverySchema),
@@ -189,7 +194,7 @@ const Page = () => {
 				apartment: data.apartment,
 				paymentMethod: data.paymentMethod,
 				deliveryMethod: deliveryMethod,
-				deliveryTime: data.deliveryTime === 'asap' ? new Date() : data.deliveryTime,
+				deliveryTime: data.deliveryTime === 'asap' ? new Date().toISOString() : data.deliveryTime.toISOString(),
 				items: state.items.map((item) => ({
 					menuItemId: item.id,
 					quantity: item.quantity,
@@ -198,11 +203,20 @@ const Page = () => {
 				method: 'DELIVERY',
 			})
 
-			toast.success('Замовлення успішно створено!')
-			resetDelivery()
-			resetTakeOut()
+			const { id, phone, name, deliveryMethod: method, deliveryTime: time } = order
+			setOrderData(id, phone, name, method, time.toISOString())
+
+
+			toast.success('Zamówienie złożone pomyślnie!')
+
+			startTransition(() => {
+				router.push('/thank-you')
+				resetDelivery()
+				resetTakeOut()
+				dispatch({ type: 'CLEAR_CART' })
+			})
 		} catch (error) {
-			toast.error('Помилка при створенні замовлення')
+			toast.error('Błąd przy stworzeniu zamówienia.')
 		} finally {
 			setIsLoading(false)
 		}
@@ -223,7 +237,7 @@ const Page = () => {
 				phone: data.phone,
 				paymentMethod: data.paymentMethod,
 				deliveryMethod: deliveryMethod,
-				deliveryTime: data.deliveryTime === 'asap' ? new Date() : data.deliveryTime,
+				deliveryTime: data.deliveryTime === 'asap' ? new Date().toISOString() : data.deliveryTime.toISOString(),
 				items: state.items.map((item) => ({
 					menuItemId: item.id,
 					quantity: item.quantity,
@@ -232,11 +246,20 @@ const Page = () => {
 				method: 'TAKE_OUT',
 			})
 
-			toast.success('Замовлення успішно створено!')
-			resetDelivery()
-			resetTakeOut()
+			const { id, phone, name, deliveryMethod: method, deliveryTime: time } = order
+			setOrderData(id, phone, name, method, time.toISOString())
+
+
+			toast.success('Zamówienie złożone pomyślnie!')
+
+			startTransition(() => {
+				router.push('/thank-you')
+				resetDelivery()
+				resetTakeOut()
+				dispatch({ type: 'CLEAR_CART' })
+			})
 		} catch (error) {
-			toast.error('Помилка при створенні замовлення')
+			toast.error('Błąd przy stworzeniu zamówienia.')
 		} finally {
 			setIsLoading(false)
 		}
@@ -412,6 +435,7 @@ const Page = () => {
 											onClick={() => handlePaymentMethodSelect('blik')}
 											className="flex items-center space-x-2"
 										>
+											<BsFillBootstrapFill size={18} />
 											<span>Blik</span>
 										</Button>
 
@@ -421,7 +445,7 @@ const Page = () => {
 											onClick={() => handlePaymentMethodSelect('apple_pay')}
 											className="flex items-center space-x-2"
 										>
-											<FaApplePay size={22} />
+											<FaApple size={18} />
 											<span>Apple Pay</span>
 										</Button>
 
@@ -431,7 +455,7 @@ const Page = () => {
 											onClick={() => handlePaymentMethodSelect('google_pay')}
 											className="flex items-center space-x-2"
 										>
-											<FaGooglePay size={22} />
+											<FaGoogle size={18} />
 											<span>Google Pay</span>
 										</Button>
 									</div>
@@ -522,6 +546,7 @@ const Page = () => {
 											onClick={() => handlePaymentMethodSelect('blik')}
 											className="flex items-center space-x-2"
 										>
+											<BsFillBootstrapFill size={18} />
 											<span>Blik</span>
 										</Button>
 
@@ -531,7 +556,7 @@ const Page = () => {
 											onClick={() => handlePaymentMethodSelect('apple_pay')}
 											className="flex items-center space-x-2"
 										>
-											<FaApplePay size={22} />
+											<FaApple size={18} />
 											<span>Apple Pay</span>
 										</Button>
 
@@ -541,7 +566,7 @@ const Page = () => {
 											onClick={() => handlePaymentMethodSelect('google_pay')}
 											className="flex items-center space-x-2"
 										>
-											<FaGooglePay size={22} />
+											<FaGoogle size={18} />
 											<span>Google Pay</span>
 										</Button>
 									</div>
@@ -559,33 +584,42 @@ const Page = () => {
 
 				<div className="space-y-6 w-full">
 					<h3 className="text-xl text-secondary font-semibold">Twoje zamówienie</h3>
-					<ul className="divide-y divide-gray-200">
-						{state.items.map((item) => (
-							<li key={item.id} className="flex py-6">
-								<div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
-									<img
-										src={item.image}
-										alt={item.name}
-										className="h-full w-full object-cover object-center"
-									/>
+					{
+						state.items.length === 0 ?
+							<div className='flex flex-col gap-2 items-center justify-center'>
+								<h4 className='text-2xl bold'>Niestety Twój koszyk jest pusty :(</h4>
+								<p className="text-center text-text-foreground">Spradź nasze <Link href='/order' className='text-primary'>menu</Link> aby przekonać się jakie pyszne rzeczy mamy dla Ciebie!</p>
+							</div> :
+							<>
+								<ul className="divide-y divide-gray-200">
+									{state.items.map((item) => (
+										<li key={item.id} className="flex py-6">
+											<div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
+												<img
+													src={item.image}
+													alt={item.name}
+													className="h-full w-full object-cover object-center"
+												/>
+											</div>
+											<div className="ml-4 flex flex-1 flex-col justify-between">
+												<div>
+													<h3 className="text-secondary font-medium">{item.name}</h3>
+													<p className="mt-1 text-sm text-gray-500">Ilość: {item.quantity}</p>
+												</div>
+												<p className="text-lg font-semibold text-gray-900">
+													{item.price * item.quantity} zł
+												</p>
+											</div>
+										</li>
+									))}
+								</ul>
+								<div className="flex font-sans justify-between text-xl font-bold text-text-secondary">
+									<span>Total</span>
+									<span>{state.totalAmount} zł</span>
 								</div>
-								<div className="ml-4 flex flex-1 flex-col justify-between">
-									<div>
-										<h3 className="text-secondary font-medium">{item.name}</h3>
-										<p className="mt-1 text-sm text-gray-500">Ilość: {item.quantity}</p>
-									</div>
-									<p className="text-lg font-semibold text-gray-900">
-										{item.price * item.quantity} zł
-									</p>
-								</div>
-							</li>
-						))}
-					</ul>
-					<div className="flex font-sans justify-between text-xl font-bold text-text-secondary">
-						<span>Total</span>
-						<span>{state.totalAmount} zł</span>
-					</div>
-					<LoadingButton form={deliveryMethod === 'DELIVERY' ? 'deliveryForm' : 'takeOutForm'} variant='secondary' isLoading={isLoading} className="w-full" type="submit">Złóż zamówienie</LoadingButton>
+								<LoadingButton form={deliveryMethod === 'DELIVERY' ? 'deliveryForm' : 'takeOutForm'} variant='secondary' isLoading={isLoading} className="w-full" type="submit">Złóż zamówienie</LoadingButton>
+							</>
+					}
 				</div>
 			</div>
 		</div>

@@ -12,8 +12,8 @@ import { DELIVERY_RADIUS_METERS, RESTAURANT_COORDINATES } from '@/config/constan
 import { Coordinates, getCoordinates, hasStreetNumber, haversineDistance } from "@/lib/deliveryUtils"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Autocomplete } from "@react-google-maps/api"
-import Link from 'next/link'
-import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useState, useTransition } from 'react' // Додаємо useTransition
 import { useForm } from "react-hook-form"
 import { MdOutlineKeyboardArrowRight } from "react-icons/md"
 import { toast } from "sonner"
@@ -27,8 +27,8 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>
 
 interface DeliveryFormProps {
-	formData: FormData // Додайте це
-	onFormDataChange: (data: FormData) => void // Додайте це
+	formData: FormData
+	onFormDataChange: (data: FormData) => void
 	addressVerified: boolean
 	setAddressVerified: (verified: boolean) => void
 }
@@ -45,6 +45,9 @@ export default function DeliveryForm({
 		useState<google.maps.places.Autocomplete | null>(null)
 	const [addressValid, setAddressValid] = useState(true)
 	const [loading, setLoading] = useState(false)
+
+	const router = useRouter()
+	const [isPending, startTransition] = useTransition() // Використовуємо useTransition для переходу
 
 	const form = useForm<FormData>({
 		resolver: zodResolver(formSchema),
@@ -71,23 +74,28 @@ export default function DeliveryForm({
 
 		setDeliveryAddressCoordinates(deliveryCoordinates)
 
-		console.log(deliveryAddressCoordinates)
-
 		const distance = haversineDistance(RESTAURANT_COORDINATES, deliveryCoordinates)
-
-		console.log(distance)
 
 		if (distance <= DELIVERY_RADIUS_METERS) {
 			setLoading(false)
 			setAddressVerified(true)
 			localStorage.setItem('deliveryAddress', address)
-			toast.success("Gratulacje! Twój adres znajduje się w zasięgu naszej dostawy.")
+			toast.success("Świetna wiadomość, Twój adres znajduje się w zasięgu naszej dostawy. Możesz przejść do zamówienia.")
 		} else {
 			setLoading(false)
-			toast.warning("Niestety, twój adres nie znajduje się w zasięgu naszej dostawy.")
+			toast.warning("Niestety, Twój adres znajduje się poza зasięgiem naszej dostawy.")
 		}
 	}
 
+	// Обробляємо перенаправлення при натисканні на кнопку після валідації
+	const handleOrderClick = () => {
+		if (addressVerified) {
+			// Використовуємо startTransition для асинхронного переходу
+			startTransition(() => {
+				router.push('/order')
+			})
+		}
+	}
 
 	return (
 		<div className="flex flex-col space-y-8">
@@ -127,11 +135,19 @@ export default function DeliveryForm({
 							</FormItem>
 						)}
 					/>
-					<LoadingButton isLoading={loading} type="submit" className="w-full my-4">
+
+					{/* Використовуємо одну кнопку для обох випадків */}
+					<LoadingButton
+						isLoading={loading || isPending} // Показуємо стан завантаження під час переходу
+						type={addressVerified ? "button" : "submit"}
+						variant='secondary'
+						className="w-full my-4"
+						onClick={handleOrderClick}
+					>
 						{addressVerified ? (
-							<Link href="/order" className="flex items-center">
+							<div className="flex items-center">
 								Do zamówienia <MdOutlineKeyboardArrowRight />
-							</Link>
+							</div>
 						) : (
 							"Sprawdź"
 						)}

@@ -15,7 +15,7 @@ export function TimeSelector({
 	filterTime,
 }: TimeSelectorProps) {
 	return (
-		<div className="flex flex-col w-full">
+		<div className="flex flex-col w-full p-2">
 			<DatePicker
 				selected={selectedTime || undefined} // Зміна для дозволу null
 				onChange={onTimeChange}

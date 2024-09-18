@@ -5,57 +5,64 @@ import LoadingButton from '@/app/components/LoadingButton'
 import PageSubHeader from '@/app/components/PageSubHeader'
 import RestaurantMap from '@/app/components/RestaurantMap'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
+import { Skeleton } from '@/components/ui/skeleton' // Імпортуємо Skeleton
 import { DELIVERY_RADIUS_METERS, RESTAURANT_COORDINATES } from '@/config/constants'
 import { Coordinates } from '@/lib/deliveryUtils'
 import { LoadScriptNext } from "@react-google-maps/api"
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { MdOutlineDeliveryDining, MdOutlineKeyboardArrowRight, MdOutlineRestaurantMenu } from "react-icons/md"
-import { LineWave } from 'react-loader-spinner'
 
 export default function Home() {
-  const [selectedTime, setSelectedTime] = useState<Date | null>(null)
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('delivery')
-  const [formData, setFormData] = useState({ address: '' }) // State for form data
-  const [addressVerified, setAddressVerified] = useState(false) // State for address verification
+  const [formData, setFormData] = useState({ address: '' })
+  const [addressVerified, setAddressVerified] = useState(false)
   const [addressCoordinates, setAddressCoordinates] = useState<Coordinates | null>(null)
 
   const router = useRouter()
+  const [isPending, startTransition] = useTransition()
 
   const libraries: ("places")[] = ["places"]
 
-  const handleOrderClick = async () => {
+  const handleOrderClick = () => {
     setLoading(true)
-    try {
+
+    startTransition(() => {
       router.push('/order')
-      setTimeout(() => {
-        setLoading(false)
-      }, 1000)
-    } catch (error) {
-      console.error("Navigation error:", error)
-      setLoading(false)
-    }
+    })
+  }
+
+  if (!isPending && loading) {
+    setLoading(false)
   }
 
   return (
     <div className='my-auto w-full'>
+      <div className="relative w-full h-64 overflow-hidden">
+        <Image
+          src="/img/carousel-1.jpg"
+          alt="image"
+          fill
+          style={{ objectFit: 'cover' }}
+          className="absolute inset-0"
+        />
+      </div>
+
       <LoadScriptNext
         googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""}
         libraries={libraries}
         loadingElement={
-          <div className="flex justify-center items-center h-full">
-            <LineWave
-              height="100"
-              width="100"
-              color="#ABD95A"
-              ariaLabel="line-wave"
-              visible={true}
-            />
+          // Використовуємо Skeleton замість LineWave
+          <div className="space-y-4">
+            <Skeleton className="w-full h-64" />
+            <Skeleton className="w-full h-10" />
+            <Skeleton className="w-full h-10" />
           </div>
         }
       >
-        <div className="flex flex-col-reverse md:flex-row space-y-8 md:space-x-8 my-8 mx-auto w-full min-h-96 px-8 relative z-0">
+        <div className="flex flex-col-reverse md:flex-row md:space-x-8 my-8 mx-auto w-full min-h-96 px-8 relative z-0">
           <div className="w-full md:w-1/2 h-96 my-auto">
             <RestaurantMap
               center={RESTAURANT_COORDINATES}
@@ -108,15 +115,16 @@ export default function Home() {
               <TabsContent value="take-out">
                 <PageSubHeader title='Zamów online, odbierz w restauracji' className='text-2xl' />
                 <div className='space-y-4 mb-8'>
-                  <div className='flex flex-col text-lg text-center text-text-foreground'>
-                    <span className='text-primary'>Hestii 3, Sopot</span>
+                  <div className='flex flex-col text-lg text-center text-text-secondary'>
+                    <span className='text-secondary'>Hestii 3, Sopot</span>
                     <span>Pn-Pt: 12:00 - 22:00</span>
                     <span>Sb-Nd 8:00 - 22:00</span>
                   </div>
                   <LoadingButton
                     isLoading={loading}
                     type="button"
-                    className="w-full bg-secondary"
+                    variant="secondary"
+                    className="w-full"
                     onClick={handleOrderClick}
                   >
                     Do zamówienia <MdOutlineKeyboardArrowRight />

@@ -10,18 +10,20 @@ import {
 	SelectValue,
 } from "@/app/components/ui/select"
 import { MenuItemCategory, MenuItemType } from '@/app/types'
+import { Skeleton } from '@/components/ui/skeleton'
 import { CAROUSEL_MAIN_IMAGES } from '@/config'
 import { trpc } from '@/utils/trps'
 import Autoplay from "embla-carousel-autoplay"
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
+import PageSubHeader from '../components/PageSubHeader'
 
 const Page = () => {
 	const [sortedItems, setSortedItems] = useState<MenuItemType[]>([])
 	const [sortOption, setSortOption] = useState<string | undefined>(undefined)
 	const [categoryFilter, setCategoryFilter] = useState<string | undefined>(undefined)
 
-	const { data: menuItems = [] } = trpc.menu.getMenuItems.useQuery()
+	const { data: menuItems = [], isLoading } = trpc.menu.getMenuItems.useQuery() // Add isLoading to handle skeleton state
 
 	useEffect(() => {
 		// Запобігаємо виконанню, якщо menuItems ще не завантажені
@@ -92,6 +94,8 @@ const Page = () => {
 				<CarouselNext className='right-0 text-primary hover:text-primary opacity-80 hover:opacity-100 h-8 w-8 bg-transparent hover:bg-transparent' />
 			</Carousel>
 
+			<PageSubHeader title='Wybierz swoje ulubione dania' className='' />
+
 			<div className="flex gap-4 mb-4 w-1/2">
 				<Select value={sortOption} onValueChange={setSortOption}>
 					<SelectTrigger aria-label="Sortowanie">
@@ -116,20 +120,30 @@ const Page = () => {
 					</SelectContent>
 				</Select>
 			</div>
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-16">
-				{sortedItems.map(item => (
-					<MenuItem
-						id={item.id}
-						key={item.id}
-						name={item.name}
-						price={item.price}
-						description={item.description || ''}
-						image={item.image || ''}
-						category={item.category}
-						orientation='horizontal'
-					/>
-				))}
-			</div>
+
+			{/* Використовуємо Skeleton під час завантаження */}
+			{isLoading ? (
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-16">
+					{Array.from({ length: 6 }).map((_, index) => (
+						<Skeleton key={index} className="w-full h-24 md:h-32" />
+					))}
+				</div>
+			) : (
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-16">
+					{sortedItems.map(item => (
+						<MenuItem
+							id={item.id}
+							key={item.id}
+							name={item.name}
+							price={item.price}
+							description={item.description || ''}
+							image={item.image || ''}
+							category={item.category}
+							orientation='horizontal'
+						/>
+					))}
+				</div>
+			)}
 		</div>
 	)
 }
