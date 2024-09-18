@@ -28,7 +28,7 @@ const Header = () => {
 	return (
 		<header className='bg-background p-4 shadow-sm shadow-primary min-h-20 h-auto fixed w-full z-10'>
 			<div className={cn('mx-auto flex justify-between items-center', {
-				'justify-center': currentPath.includes('/checkout')
+				'justify-center': !currentPath.includes('/order')
 			})}>
 				<Link href='/'>
 					<img
@@ -37,7 +37,7 @@ const Header = () => {
 						className='max-h-12'
 					/>
 				</Link>
-				{!currentPath.includes('/checkout') && (
+				{currentPath.includes('/order') && (
 					<Button onClick={handleCartSheetOpen} variant="ghost" className="flex items-center space-x-2 hover:bg-transparent p-0 m-0 ring-0">
 						<div className="relative scale-75 group">
 							<BsCart4 className="h-8 w-8 text-text-secondary group-hover:text-secondary" />

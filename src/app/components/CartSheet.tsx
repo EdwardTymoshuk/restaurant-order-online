@@ -5,7 +5,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/app/components/ui/sheet'
 import { useCart } from '@/app/context/CartContext'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
+import { FaMinus, FaPlus } from 'react-icons/fa'
 import { IoTrashOutline } from "react-icons/io5"
 import { MdKeyboardArrowRight } from "react-icons/md"
 import RecommendDialog from './RecommendDialog'
@@ -14,8 +15,10 @@ const CartSheet = ({ onClose }: { onClose: () => void }) => {
 	const { state, dispatch } = useCart()
 	const [isDialogOpen, setIsDialogOpen] = useState(false)
 	const [isRecommendDialogOpen, setIsRecommendDialogOpen] = useState(false)
+	const [isLoading, setIsLoading] = useState(false)
 
 	const router = useRouter()
+	const [isPending, startTransition] = useTransition()
 
 	const incrementQuantity = (id: string) => {
 		dispatch({ type: 'INCREASE_QUANTITY', payload: id })
@@ -43,9 +46,16 @@ const CartSheet = ({ onClose }: { onClose: () => void }) => {
 	}
 
 	const handleContinue = () => {
-		router.push('/checkout')
-		onClose() // Закриває Sheet
-		setIsRecommendDialogOpen(false)
+		setIsLoading(true)
+
+		startTransition(() => {
+			router.push('/checkout')
+		})
+	}
+
+	if (!isPending && isLoading) {
+		setIsLoading(false)
+		onClose()
 	}
 
 	// Підрахунок загальної кількості товарів у кошику
@@ -91,29 +101,31 @@ const CartSheet = ({ onClose }: { onClose: () => void }) => {
 											<div className="flex flex-1 items-end justify-between text-sm">
 												<div className="flex items-center space-x-2">
 													<Button
-														variant='outline'
+														variant='secondary'
 														size='sm'
 														onClick={() => decrementQuantity(item.id)}
 														disabled={item.quantity === 1}
+														className='h-6 w-6 p-2'
 													>
-														-
+														<FaMinus />
 													</Button>
 													<p className="text-gray-500">{item.quantity}</p>
 													<Button
-														variant='outline'
+														variant='secondary'
 														size='sm'
 														onClick={() => incrementQuantity(item.id)}
+														className='h-6 w-6 p-2'
 													>
-														+
+														<FaPlus />
 													</Button>
 												</div>
 												<Button
 													variant='link'
 													size='link'
 													onClick={() => removeItem(item.id)}
-													className="text-danger hover:text-danger-light"
+													className="text-danger hover:text-danger-light flex items-center space-x-2"
 												>
-													Usuń
+													<span>Usuń</span> <IoTrashOutline />
 												</Button>
 											</div>
 										</div>
@@ -126,8 +138,8 @@ const CartSheet = ({ onClose }: { onClose: () => void }) => {
 								<p>{state.totalAmount} zł</p>
 							</div>
 							<div className="mt-6">
-								<Button variant='secondary' className='w-full' onClick={handleRecommendDialogOpen}>
-									Do podsumowania <MdKeyboardArrowRight />
+								<Button variant='secondary' className='w-full flex items-center justify-center' onClick={handleRecommendDialogOpen}>
+									<span>Do podsumowania</span> <MdKeyboardArrowRight />
 								</Button>
 							</div>
 							<div className="mt-6 flex justify-center text-sm text-gray-500">
@@ -135,10 +147,9 @@ const CartSheet = ({ onClose }: { onClose: () => void }) => {
 									variant='link'
 									size='link'
 									onClick={handleClearCartClick}
-									className="font-medium text-danger hover:text-danger-light"
+									className="font-medium text-danger hover:text-danger-light flex items-center space-x-2"
 								>
-									Wyczyść koszyk
-									<IoTrashOutline />
+									<span>Wyczyść koszyk</span> <IoTrashOutline />
 								</Button>
 							</div>
 						</>
@@ -165,6 +176,7 @@ const CartSheet = ({ onClose }: { onClose: () => void }) => {
 				isOpen={isRecommendDialogOpen}
 				onOpenChange={setIsRecommendDialogOpen}
 				onContinue={handleContinue}
+				isLoading={isLoading}
 			/>
 		</Sheet>
 	)

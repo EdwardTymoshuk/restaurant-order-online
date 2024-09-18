@@ -15,10 +15,14 @@ const TimeDeliverySwitcher = ({ onTimeChange }: { onTimeChange: (time: 'asap' | 
 		{ value: 'choose-time', label: 'Wybierz godzinę', icon: <BsClockHistory /> },
 	]
 
+	// Викликаємо `getNearestHour` одразу при рендері і при зміні опції
 	useEffect(() => {
 		const nearestTime = getNearestHour()
 		setSelectedTime(nearestTime)
-	}, [])
+		if (selectedOption === 'asap') {
+			onTimeChange(nearestTime)
+		}
+	}, [selectedOption])
 
 	const handleTimeChange = (date: Date | null) => {
 		if (date) {

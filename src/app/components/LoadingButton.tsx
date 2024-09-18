@@ -28,7 +28,7 @@ const LoadingButton: React.FC<LoadingButtonProps> = ({
 						ariaLabel="oval-loading"
 						visible={true}
 					/>
-					<span>{loadingText || ''}</span>
+					<span className={`${loadingText ? 'block' : 'hidden'}`}>{loadingText || ''}</span>
 				</div>
 			) : (
 				children
