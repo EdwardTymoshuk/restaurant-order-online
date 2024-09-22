@@ -1,4 +1,3 @@
-// CartContext.tsx
 'use client'
 
 import React, { createContext, useContext, useEffect, useReducer } from 'react'
@@ -29,7 +28,21 @@ const initialState: CartState = {
 	totalAmount: 0,
 }
 
-const CartContext = createContext<{ state: CartState; dispatch: React.Dispatch<CartAction> } | undefined>(undefined)
+// Функція для ініціалізації стану з localStorage
+const initCartState = (): CartState => {
+	const storedCart = localStorage.getItem('cart')
+	if (storedCart) {
+		try {
+			const parsedCart = JSON.parse(storedCart)
+			console.log('Initializing cart from storage...', parsedCart)
+			return parsedCart
+		} catch (error) {
+			console.error('Error parsing stored cart:', error)
+			return initialState
+		}
+	}
+	return initialState
+}
 
 const cartReducer = (state: CartState, action: CartAction): CartState => {
 	switch (action.type) {
@@ -102,38 +115,15 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 	}
 }
 
+const CartContext = createContext<{ state: CartState; dispatch: React.Dispatch<CartAction> } | undefined>(undefined)
+
 const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-	const [state, dispatch] = useReducer(cartReducer, initialState)
+	// Використовуємо initCartState для ініціалізації стану
+	const [state, dispatch] = useReducer(cartReducer, initialState, initCartState)
 
 	useEffect(() => {
-		const loadCartFromLocalStorage = () => {
-			try {
-				const storedCart = localStorage.getItem('cart')
-				console.log(storedCart)
-				if (storedCart) {
-					const cartData = JSON.parse(storedCart)
-					if (Array.isArray(cartData.items) && typeof cartData.totalAmount === 'number') {
-						dispatch({ type: 'SET_CART', payload: cartData })
-					} else {
-						console.warn('Invalid cart data structure in localStorage.')
-						localStorage.removeItem('cart') // Clear invalid data
-					}
-				}
-			} catch (error) {
-				console.error('Failed to parse cart data from localStorage:', error)
-				localStorage.removeItem('cart') // Clear corrupted data
-			}
-		}
-
-		loadCartFromLocalStorage()
-	}, [])
-
-	useEffect(() => {
-		try {
-			localStorage.setItem('cart', JSON.stringify(state))
-		} catch (error) {
-			console.error('Failed to save cart data to localStorage:', error)
-		}
+		console.log('Saving cart state to storage:', state)
+		localStorage.setItem('cart', JSON.stringify(state))
 	}, [state])
 
 	return (
@@ -152,4 +142,3 @@ const useCart = () => {
 }
 
 export { CartProvider, useCart }
-

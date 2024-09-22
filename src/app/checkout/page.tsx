@@ -3,6 +3,7 @@
 import { Button } from '@/app/components/ui/button'
 import { Input } from '@/app/components/ui/input'
 import { useCart } from '@/app/context/CartContext'
+import { Textarea } from '@/components/ui/textarea'
 import { getCoordinates, isAddressInDeliveryArea } from '@/lib/deliveryUtils'
 import { trpc } from '@/utils/trps'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -44,6 +45,8 @@ const deliverySchema = z.object({
 		z.literal('asap'),
 		z.date().refine((date) => date > new Date(), { message: 'Podaj poprawną godzinę dostawy' }),
 	]),
+	comment: z.string().max(200, 'Komentarz jest zbyt długi').optional().transform(val => val === '' ? undefined : val),
+	promoCode: z.string().max(20, 'Kod promocyjny jest zbyt długi').optional().transform(val => val === '' ? undefined : val),
 })
 
 const takeOutSchema = z.object({
@@ -54,6 +57,8 @@ const takeOutSchema = z.object({
 		z.literal('asap'),
 		z.date().refine((date) => date > new Date(), { message: 'Podaj poprawną godzinę dostawy' }),
 	]),
+	comment: z.string().max(200, 'Komentarz jest zbyt długi').optional().transform(val => val === '' ? undefined : val),
+	promoCode: z.string().max(20, 'Kod promocyjny jest zbyt długi').optional().transform(val => val === '' ? undefined : val),
 })
 
 type DeliveryFormData = z.infer<typeof deliverySchema>
@@ -83,6 +88,8 @@ const Page = () => {
 			buildingNumber: undefined,
 			apartment: undefined,
 			deliveryTime: 'asap',
+			comment: '',
+			promoCode: '',
 		},
 		mode: 'onChange',
 	})
@@ -94,6 +101,8 @@ const Page = () => {
 			phone: '',
 			paymentMethod: '',
 			deliveryTime: 'asap',
+			comment: '',
+			promoCode: '',
 		},
 		mode: 'onChange',
 	})
@@ -201,6 +210,8 @@ const Page = () => {
 				})),
 				totalAmount: state.totalAmount,
 				method: 'DELIVERY',
+				comment: data.comment,
+				promoCode: data.promoCode
 			})
 
 			const { id, phone, name, deliveryMethod: method, deliveryTime: time } = order
@@ -225,7 +236,6 @@ const Page = () => {
 	const onTakeOutSubmit = async (data: TakeOutFormData) => {
 		try {
 			setIsLoading(true)
-
 			if (!data.paymentMethod) {
 				toast.error('Nie wybrano metody opłaty')
 				setIsLoading(false)
@@ -244,26 +254,34 @@ const Page = () => {
 				})),
 				totalAmount: state.totalAmount,
 				method: 'TAKE_OUT',
+				comment: data.comment,
+				promoCode: data.promoCode,
 			})
 
 			const { id, phone, name, deliveryMethod: method, deliveryTime: time } = order
 			setOrderData(id, phone, name, method, time.toISOString())
 
-
 			toast.success('Zamówienie złożone pomyślnie!')
 
 			startTransition(() => {
+				// Робимо перехід менш пріоритетним, що дозволяє зберігати стан завантаження
 				router.push('/thank-you')
-				resetDelivery()
-				resetTakeOut()
-				dispatch({ type: 'CLEAR_CART' })
 			})
+
+			// Скидаємо стан форми лише після переходу
+			resetDelivery()
+			resetTakeOut()
+			dispatch({ type: 'CLEAR_CART' })
+
 		} catch (error) {
 			toast.error('Błąd przy stworzeniu zamówienia.')
+			setIsLoading(false) // Завершуємо завантаження у разі помилки
 		} finally {
+			// Залишаємо setIsLoading(false) тільки якщо перехід відбувся
 			setIsLoading(false)
 		}
 	}
+
 
 	return (
 		<div className="container mx-auto p-4">
@@ -395,6 +413,34 @@ const Page = () => {
 
 
 								<div className='space-y-2'>
+									<h3 className="text-xl text-secondary font-semibold">Komentarz do zamówienia</h3>
+									<Textarea
+										id="comment"
+										placeholder="Komentarz do zamówienia"
+										{...registerDelivery('comment')}
+										className={`mt-1 ${formStateDelivery.errors.comment ? 'border-danger' : ''}`}
+									/>
+									{formStateDelivery.errors.comment && (
+										<p className="text-danger text-sm pt-1">{formStateDelivery.errors.comment?.message}</p>
+									)}
+								</div>
+								<div className='space-y-2'>
+									<h3 className="text-xl text-secondary font-semibold">Kod promocyjny</h3>
+									<Input
+										id='promoCode'
+										placeholder="Kod promocyjny"
+										{...registerDelivery('promoCode')}
+										className={`mt-1 ${formStateDelivery.errors.promoCode ? 'border-danger' : ''}`}
+									/>
+									{formStateDelivery.errors.promoCode && (
+										<p className="text-danger text-sm pt-1">{formStateDelivery.errors.promoCode?.message}</p>
+									)}
+								</div>
+
+
+
+
+								<div className='space-y-2'>
 									<h3 className="text-xl text-secondary font-semibold">Płatność przy odbiorze</h3>
 									<div className="grid grid-cols-2 gap-4">
 										<Button
@@ -505,6 +551,33 @@ const Page = () => {
 									</div>
 								</div>
 
+
+
+								<div className='space-y-2'>
+									<h3 className="text-xl text-secondary font-semibold">Komentarz do zamówienia</h3>
+									<Textarea
+										id="comment"
+										placeholder="Komentarz do zamówienia"
+										{...registerTakeOut('comment')}
+										className={`mt-1 ${formStateTakeOut.errors.comment ? 'border-danger' : ''}`}
+									/>
+									{formStateTakeOut.errors.comment && (
+										<p className="text-danger text-sm pt-1">{formStateTakeOut.errors.comment?.message}</p>
+									)}
+								</div>
+								<div className='space-y-2'>
+									<h3 className="text-xl text-secondary font-semibold">Kod promocyjny</h3>
+									<Input
+										id='promoCode'
+										placeholder="Kod promocyjny"
+										{...registerTakeOut('promoCode')}
+										className={`mt-1 ${formStateTakeOut.errors.promoCode ? 'border-danger' : ''}`}
+									/>
+									{formStateTakeOut.errors.promoCode && (
+										<p className="text-danger text-sm pt-1">{formStateTakeOut.errors.promoCode?.message}</p>
+									)}
+								</div>
+
 								<div className='space-y-2'>
 									<h3 className="text-xl text-secondary font-semibold">Płatność przy odbiorze</h3>
 									<div className="grid grid-cols-2 gap-4">
@@ -570,8 +643,8 @@ const Page = () => {
 											<span>Google Pay</span>
 										</Button>
 									</div>
-									{formStateDelivery.errors.paymentMethod && (
-										<p className="text-danger text-sm pt-1">{formStateDelivery.errors.paymentMethod?.message}</p>
+									{formStateTakeOut.errors.paymentMethod && (
+										<p className="text-danger text-sm pt-1">{formStateTakeOut.errors.paymentMethod?.message}</p>
 									)}
 								</div>
 
