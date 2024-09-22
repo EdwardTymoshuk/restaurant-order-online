@@ -1,18 +1,19 @@
 'use client'
 
-import { Button } from '@/app/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { MdKeyboardArrowLeft, MdSearch } from 'react-icons/md'
+import OrderTrackingDialog from '../components/OrderTrackingDialog'
+import { Button } from '../components/ui/button'
 import { Separator } from '../components/ui/separator'
 import { useOrder } from '../context/OrderContext'
 
 const ThankYouPage = () => {
 	const router = useRouter()
 	const { orderId, phoneNumber, clientName, deliveryMethod, deliveryTime, clearOrderData } = useOrder()
-
+	const [isOrderTrackingOpen, setIsOrderTrackingOpen] = useState(false)
 	const [isLoading, setIsLoading] = useState(true)
 
 	useEffect(() => {
@@ -88,11 +89,17 @@ const ThankYouPage = () => {
 					<Button variant="secondary" className="w-full mt-4" onClick={() => router.push('/order')}>
 						<MdKeyboardArrowLeft size={18} /> Do menu
 					</Button>
-					<Button variant="secondary" className="w-full mt-4" onClick={() => router.push('/check-order')}>
-						<MdSearch size={18} /> Śledź zamóweinie
+					<Button variant="secondary" className="w-full mt-4" onClick={() => setIsOrderTrackingOpen(true)}>
+						<MdSearch size={18} /> Śledź zamówienie
 					</Button>
 				</div>
 			</div>
+
+			{/* Діалогове вікно для слідкування за замовленням */}
+			<OrderTrackingDialog
+				isOpen={isOrderTrackingOpen}
+				onOpenChange={setIsOrderTrackingOpen}
+			/>
 		</div>
 	)
 }

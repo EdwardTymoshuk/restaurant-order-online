@@ -22,9 +22,11 @@ export const orderRouter = router({
 			street: z.string().optional(),
 			buildingNumber: z.number().optional(),
 			apartment: z.number().optional(),
+			comment: z.string().max(200, 'Komentarz jest zbyt długi').optional(),
+			promoCode: z.string().max(20, 'Kod promocyjny jest zbyt długi').optional(),
 		}))
 		.mutation(async ({ input }) => {
-			const { name, phone, paymentMethod, deliveryTime, items, totalAmount, method, deliveryMethod } = input
+			const { name, phone, paymentMethod, deliveryTime, items, totalAmount, method, deliveryMethod, comment, promoCode } = input
 
 			const orderData: Prisma.OrderUncheckedCreateInput = {
 				name,
@@ -40,6 +42,8 @@ export const orderRouter = router({
 						quantity: item.quantity,
 					})),
 				},
+				comment,
+				promoCode,
 			}
 
 			// Якщо це доставка, додаємо поля адреси
@@ -56,5 +60,32 @@ export const orderRouter = router({
 			})
 
 			return order
+		}),
+	getOrderStatus: publicProcedure
+		.input(z.object({
+			phone: z.string(),
+		}))
+		.query(async ({ input }) => {
+			const { phone } = input
+
+			const order = await prisma.order.findFirst({
+				where: {
+					phone: phone,
+				},
+				orderBy: {
+					createdAt: 'desc',
+				},
+			})
+
+			if (!order) {
+				throw new Error('Order not found')
+			}
+
+			return {
+				status: order.status,
+				orderId: order.id,
+				deliveryMethod: order.deliveryMethod,
+				deliveryTime: order.deliveryTime,
+			}
 		}),
 })

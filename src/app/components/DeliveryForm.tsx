@@ -15,7 +15,6 @@ import { Autocomplete } from "@react-google-maps/api"
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react' // Додаємо useTransition
 import { useForm } from "react-hook-form"
-import { MdOutlineKeyboardArrowRight } from "react-icons/md"
 import { toast } from "sonner"
 import { z } from "zod"
 import LoadingButton from "./LoadingButton"
@@ -100,7 +99,7 @@ export default function DeliveryForm({
 	return (
 		<div className="flex flex-col space-y-8">
 			<Form {...form}>
-				<form onSubmit={form.handleSubmit(onSubmit)} className="mb-8 space-y-4">
+				<form onSubmit={form.handleSubmit(onSubmit)} className="mb-2 space-y-4">
 					<FormField
 						control={form.control}
 						name="address"
@@ -137,7 +136,7 @@ export default function DeliveryForm({
 					/>
 
 					{/* Використовуємо одну кнопку для обох випадків */}
-					<LoadingButton
+					{/* <LoadingButton
 						isLoading={loading || isPending} // Показуємо стан завантаження під час переходу
 						type={addressVerified ? "button" : "submit"}
 						variant='secondary'
@@ -151,6 +150,14 @@ export default function DeliveryForm({
 						) : (
 							"Sprawdź"
 						)}
+					</LoadingButton> */}
+					<LoadingButton
+						isLoading={loading || isPending} // Показуємо стан завантаження під час переходу
+						type='submit'
+						variant='default'
+						className="w-full my-4"
+					>
+						Sprawdź
 					</LoadingButton>
 				</form>
 			</Form>
