@@ -46,7 +46,7 @@ const AddressModal = ({ onClose }: { onClose: () => void }) => {
 						/>
 						<div className="flex justify-end space-x-4">
 							<Button variant="secondary" onClick={onClose}>Anuluj</Button>
-							<Button variant="primary" onClick={handleCheckAddress}>Sprawdź</Button>
+							<Button variant="default" onClick={handleCheckAddress}>Sprawdź</Button>
 						</div>
 					</TabsContent>
 					<TabsContent value="take-out">
@@ -57,7 +57,7 @@ const AddressModal = ({ onClose }: { onClose: () => void }) => {
 						</div>
 						<div className="flex justify-end space-x-4 mt-4">
 							<Button variant="secondary" onClick={onClose}>Anuluj</Button>
-							<Button variant="primary" onClick={handleOrderClick}>Do zamówienia</Button>
+							<Button variant="default" onClick={handleOrderClick}>Do zamówienia</Button>
 						</div>
 					</TabsContent>
 				</Tabs>
