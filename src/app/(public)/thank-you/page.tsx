@@ -1,14 +1,14 @@
 'use client'
 
-import { Skeleton } from '@/components/ui/skeleton'
+import { Skeleton } from '@/app/components/ui/skeleton'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { MdKeyboardArrowLeft, MdSearch } from 'react-icons/md'
-import OrderTrackingDialog from '../components/OrderTrackingDialog'
-import { Button } from '../components/ui/button'
-import { Separator } from '../components/ui/separator'
-import { useOrder } from '../context/OrderContext'
+import OrderTrackingDialog from '../../components/OrderTrackingDialog'
+import { Button } from '../../components/ui/button'
+import { Separator } from '../../components/ui/separator'
+import { useOrder } from '../../context/OrderContext'
 
 const ThankYouPage = () => {
 	const router = useRouter()

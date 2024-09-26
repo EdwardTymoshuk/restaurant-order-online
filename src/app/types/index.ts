@@ -37,15 +37,22 @@ export type MenuItemCategory =
 	'Napoje zimne' |
 	'Piwo butelkowe' |
 	'Piwo bezalkoholowe' |
+	'Piwo beczkowe' |
+	'Piwo smakowe' |
 	'Wina Białe' |
 	'Wina Czerwone' |
+	'Wina Musujące' |
 	'Drinki' |
 	'Whisky' |
 	'Rum' |
 	'Gin' |
 	'Tequila' |
 	'Cognac / Brandy' |
-	'Wódka'
+	'Wódka' |
+	'Napoje alkoholowe' |
+	'Napoje bezalkoholowe' |
+	'Napoje łekkoprocentowe' |
+	'Inne'
 
 export interface MenuItemType {
 	id: string,

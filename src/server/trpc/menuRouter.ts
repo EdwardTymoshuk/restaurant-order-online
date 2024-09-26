@@ -1,13 +1,7 @@
-// src/server/trpc/menuRouter.ts
-import { MenuItemCategory } from '@/app/types'
-import { MenuCategories } from '@/config'
 import prisma from '@/lib/prisma'
+import { ObjectId } from 'mongodb'
+import { z } from 'zod'
 import { publicProcedure, router } from './trpc'
-
-// Функція для перевірки категорії
-const isValidCategory = (category: string): category is MenuItemCategory => {
-	return MenuCategories.includes(category)
-}
 
 export const menuRouter = router({
 	getMenuItems: publicProcedure.query(async () => {
@@ -16,11 +10,106 @@ export const menuRouter = router({
 				isOrderable: true,
 			},
 		})
-		const validItems = items.map(item => ({
-			...item,
-			category: isValidCategory(item.category) ? item.category : 'Inne',
-		}))
-
-		return validItems
+		return items
 	}),
+
+	getAllMenuItems: publicProcedure.query(async () => {
+		const items = await prisma.menuItem.findMany()
+		return items
+	}),
+
+	getMenuItemById: publicProcedure
+		.input(z.object({ id: z.string() }))
+		.query(async ({ input }) => {
+			const { id } = input
+
+			if (!ObjectId.isValid(id)) {
+				throw new Error('Invalid ID format')
+			}
+
+			const item = await prisma.menuItem.findUnique({
+				where: { id },
+			})
+
+			if (!item) {
+				throw new Error(`Item with ID ${id} not found`)
+			}
+
+			return item
+		}),
+
+	createMenuItem: publicProcedure
+		.input(z.object({
+			name: z.string(),
+			price: z.number(),
+			description: z.string().optional(),
+			category: z.string(),
+			image: z.string().optional(),
+			isOrderable: z.boolean().default(true),
+			isRecommended: z.boolean().default(false),
+		}))
+		.mutation(async ({ input }) => {
+			const newItem = await prisma.menuItem.create({
+				data: {
+					name: input.name,
+					price: input.price,
+					description: input.description,
+					category: input.category,
+					image: input.image,
+					isOrderable: input.isOrderable,
+					isRecommended: input.isRecommended,
+				},
+			})
+			return newItem
+		}),
+
+	updateMenuItem: publicProcedure
+		.input(z.object({
+			id: z.string(),
+			name: z.string().optional(),
+			price: z.number().optional(),
+			description: z.string().optional(),
+			image: z.string().optional(),
+			category: z.string().optional(),
+			isRecommended: z.boolean().optional(),
+			isOrderable: z.boolean().optional(),
+		}))
+		.mutation(async ({ input }) => {
+			const { id, ...data } = input
+
+			const item = await prisma.menuItem.findUnique({
+				where: { id },
+			})
+
+			if (!ObjectId.isValid(id)) {
+				throw new Error('Invalid ID format')
+			}
+
+			if (!item) {
+				console.log(`Item with ID ${id} not found`)
+				throw new Error('Item not found')
+			}
+
+			const updatedItem = await prisma.menuItem.update({
+				where: { id },
+				data,
+			})
+			return updatedItem
+		}),
+
+	deleteMenuItem: publicProcedure
+		.input(z.object({ id: z.string() }))
+		.mutation(async ({ input }) => {
+			const { id } = input
+
+			if (!ObjectId.isValid(id)) {
+				throw new Error('Invalid ID format')
+			}
+
+			const deletedItem = await prisma.menuItem.delete({
+				where: { id },
+			})
+
+			return deletedItem
+		}),
 })

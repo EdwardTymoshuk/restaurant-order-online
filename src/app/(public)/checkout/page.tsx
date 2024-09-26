@@ -2,8 +2,8 @@
 
 import { Button } from '@/app/components/ui/button'
 import { Input } from '@/app/components/ui/input'
+import { Textarea } from '@/app/components/ui/textarea'
 import { useCart } from '@/app/context/CartContext'
-import { Textarea } from '@/components/ui/textarea'
 import { getCoordinates, isAddressInDeliveryArea } from '@/lib/deliveryUtils'
 import { trpc } from '@/utils/trps'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -17,12 +17,12 @@ import { FaRegCreditCard } from 'react-icons/fa6'
 import { MdKeyboardArrowLeft, MdOutlineDeliveryDining, MdOutlineRestaurantMenu } from 'react-icons/md'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import LoadingButton from '../components/LoadingButton'
-import PageSubHeader from '../components/PageSubHeader'
-import Switcher from '../components/Switcher'
-import TimeDeliverySwitcher from '../components/TimeDeliverySwitcher'
-import { Separator } from '../components/ui/separator'
-import { useOrder } from '../context/OrderContext'
+import LoadingButton from '../../components/LoadingButton'
+import PageSubHeader from '../../components/PageSubHeader'
+import Switcher from '../../components/Switcher'
+import TimeDeliverySwitcher from '../../components/TimeDeliverySwitcher'
+import { Separator } from '../../components/ui/separator'
+import { useOrder } from '../../context/OrderContext'
 
 // Схема для доставки
 const deliverySchema = z.object({
