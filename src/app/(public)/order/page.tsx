@@ -9,14 +9,14 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/app/components/ui/select"
+import { Skeleton } from '@/app/components/ui/skeleton'
 import { MenuItemCategory, MenuItemType } from '@/app/types'
-import { Skeleton } from '@/components/ui/skeleton'
 import { CAROUSEL_MAIN_IMAGES } from '@/config'
 import { trpc } from '@/utils/trps'
 import Autoplay from "embla-carousel-autoplay"
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
-import PageSubHeader from '../components/PageSubHeader'
+import PageSubHeader from '../../components/PageSubHeader'
 
 const Page = () => {
 	const [sortedItems, setSortedItems] = useState<MenuItemType[]>([])

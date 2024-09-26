@@ -28,19 +28,22 @@ const initialState: CartState = {
 	totalAmount: 0,
 }
 
-// Функція для ініціалізації стану з localStorage
 const initCartState = (): CartState => {
-	const storedCart = localStorage.getItem('cart')
-	if (storedCart) {
-		try {
-			const parsedCart = JSON.parse(storedCart)
-			console.log('Initializing cart from storage...', parsedCart)
-			return parsedCart
-		} catch (error) {
-			console.error('Error parsing stored cart:', error)
-			return initialState
+	// Перевірка, чи ми на клієнтській стороні
+	if (typeof window !== 'undefined') {
+		const storedCart = localStorage.getItem('cart')
+		if (storedCart) {
+			try {
+				const parsedCart = JSON.parse(storedCart)
+				console.log('Initializing cart from storage...', parsedCart)
+				return parsedCart
+			} catch (error) {
+				console.error('Error parsing stored cart:', error)
+				return initialState
+			}
 		}
 	}
+	// Якщо ми на сервері або немає збережених даних у localStorage
 	return initialState
 }
 

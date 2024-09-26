@@ -4,8 +4,8 @@ import DeliveryForm from '@/app/components/DeliveryForm'
 import LoadingButton from '@/app/components/LoadingButton'
 import PageSubHeader from '@/app/components/PageSubHeader'
 import RestaurantMap from '@/app/components/RestaurantMap'
+import { Skeleton } from '@/app/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
-import { Skeleton } from '@/components/ui/skeleton'
 import { DELIVERY_RADIUS_METERS, RESTAURANT_COORDINATES } from '@/config/constants'
 import { Coordinates } from '@/lib/deliveryUtils'
 import { LoadScriptNext } from "@react-google-maps/api"

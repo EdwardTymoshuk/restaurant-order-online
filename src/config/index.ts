@@ -1,4 +1,4 @@
-import { CarouselImage, Opinion } from '@/app/types'
+import { CarouselImage, MenuItemCategory, Opinion } from '@/app/types'
 
 export const CAROUSEL_MAIN_IMAGES: CarouselImage[] = [
 	{ src: '/img/carousel-1.jpg' },
@@ -37,12 +37,45 @@ export const OPINIONS: Opinion[] = [
 		rate: 5,
 	},
 ]
-export const MenuCategories = [
-	'Dania główne', 'Pizza', 'Burgery', 'Dla dzieci', 'Dodatki', 'Desery', 'Napoje',
-	'Śniadania', 'Przystawki', 'Zupy', 'Bowle', 'Vege', 'Dania rybne', 'Owoce morza',
-	'Dania mięsne', 'Klasyczne koktaile', 'Na ciepło', 'Herbata', 'Kawa', 'Napoje zimne',
-	'Piwo butelkowe', 'Piwo bezalkoholowe', 'Wina Białe', 'Wina Czerwone', 'Drinki',
-	'Whisky', 'Rum', 'Gin', 'Tequila', 'Cognac / Brandy', 'Wódka', 'Inne'
+export const menuItemCategories: MenuItemCategory[] = [
+	'Dania główne',
+	'Pizza',
+	'Burgery',
+	'Dla dzieci',
+	'Dodatki',
+	'Desery',
+	'Napoje',
+	'Śniadania',
+	'Przystawki',
+	'Zupy',
+	'Bowle',
+	'Vege',
+	'Dania rybne',
+	'Owoce morza',
+	'Dania mięsne',
+	'Klasyczne koktaile',
+	'Na ciepło',
+	'Herbata',
+	'Kawa',
+	'Napoje zimne',
+	'Piwo butelkowe',
+	'Piwo bezalkoholowe',
+	'Piwo beczkowe',
+	'Piwo smakowe',
+	'Wina Białe',
+	'Wina Czerwone',
+	'Wina Musujące',
+	'Drinki',
+	'Whisky',
+	'Rum',
+	'Gin',
+	'Tequila',
+	'Cognac / Brandy',
+	'Wódka',
+	'Napoje alkoholowe',
+	'Napoje bezalkoholowe',
+	'Napoje łekkoprocentowe',
+	'Inne'
 ]
 
 

@@ -5,6 +5,7 @@ import MainContainer from '@/app/components/MainContainer'
 import { trpc } from '@/utils/trps'
 import { QueryClient } from '@tanstack/react-query'
 import { Inter, Roboto } from 'next/font/google'
+import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import Providers from './components/Providers'
 import './globals.css'
@@ -18,20 +19,27 @@ function RootLayout({
   children: React.ReactNode
 }>) {
   const [queryClient] = useState(() => new QueryClient())
+  const pathname = usePathname()
+
+  // Перевірка, чи шлях містить "admin-panel"
+  const isAdminPanel = pathname?.startsWith('/admin-panel')
 
   return (
     <html lang='en'>
       <body className={roboto.className}>
         <Providers>
-          <Header />
-          <MainContainer>
-            {children}
-          </MainContainer>
+          {!isAdminPanel && <Header />}
+          {!isAdminPanel ? (
+            <MainContainer>
+              {children}
+            </MainContainer>
+          ) : (
+            children
+          )}
         </Providers>
       </body>
     </html>
   )
 }
 
-// Обгортаємо ваш RootLayout з `withTRPC`
 export default trpc.withTRPC(RootLayout)
