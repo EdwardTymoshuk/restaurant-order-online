@@ -1,6 +1,6 @@
 'use client'
 
-import { trpc } from '@/utils/trps'
+import { trpc } from '@/utils/trpс'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { TRPCClientError } from '@trpc/client'
 import { useState } from 'react'
