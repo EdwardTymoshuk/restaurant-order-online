@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { GiMeal } from 'react-icons/gi'
 
 interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
-	src: string
+	src: string | undefined
 	alt: string
 	fallback?: React.ReactNode
 	containerClassName?: string

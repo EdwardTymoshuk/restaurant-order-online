@@ -1,5 +1,6 @@
 'use client'
 
+import ImageWithFallback from '@/app/components/ImageWithFallback'
 import { Button } from '@/app/components/ui/button'
 import { Input } from '@/app/components/ui/input'
 import { Textarea } from '@/app/components/ui/textarea'
@@ -668,7 +669,9 @@ const Page = () => {
 									{state.items.map((item) => (
 										<li key={item.id} className="flex py-6">
 											<div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
-												<img
+												<ImageWithFallback
+													width={96}
+													height={96}
 													src={item.image}
 													alt={item.name}
 													className="h-full w-full object-cover object-center"

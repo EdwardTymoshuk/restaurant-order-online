@@ -25,7 +25,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, productTit
     if (productName !== productTitle) {
       setProductName(productTitle)
     }
-  }, [productTitle])
+  }, [productTitle, productName])
 
   // Оновлюємо imageSrc, якщо змінюється imageUrl
   useEffect(() => {
