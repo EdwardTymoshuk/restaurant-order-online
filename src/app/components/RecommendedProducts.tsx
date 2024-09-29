@@ -28,6 +28,7 @@ const RecommendedProducts = () => {
 					id={item.id}
 					name={item.name}
 					price={item.price}
+					image={item.image!}
 					orientation="horizontal"
 					className="px-4"
 				/>
