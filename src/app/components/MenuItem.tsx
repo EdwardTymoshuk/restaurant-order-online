@@ -20,7 +20,7 @@ type MenuItemProps = Partial<MenuItemType> & {
 	name: string,
 	price: number,
 	description?: string,
-	image?: string,
+	image: string,
 	orientation?: 'vertical' | 'horizontal',
 	className?: string,
 }
@@ -44,7 +44,8 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 					id,
 					name,
 					price,
-					quantity: 1
+					quantity: 1,
+					image
 				},
 			})
 
