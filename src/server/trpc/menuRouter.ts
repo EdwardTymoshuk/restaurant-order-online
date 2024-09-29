@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { ObjectId } from 'mongodb'
 import { z } from 'zod'
 import { publicProcedure, router } from './trpc'

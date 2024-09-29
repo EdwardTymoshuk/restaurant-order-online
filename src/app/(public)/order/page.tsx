@@ -12,7 +12,7 @@ import {
 import { Skeleton } from '@/app/components/ui/skeleton'
 import { MenuItemCategory, MenuItemType } from '@/app/types'
 import { CAROUSEL_MAIN_IMAGES } from '@/config'
-import { trpc } from '@/utils/trpс'
+import { trpc } from '@/utils/trpc'
 import Autoplay from "embla-carousel-autoplay"
 import Image from 'next/image'
 import { useEffect, useState } from 'react'

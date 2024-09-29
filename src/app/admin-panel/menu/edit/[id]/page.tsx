@@ -15,7 +15,7 @@ import { Skeleton } from "@/app/components/ui/skeleton"
 import { Textarea } from "@/app/components/ui/textarea"
 import { MenuItemCategory } from '@/app/types'
 import { menuItemCategories } from '@/config'
-import { trpc } from '@/utils/trpс'
+import { trpc } from '@/utils/trpc'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { MdKeyboardArrowLeft } from 'react-icons/md'

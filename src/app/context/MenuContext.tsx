@@ -1,5 +1,5 @@
 import { MenuItemCategory, MenuItemType } from '@/app/types'
-import { trpc } from '@/utils/trpс'
+import { trpc } from '@/utils/trpc'
 import { createContext, useContext, useEffect, useState } from 'react'
 
 interface MenuContextType {

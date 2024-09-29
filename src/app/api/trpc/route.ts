@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { appRouter } from '@/server/trpc/appRouter'
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
 
