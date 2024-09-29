@@ -1,12 +1,10 @@
+// src/app/layout.tsx
 'use client'
 
 import Header from '@/app/components/Header'
 import MainContainer from '@/app/components/MainContainer'
-import { trpc } from '@/utils/trpc'
-import { QueryClient } from '@tanstack/react-query'
 import { Inter, Roboto } from 'next/font/google'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
 import Providers from './components/Providers'
 import './globals.css'
 
@@ -18,7 +16,6 @@ function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const [queryClient] = useState(() => new QueryClient())
   const pathname = usePathname()
 
   // Перевірка, чи шлях містить "admin-panel"
@@ -42,4 +39,4 @@ function RootLayout({
   )
 }
 
-export default trpc.withTRPC(RootLayout)
+export default RootLayout
