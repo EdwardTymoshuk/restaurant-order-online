@@ -15,7 +15,7 @@ import { Textarea } from "@/app/components/ui/textarea"
 import { MenuItemCategory } from '@/app/types'
 import { Checkbox } from '@/components/ui/checkbox'
 import { menuItemCategories } from '@/config'
-import { trpc } from '@/utils/trps'
+import { trpc } from '@/utils/trpс'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { MdKeyboardArrowLeft } from 'react-icons/md'

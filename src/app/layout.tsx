@@ -2,7 +2,7 @@
 
 import Header from '@/app/components/Header'
 import MainContainer from '@/app/components/MainContainer'
-import { trpc } from '@/utils/trps'
+import { trpc } from '@/utils/trpс'
 import { QueryClient } from '@tanstack/react-query'
 import { Inter, Roboto } from 'next/font/google'
 import { usePathname } from 'next/navigation'
