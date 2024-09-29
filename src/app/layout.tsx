@@ -3,6 +3,7 @@
 
 import Header from '@/app/components/Header'
 import MainContainer from '@/app/components/MainContainer'
+import { trpc } from '@/utils/trpc'
 import { Inter, Roboto } from 'next/font/google'
 import { usePathname } from 'next/navigation'
 import Providers from './components/Providers'
@@ -39,4 +40,4 @@ function RootLayout({
   )
 }
 
-export default RootLayout
+export default trpc.withTRPC(RootLayout)
