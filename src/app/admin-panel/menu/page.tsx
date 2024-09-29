@@ -12,7 +12,7 @@ import {
 import { Skeleton } from '@/app/components/ui/skeleton'
 import { Switch } from '@/app/components/ui/switch'
 import { MenuItemCategory, MenuItemType } from '@/app/types'
-import { trpc } from '@/utils/trpс'
+import { trpc } from '@/utils/trpc'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { FiPlus } from "react-icons/fi"
