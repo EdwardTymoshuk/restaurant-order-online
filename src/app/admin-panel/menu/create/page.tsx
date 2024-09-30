@@ -1,6 +1,7 @@
 'use client'
 
 import ImageUploader from '@/app/admin-panel/components/ImageUploader'
+import LoadingButton from '@/app/components/LoadingButton'
 import PageSubHeader from '@/app/components/PageSubHeader'
 import { Button } from '@/app/components/ui/button'
 import { Input } from "@/app/components/ui/input"
@@ -31,12 +32,14 @@ const CreateMenuItemPage = () => {
 	const [image, setImage] = useState('')
 	const [isOrderable, setIsOrderable] = useState(true)
 	const [isRecommended, setIsRecommended] = useState(false)
+	const [isLoading, setIsLoading] = useState(false)  // Додаємо стан для відстеження завантаження
 
 	const handleImageUpload = (imageUrl: string) => {
 		setImage(imageUrl)
 	}
 
 	const handleSubmit = async () => {
+		setIsLoading(true)  // Встановлюємо стан isLoading в true перед запитом
 		try {
 			await createMenuItem({
 				name,
@@ -50,12 +53,14 @@ const CreateMenuItemPage = () => {
 			router.push('/admin-panel?tab=menu')
 		} catch (error) {
 			console.error("Nie udało się dodać nowej pozycji menu:", error)
+		} finally {
+			setIsLoading(false)  // Встановлюємо стан isLoading в false після завершення запиту
 		}
 	}
 
 	return (
 		<div className="container mx-auto px-4 py-6">
-			<Button variant="link" onClick={() => router.push('/admin-panel/menu')} className='p-0 text-secondary'>
+			<Button variant="link" onClick={() => router.push('/admin-panel?tab=menu')} className='p-0 text-secondary'>
 				<MdKeyboardArrowLeft size={24} /><span>Wróć do menu</span>
 			</Button>
 			<div className="flex justify-between items-center mb-6">
@@ -129,7 +134,9 @@ const CreateMenuItemPage = () => {
 				</div>
 
 				<div className="text-right">
-					<Button variant='default' onClick={handleSubmit}>Dodaj</Button>
+					<LoadingButton isLoading={isLoading} onClick={handleSubmit}>
+						Dodaj
+					</LoadingButton>
 				</div>
 			</div>
 		</div>

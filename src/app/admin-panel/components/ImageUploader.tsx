@@ -4,17 +4,19 @@ import LoadingButton from '@/app/components/LoadingButton'
 import { Input } from '@/app/components/ui/input'
 import { getCroppedImg } from '@/utils/getCroppedImg'
 import { sanitizeImageFilename } from '@/utils/sanitizeImageFilename'
+import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
 import Cropper, { Area } from 'react-easy-crop'
 
 interface ImageUploaderProps {
-  onImageUpload: (imageUrl: string) => void
+  onImageUpload: (currentImage: string) => void
   productTitle: string
-  imageUrl?: string // Проп для поточного зображення
+  currentImage?: string
 }
 
-const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, productTitle, imageUrl }) => {
+const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, productTitle, currentImage }) => {
   const [imageSrc, setImageSrc] = useState<string | null>(null)
+  const [imageToShow, setImageToShow] = useState<string | undefined>(currentImage)
   const [crop, setCrop] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const [zoom, setZoom] = useState<number>(1)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
@@ -27,12 +29,9 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, productTit
     }
   }, [productTitle, productName])
 
-  // Оновлюємо imageSrc, якщо змінюється imageUrl
   useEffect(() => {
-    if (imageUrl && !imageSrc) {
-      setImageSrc(imageUrl)
-    }
-  }, [imageUrl])
+    setImageToShow(currentImage)
+  }, [currentImage])
 
   const onCropComplete = (croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels)
@@ -71,9 +70,10 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, productTit
       })
 
       if (response.ok) {
-        const { imageUrl } = await response.json()
-        onImageUpload(imageUrl)
-        setImageSrc(imageUrl) // Оновлюємо imageSrc після завантаження
+        const { currentImage } = await response.json()
+        onImageUpload(currentImage)
+        setImageSrc(null)  // Очищуємо область для обрізки після успішного завантаження
+        setImageToShow(currentImage)  // Оновлюємо зображення, яке відображається
       } else {
         console.error('Nie udało się przesłać obrazu')
       }
@@ -86,6 +86,12 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, productTit
 
   return (
     <div className="space-y-4">
+      {imageToShow ? (
+        <div className="mb-4">
+          <Image src={imageToShow} alt="Obecne zdjęcie" className="max-w-full h-auto" width={150} height={150} />
+        </div>
+      ) : ''}
+
       <Input
         type="file"
         accept="image/*"
@@ -113,15 +119,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, productTit
             disabled={uploading}
             className="mt-4"
           >
-            {uploading ? 'Przesyłanie...' : 'Przytnij i zapisz'}
+            Przytnij i zapisz
           </LoadingButton>
-        </div>
-      )}
-
-      {/* Якщо зображення завантажене та немає нового зображення для обрізки */}
-      {!imageSrc && imageUrl && (
-        <div className="mb-4">
-          <img src={imageUrl} alt="Obecne zdjęcie" className="max-w-full h-auto" />
         </div>
       )}
     </div>

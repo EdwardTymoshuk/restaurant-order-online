@@ -1,6 +1,7 @@
 'use client'
 
 import ImageUploader from '@/app/admin-panel/components/ImageUploader'
+import LoadingButton from '@/app/components/LoadingButton'
 import PageSubHeader from '@/app/components/PageSubHeader'
 import { Button } from '@/app/components/ui/button'
 import { Input } from "@/app/components/ui/input"
@@ -30,6 +31,7 @@ const EditMenuItemPage = ({ params }: { params: { id: string } }) => {
 	const [description, setDescription] = useState('')
 	const [category, setCategory] = useState<MenuItemCategory>('Inne')
 	const [image, setImage] = useState('')
+	const [isLoadingSubmit, setIsLoadingSubmit] = useState(false)
 
 	useEffect(() => {
 		if (menuItem) {
@@ -42,11 +44,11 @@ const EditMenuItemPage = ({ params }: { params: { id: string } }) => {
 	}, [menuItem])
 
 	const handleImageUpload = (imageUrl: string) => {
-		console.log('Image url:', imageUrl)
 		setImage(imageUrl)
 	}
 
 	const handleSubmit = async () => {
+		setIsLoadingSubmit(true)
 		try {
 			await updateMenuItem({
 				id: params.id,
@@ -59,6 +61,8 @@ const EditMenuItemPage = ({ params }: { params: { id: string } }) => {
 			router.push('/admin-panel?tab=menu')
 		} catch (error) {
 			console.error("Failed to update menu item:", error)
+		} finally {
+			setIsLoadingSubmit(false)
 		}
 	}
 
@@ -121,11 +125,13 @@ const EditMenuItemPage = ({ params }: { params: { id: string } }) => {
 					/>
 
 					<label className="block font-medium text-secondary">Zdjęcie</label>
-					<ImageUploader onImageUpload={handleImageUpload} productTitle={name} />
+					<ImageUploader onImageUpload={handleImageUpload} productTitle={name} currentImage={image} />
 				</div>
 
 				<div className="text-right">
-					<Button variant='default' onClick={handleSubmit}>Zapisz</Button>
+					<LoadingButton isLoading={isLoadingSubmit} onClick={handleSubmit}>
+						Dodaj
+					</LoadingButton>
 				</div>
 			</div>
 		</div>
