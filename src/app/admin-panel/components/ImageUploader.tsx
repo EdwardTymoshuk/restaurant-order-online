@@ -11,10 +11,11 @@ import Cropper, { Area } from 'react-easy-crop'
 interface ImageUploaderProps {
   onImageUpload: (currentImage: string) => void
   productTitle: string
-  currentImage?: string
+  currentImage?: string,
+  disabled?: boolean,
 }
 
-const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, productTitle, currentImage }) => {
+const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, productTitle, currentImage, disabled }) => {
   const [imageSrc, setImageSrc] = useState<string | null>(null)
   const [imageToShow, setImageToShow] = useState<string | undefined>(currentImage)
   const [crop, setCrop] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
@@ -30,14 +31,17 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, productTit
   }, [productTitle, productName])
 
   useEffect(() => {
-    setImageToShow(currentImage)
-  }, [currentImage])
+    if (imageToShow !== currentImage) {
+      setImageToShow(currentImage)
+    }
+  }, [currentImage, imageToShow])
 
   const onCropComplete = (croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels)
   }
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return
     const file = e.target.files?.[0]
     if (file) {
       const reader = new FileReader()
@@ -50,10 +54,12 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, productTit
 
   const handleCrop = async () => {
     if (!imageSrc || !croppedAreaPixels || !productName) return
-
-    const croppedImageBlob = await getCroppedImg(imageSrc, croppedAreaPixels)
-
-    await handleImageUpload(croppedImageBlob)
+    try {
+      const croppedImageBlob = await getCroppedImg(imageSrc, croppedAreaPixels)
+      await handleImageUpload(croppedImageBlob)
+    } catch (error) {
+      console.error("Error during cropping:", error)
+    }
   }
 
   const handleImageUpload = async (imageBlob: Blob) => {
@@ -70,34 +76,48 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, productTit
       })
 
       if (response.ok) {
-        const { currentImage } = await response.json()
-        onImageUpload(currentImage)
-        setImageSrc(null)  // Очищуємо область для обрізки після успішного завантаження
-        setImageToShow(currentImage)  // Оновлюємо зображення, яке відображається
+        const { imageUrl } = await response.json()
+        onImageUpload(imageUrl)
+        setImageToShow(imageUrl) // Встановлюємо нове зображення
+        setImageSrc(null)  // Очищуємо вибране зображення
       } else {
-        console.error('Nie udało się przesłać obrazu')
+        console.error('Не вдалося завантажити зображення')
       }
     } catch (error) {
-      console.error('Nie udało się przesłać obrazu', error)
+      console.error('Помилка під час завантаження зображення', error)
     } finally {
       setUploading(false)
     }
   }
 
+
+
   return (
     <div className="space-y-4">
-      {imageToShow ? (
+      {imageToShow && (
         <div className="mb-4">
-          <Image src={imageToShow} alt="Obecne zdjęcie" className="max-w-full h-auto" width={150} height={150} />
+          <Image src={`${imageToShow}?t=${Date.now()}`} alt="Zdjęcie pozycji menu" className="max-w-full h-auto" width={150} height={150} />
         </div>
-      ) : ''}
+      )}
 
-      <Input
-        type="file"
-        accept="image/*"
-        onChange={handleImageChange}
-        className="mb-4"
-      />
+      <div className="relative">
+        <Input
+          type="file"
+          accept="image/*"
+          onChange={handleImageChange}
+          className={`absolute inset-0 w-full h-full opacity-0 cursor-pointer ${disabled ? 'hidden' : ''}`}
+          disabled={disabled}
+        />
+        <div
+          className={`h-24 flex items-center justify-center w-full border border-dashed border-gray-400 ${disabled ? 'bg-gray-200 cursor-not-allowed' : ''}`}
+        >
+          <p className="text-gray-400">
+            {disabled ? 'Dodaj nazwę produktu, aby dodać zdjęcie' : 'Kliknij, aby dodać zdjęcie'}
+          </p>
+        </div>
+      </div>
+
+
 
       {imageSrc && (
         <div className="crop-container mb-4">

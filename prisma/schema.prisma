@@ -17,6 +17,8 @@ model MenuItem {
   isRecommended Boolean     @default(false)
   isOrderable   Boolean     @default(true)
   orders        OrderItem[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   @@index([name, category])
 }
