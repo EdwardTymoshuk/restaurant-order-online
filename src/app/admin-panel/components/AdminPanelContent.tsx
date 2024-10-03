@@ -1,9 +1,8 @@
-// src/app/admin-panel/AdminPanelContent.tsx
 'use client'
 
 import { Settings } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FaThList } from 'react-icons/fa'
 import { ImStatsBars } from 'react-icons/im'
 import { IoRestaurant } from 'react-icons/io5'
@@ -24,6 +23,21 @@ export default function AdminPanelContent() {
 
 	const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
+	// Закриття меню при кліку поза межами
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			const sidebarElement = document.getElementById('sidebar')
+			if (sidebarElement && !sidebarElement.contains(event.target as Node) && isSidebarOpen) {
+				setIsSidebarOpen(false)
+			}
+		}
+
+		document.addEventListener('mousedown', handleClickOutside)
+		return () => {
+			document.removeEventListener('mousedown', handleClickOutside)
+		}
+	}, [isSidebarOpen])
+
 	const menuItems = [
 		{ label: 'Pulpit', icon: <MdDashboard />, key: 'dashboard' },
 		{ label: 'Zamówienia', icon: <FaThList />, key: 'orders' },
@@ -33,9 +47,9 @@ export default function AdminPanelContent() {
 	]
 
 	return (
-		<div className="flex flex-col md:flex-row min-h-screen bg-gray-100 ">
+		<div className="flex flex-col lg:flex-row min-h-screen bg-gray-100">
 			{/* Кнопка для відкриття меню на мобільних пристроях */}
-			<div className="md:hidden flex w-full items-start p-6 bg-secondary shadow-sm shadow-primary">
+			<div className="lg:hidden flex w-full items-start p-6 bg-secondary shadow-sm shadow-primary">
 				<button
 					onClick={() => setIsSidebarOpen(!isSidebarOpen)}
 					className="text-text-primary hover:text-primary transition-all"
@@ -47,7 +61,8 @@ export default function AdminPanelContent() {
 			{/* Бокове меню */}
 			<Sidebar
 				className={`fixed min-h-screen h-auto z-20 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-					} md:translate-x-0 transition-transform duration-300 ease-in-out`}
+					} lg:translate-x-0 transition-transform duration-300 ease-in-out`}
+				onClose={() => setIsSidebarOpen(false)} // Закриття через кнопку
 			>
 				{menuItems.map((item) => (
 					<SidebarLink
@@ -62,7 +77,7 @@ export default function AdminPanelContent() {
 			</Sidebar>
 
 			{/* Контент */}
-			<main className="flex-1 p-8 md:pl-72">
+			<main className="flex-1 p-2 md:p-4 lg:p-8 lg:pl-72">
 				{tab === 'dashboard' && <Dashboard />}
 				{tab === 'orders' && <Orders />}
 				{tab === 'menu' && <MenuTable />}
