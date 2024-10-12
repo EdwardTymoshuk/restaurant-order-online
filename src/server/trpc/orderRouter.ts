@@ -1,9 +1,10 @@
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
+import { OrderStatus, Prisma } from '@prisma/client' // Додаємо Prisma для типів
 import { z } from 'zod'
 import { publicProcedure, router } from './trpc'
 
 export const orderRouter = router({
+	// Створення замовлення
 	create: publicProcedure
 		.input(z.object({
 			name: z.string(),
@@ -22,52 +23,76 @@ export const orderRouter = router({
 			street: z.string().optional(),
 			buildingNumber: z.number().optional(),
 			apartment: z.number().optional(),
-			comment: z.string().max(200, 'Komentarz jest zbyt długi').optional(),
-			promoCode: z.string().max(20, 'Kod promocyjny jest zbyt długi').optional(),
+			comment: z.string().max(200).optional(),
+			promoCode: z.string().max(20).optional(),
 		}))
 		.mutation(async ({ input }) => {
-			const { name, phone, paymentMethod, deliveryTime, items, totalAmount, method, deliveryMethod, comment, promoCode } = input
-
-			const orderData: Prisma.OrderUncheckedCreateInput = {
-				name,
-				phone,
-				paymentMethod,
-				deliveryTime: new Date(deliveryTime),
-				deliveryMethod,
-				totalAmount,
-				status: 'PENDING',
+			const orderData = {
+				name: input.name,
+				phone: input.phone,
+				paymentMethod: input.paymentMethod,
+				deliveryTime: new Date(input.deliveryTime),
+				deliveryMethod: input.deliveryMethod,
+				totalAmount: input.totalAmount,
+				status: OrderStatus.PENDING,
 				items: {
-					create: items.map((item) => ({
+					create: input.items.map(item => ({
 						menuItemId: item.menuItemId,
 						quantity: item.quantity,
 					})),
 				},
-				comment,
-				promoCode,
+				comment: input.comment,
+				promoCode: input.promoCode,
 			}
 
-			// Якщо це доставка, додаємо поля адреси
-			if (method === 'DELIVERY') {
-				orderData.city = input.city
-				orderData.postalCode = input.postalCode
-				orderData.street = input.street
-				orderData.buildingNumber = input.buildingNumber
-				orderData.apartment = input.apartment ?? undefined
+			if (input.method === 'DELIVERY') {
+				Object.assign(orderData, {
+					city: input.city,
+					postalCode: input.postalCode,
+					street: input.street,
+					buildingNumber: input.buildingNumber,
+					apartment: input.apartment ?? undefined,
+				})
 			}
 
-			const order = await prisma.order.create({
+			return prisma.order.create({
 				data: orderData,
 			})
-
-			return order
 		}),
+
+	// Отримання всіх замовлень
+	getAllOrders: publicProcedure.query(async () => {
+		const orders = await prisma.order.findMany({
+			include: {
+				items: {
+					include: {
+						menuItem: true,
+					},
+				},
+			},
+			orderBy: {
+				createdAt: 'desc',
+			},
+		})
+
+		return orders as Prisma.OrderGetPayload<{
+			include: {
+				items: {
+					include: {
+						menuItem: true
+					}
+				}
+			}
+		}>[]
+	}),
+
+	// Отримання статусу замовлення
 	getOrderStatus: publicProcedure
 		.input(z.object({
 			phone: z.string(),
 		}))
 		.query(async ({ input }) => {
 			const { phone } = input
-
 			const order = await prisma.order.findFirst({
 				where: {
 					phone: phone,
@@ -88,4 +113,39 @@ export const orderRouter = router({
 				deliveryTime: order.deliveryTime,
 			}
 		}),
+
+	// Оновлення статусу замовлення
+	updateStatus: publicProcedure
+		.input(z.object({
+			orderId: z.string(),
+			status: z.enum(['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'READY', 'DELIVERING', 'DELIVERED', 'COMPLETED', 'CANCELLED']),
+		}))
+		.mutation(async ({ input }) => {
+			return await prisma.order.update({
+				where: { id: input.orderId },
+				data: { status: OrderStatus[input.status] }, // Використовуємо enum OrderStatus
+			})
+		}),
+
+	// Видалення замовлення
+	deleteOrder: publicProcedure
+		.input(z.object({
+			orderId: z.string(),
+		}))
+		.mutation(async ({ input }) => {
+			// Спочатку видаляємо всі записи в OrderItem, що пов'язані з цим замовленням
+			await prisma.orderItem.deleteMany({
+				where: {
+					orderId: input.orderId,
+				},
+			})
+
+			// Після цього видаляємо саме замовлення
+			const order = await prisma.order.delete({
+				where: { id: input.orderId },
+			})
+
+			return order
+		}),
+
 })
