@@ -1,5 +1,6 @@
-import { uploadToR2 } from '@/lib/uploadToR2'
+
 import { sanitizeImageFilename } from '@/utils/sanitizeImageFilename'
+import { uploadToR2 } from '@/utils/uploadToR2'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const runtime = 'nodejs'

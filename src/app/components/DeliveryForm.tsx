@@ -9,7 +9,7 @@ import {
 } from "@/app/components/ui/form"
 import { Input } from "@/app/components/ui/input"
 import { DELIVERY_RADIUS_METERS, RESTAURANT_COORDINATES } from '@/config/constants'
-import { Coordinates, getCoordinates, hasStreetNumber, haversineDistance } from "@/lib/deliveryUtils"
+import { Coordinates, getCoordinates, hasStreetNumber, haversineDistance } from "@/utils/deliveryUtils"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Autocomplete } from "@react-google-maps/api"
 import { useRouter } from 'next/navigation'

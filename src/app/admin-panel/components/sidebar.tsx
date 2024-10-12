@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils/utils'
 import { MdClose } from 'react-icons/md' // Додаємо іконку закриття
 
 interface SidebarProps {

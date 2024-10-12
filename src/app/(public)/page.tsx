@@ -7,7 +7,7 @@ import RestaurantMap from '@/app/components/RestaurantMap'
 import { Skeleton } from '@/app/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
 import { DELIVERY_RADIUS_METERS, RESTAURANT_COORDINATES } from '@/config/constants'
-import { Coordinates } from '@/lib/deliveryUtils'
+import { Coordinates } from '@/utils/deliveryUtils'
 import { LoadScriptNext } from "@react-google-maps/api"
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'

@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils/utils'
 
 const PageSubHeader = ({ title, className }: { title: string, className?: string }) => {
 	return (

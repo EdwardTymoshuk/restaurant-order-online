@@ -1,8 +1,8 @@
 'use client'
 
 import { Input } from '@/app/components/ui/input'
-import { getCoordinates, isAddressInDeliveryArea } from '@/lib/deliveryUtils'
 import { validateDeliveryForm } from '@/lib/validators'
+import { getCoordinates, isAddressInDeliveryArea } from '@/utils/deliveryUtils'
 import { useEffect, useState } from 'react'
 import { MdOutlineDeliveryDining, MdOutlineRestaurantMenu } from 'react-icons/md'
 import { toast } from 'sonner'

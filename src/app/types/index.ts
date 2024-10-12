@@ -1,12 +1,15 @@
+// Тип для навігаційних елементів
 export interface NavBarItem {
 	label: string,
 	link: string,
 }
 
+// Тип для зображень у каруселі
 export interface CarouselImage {
 	src: string,
 }
 
+// Тип для відгуків (Opinions)
 export interface Opinion {
 	author: string,
 	date: string,
@@ -14,6 +17,7 @@ export interface Opinion {
 	rate: 1 | 2 | 3 | 4 | 5,
 }
 
+// Тип для категорій меню
 export type MenuItemCategory =
 	'Dania główne' |
 	'Pizza' |
@@ -54,6 +58,7 @@ export type MenuItemCategory =
 	'Napoje łekkoprocentowe' |
 	'Inne'
 
+// Тип для позицій меню
 export interface MenuItemType {
 	id: string,
 	name: string,
@@ -63,6 +68,55 @@ export interface MenuItemType {
 	image: string | null | undefined,
 	isOrderable?: boolean,
 	isRecommended?: boolean,
+	createdAt: Date,
+	updatedAt: Date,
+}
+
+// Тип для статусу замовлення
+export enum OrderStatus {
+	PENDING = 'PENDING',
+	ACCEPTED = 'ACCEPTED',
+	IN_PROGRESS = 'IN_PROGRESS',
+	READY = 'READY',
+	DELIVERING = 'DELIVERING',
+	DELIVERED = 'DELIVERED',
+	COMPLETED = 'COMPLETED',
+	CANCELLED = 'CANCELLED',
+}
+
+// Тип для методу доставки
+export enum DeliveryMethod {
+	DELIVERY = 'DELIVERY',
+	TAKE_OUT = 'TAKE_OUT',
+}
+
+// Тип для позицій замовлення (OrderItem)
+export interface OrderItemType {
+	id: string,
+	quantity: number,
+	menuItemId: string, // Foreign key для MenuItem
+	menuItem: MenuItemType, // Зв'язаний об'єкт MenuItem
+	orderId: string, // Foreign key для Order
+}
+
+// Тип для замовлення (Order)
+export interface OrderType {
+	id: string,
+	name: string,
+	phone: string,
+	city?: string | null,
+	postalCode?: string | null,
+	street?: string | null,
+	buildingNumber?: number | null,
+	apartment?: number | null,
+	deliveryMethod: DeliveryMethod,
+	paymentMethod: string,
+	deliveryTime: Date,
+	items: OrderItemType[], // Массив позицій замовлення
+	totalAmount: number,
+	status: OrderStatus,
+	comment?: string | null,
+	promoCode?: string | null,
 	createdAt: Date,
 	updatedAt: Date,
 }
