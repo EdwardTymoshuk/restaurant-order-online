@@ -9,10 +9,10 @@ import {
 import { useCart } from '@/app/context/CartContext'
 import { MenuItemType } from '@/app/types'
 import { cn } from '@/utils/utils'
-import Image from 'next/image'
 import React, { useState } from 'react'
 import { CiShoppingBasket } from 'react-icons/ci'
 import { FaCheck, FaMinus, FaPlus } from 'react-icons/fa'
+import ImageWithFallback from './ImageWithFallback'
 import { Button } from './ui/button'
 
 type MenuItemProps = Partial<MenuItemType> & {
@@ -26,7 +26,6 @@ type MenuItemProps = Partial<MenuItemType> & {
 }
 
 const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image, orientation = 'vertical', className }) => {
-	const [imageError, setImageError] = useState(false)
 	const [addedToCart, setAddedToCart] = useState(false) // Для анімації чеку
 	const isVertical = orientation === 'vertical'
 
@@ -78,21 +77,19 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 				'w-full h-48': isVertical,
 				'w-24 h-24': !isVertical,
 			})}>
-				<div className='relative w-full h-full p-2'>
-					{image && !imageError ? (
-						<Image
-							src={image}
-							alt={name ?? 'Menu item image'}
-							fill
-							style={{ objectFit: 'cover' }}
-							className='rounded-md'
-							onError={() => setImageError(true)}
-						/>
-					) : (
-						<div className='w-full h-full bg-gray-200 rounded-md flex items-center justify-center italic text-text-foreground text-center'>
-							No image
-						</div>
-					)}
+				<div className='relative w-48 h-48'>
+					<ImageWithFallback
+						src={image}
+						alt={name ?? 'Menu item image'}
+						width={isVertical ? 192 : 96}
+						height={isVertical ? 192 : 96}
+						style={{ objectFit: 'cover' }}
+						className='rounded-md'
+						containerClassName={cn('p-0', {
+							'w-full h-48': isVertical,
+							'w-24 h-24': !isVertical,
+						})}
+					/>
 				</div>
 			</CardHeader>
 			<CardContent className='p-2 border-0 flex-1'>

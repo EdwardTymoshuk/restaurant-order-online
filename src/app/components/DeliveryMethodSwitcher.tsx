@@ -64,7 +64,7 @@ const DeliveryMethodSwitcher: React.FC<DeliveryMethodSwitcherProps> = ({ deliver
 				})
 			}
 		}
-	}, [])
+	}, [setDeliveryData])
 
 	// useEffect(() => {
 	// 	if (deliveryMethod === 'DELIVERY') {

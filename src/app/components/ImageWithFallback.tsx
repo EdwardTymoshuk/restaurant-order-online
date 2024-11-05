@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import React, { useState } from 'react'
 import { GiMeal } from 'react-icons/gi'
 
@@ -6,6 +7,8 @@ interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElemen
 	alt: string
 	fallback?: React.ReactNode
 	containerClassName?: string
+	width: number
+	height: number
 }
 
 const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
@@ -13,16 +16,20 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
 	alt,
 	fallback,
 	containerClassName,
+	width = 96,
+	height = 96,
 	...rest
 }) => {
 	const [error, setError] = useState(false)
 
 	return (
 		<>
-			{!error ? (
-				<img
+			{!error && src ? (
+				<Image
 					src={src}
 					alt={alt}
+					width={width}
+					height={height}
 					onError={() => setError(true)}
 					{...rest}
 				/>

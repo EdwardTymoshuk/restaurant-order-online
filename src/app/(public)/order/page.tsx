@@ -18,7 +18,7 @@ import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import PageSubHeader from '../../components/PageSubHeader'
 
-const Page = () => {
+const Order = () => {
 	const [sortedItems, setSortedItems] = useState<MenuItemType[]>([])
 	const [sortOption, setSortOption] = useState<string | undefined>(undefined)
 	const [categoryFilter, setCategoryFilter] = useState<string | undefined>(undefined)
@@ -83,8 +83,7 @@ const Page = () => {
 									src={item.src}
 									alt='Carousel image'
 									fill
-									objectFit='cover'
-									className='w-auto min-h-[250px]'
+									className='w-auto min-h-[250px] object-cover'
 								/>
 							</div>
 						</CarouselItem>
@@ -148,4 +147,4 @@ const Page = () => {
 	)
 }
 
-export default Page
+export default Order

@@ -65,7 +65,7 @@ const takeOutSchema = z.object({
 type DeliveryFormData = z.infer<typeof deliverySchema>
 type TakeOutFormData = z.infer<typeof takeOutSchema>
 
-const Page = () => {
+const Checkout = () => {
 
 	const { state, dispatch } = useCart()
 	const { setOrderData } = useOrder()
@@ -702,4 +702,4 @@ const Page = () => {
 	)
 }
 
-export default Page
+export default Checkout
