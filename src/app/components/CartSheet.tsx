@@ -9,6 +9,7 @@ import { useState, useTransition } from 'react'
 import { FaMinus, FaPlus } from 'react-icons/fa'
 import { IoTrashOutline } from "react-icons/io5"
 import { MdKeyboardArrowRight } from "react-icons/md"
+import ImageWithFallback from './ImageWithFallback'
 import RecommendDialog from './RecommendDialog'
 
 const CartSheet = ({ onClose }: { onClose: () => void }) => {
@@ -78,17 +79,14 @@ const CartSheet = ({ onClose }: { onClose: () => void }) => {
 								{state.items.map((item) => (
 									<li key={item.id} className="flex py-6">
 										<div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
-											{item.image ? (
-												<img
-													src={item.image}
-													alt={item.name}
-													className="h-full w-full object-cover object-center"
-												/>
-											) : (
-												<div className="h-full w-full bg-gray-200 flex items-center justify-center text-sm text-gray-500">
-													No image
-												</div>
-											)}
+											<ImageWithFallback
+												src={item.image}
+												alt={item.name}
+												width={48}
+												height={48}
+												className="h-full w-full object-cover object-center"
+												containerClassName="h-24 w-24"
+											/>
 										</div>
 
 										<div className="ml-4 flex flex-1 flex-col">

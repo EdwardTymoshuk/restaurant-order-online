@@ -22,7 +22,7 @@ const TimeDeliverySwitcher = ({ onTimeChange }: { onTimeChange: (time: 'asap' | 
 		if (selectedOption === 'asap') {
 			onTimeChange(nearestTime)
 		}
-	}, [selectedOption])
+	}, [selectedOption, onTimeChange])
 
 	const handleTimeChange = (date: Date | null) => {
 		if (date) {

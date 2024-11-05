@@ -2,6 +2,7 @@
 
 import CartSheet from '@/app/components/CartSheet'
 import { cn } from '@/utils/utils'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
@@ -35,10 +36,11 @@ const Header = () => {
 		<header className='bg-background p-4 shadow-sm shadow-primary min-h-20 h-auto fixed w-full z-10'>
 			<div className={cn('mx-auto flex justify-between items-center')}>
 				<Link href='/'>
-					<img
+					<Image
 						src='/img/page-main-logo.png'
 						alt='Spoko Restaurant Logo'
-						className='max-h-12'
+						width={96}
+						height={96}
 					/>
 				</Link>
 

@@ -445,7 +445,7 @@ const Orders = () => {
 				</DialogContent>
 			</Dialog>
 			<Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
-				<DialogContent className='w-full items-center justify-center' aria-description={undefined}>
+				<DialogContent className="w-full items-center justify-center" aria-describedby={undefined}>
 					<DialogTitle className='sr-only'>Powiadomienie o nowym zamówieniu</DialogTitle>
 					<div className='flex items-center text-xl'>
 						<p>🔔 Masz {newOrderCount} {getOrderLabel(newOrderCount)}!</p>
