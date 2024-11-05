@@ -1,11 +1,13 @@
 import LoadingButton from '@/app/components/LoadingButton'
 import { Button } from '@/app/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/app/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/app/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
+import { useOrderSubscription } from '@/hooks/useOrderSubscription'
 import { formatTimeAgo } from '@/utils/formatTimeAgo'
 import { getOrderStatuses } from '@/utils/getOrderStatuses'
 import { trpc } from '@/utils/trpc'
+import { cn } from '@/utils/utils'
 import { OrderStatus, Prisma } from '@prisma/client'
 import orderBy from 'lodash/orderBy'
 import { useEffect, useState } from 'react'
@@ -65,14 +67,22 @@ const Orders = () => {
 	const [selectedStatus, setSelectedStatus] = useState<{ [key: string]: OrderStatus }>({})
 	const [isEditingStatus, setIsEditingStatus] = useState<{ [key: string]: boolean }>({})
 	const [localOrders, setLocalOrders] = useState<OrderWithItems[]>([])
-	const [sortConfig, setSortConfig] = useState<{ key: 'status' | 'deliveryMethod' | 'createdAt' | 'deliveryTime'; direction: 'asc' | 'desc' } | null>(null)
+	const [sortConfig, setSortConfig] = useState<{ key: 'status' | 'deliveryMethod' | 'createdAt' | 'deliveryTime'; direction: 'asc' | 'desc' }>({
+		key: 'createdAt', // Сортуємо за датою створення за замовчуванням
+		direction: 'desc', // Найновіші замовлення зверху
+	}); (null)
 
 
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 	const [orderToDelete, setOrderToDelete] = useState<string | null>(null)
 
+	// const [orders, setOrders] = useState<OrderWithItems[]>([]) // Основний стан для замовлень
+	const [highlightedOrders, setHighlightedOrders] = useState<Set<string>>(new Set()) // Для виділення нових замовлень
 
-	const { data: orders, isLoading, error, refetch } = trpc.order.getAllOrders.useQuery()
+
+	const { data: initialOrders, isLoading, error, refetch } = trpc.order.getAllOrders.useQuery()
+
+	const { newOrders, highlightedOrderIds, isDialogOpen, handleCloseDialog, newOrderCount } = useOrderSubscription()
 
 	const statusOrder: OrderStatus[] = [
 		'PENDING',
@@ -99,12 +109,53 @@ const Orders = () => {
 			toast.success('Zamówienie zostało pomyślnie usunięte')
 		},
 	})
+	// Початкове завантаження замовлень
+	useEffect(() => {
+		if (initialOrders) {
+			setLocalOrders(initialOrders)
+		}
+	}, [initialOrders])
 
 	useEffect(() => {
-		if (orders) {
-			setLocalOrders(orders)
+		console.log(newOrders)
+		if (newOrders.length > 0) {
+			let newOrderIds: Set<string> = new Set() // Оголошуємо змінну поза блоком
+
+			setLocalOrders((prevOrders) => {
+				const allOrders = [...prevOrders]
+
+				newOrders.forEach((newOrder) => {
+					if (!prevOrders.some(order => order.id === newOrder.id)) {
+						allOrders.push(newOrder)
+						newOrderIds.add(newOrder.id) // Зберігаємо нові ID для виділення
+					}
+				})
+
+				// Оновлюємо стан з новими замовленнями
+				setHighlightedOrders(newOrderIds) // Виділяємо тільки нові замовлення
+
+				return allOrders // Повертаємо оновлений список замовлень
+			})
+
+			const audio = new Audio('/audio/notification.wav') // Шлях до аудіофайлу
+			audio.play()
+
+			// Видаляємо виділення нових замовлень через 5 секунд
+			const timeoutId = setTimeout(() => {
+				setHighlightedOrders((prev) => {
+					const updated = new Set(prev)
+					newOrderIds.forEach(id => updated.delete(id)) // Видаляємо ID замовлень після таймера
+					return updated
+				})
+			}, 5000) // Виділення нових замовлень на 5 секунд
+
+			return () => clearTimeout(timeoutId)
 		}
-	}, [orders])
+	}, [newOrders])
+
+
+
+
 
 	// Сортування замовлень
 	const sortedOrders = sortConfig ? orderBy(
@@ -157,7 +208,7 @@ const Orders = () => {
 
 		if (!newStatus) return
 
-		const currentStatus = orders?.find(order => order.id === orderId)?.status
+		const currentStatus = localOrders?.find(order => order.id === orderId)?.status
 
 		if (newStatus && newStatus !== currentStatus) {
 			setLocalOrders((prevOrders) =>
@@ -176,7 +227,7 @@ const Orders = () => {
 
 	const toggleStatusEdit = (orderId: string, event: React.MouseEvent) => {
 		event.stopPropagation()
-		const currentStatus = orders?.find(order => order.id === orderId)?.status
+		const currentStatus = localOrders?.find(order => order.id === orderId)?.status
 		setSelectedStatus((prev) => ({ ...prev, [orderId]: currentStatus as OrderStatus }))
 		setIsEditingStatus((prev) => ({ ...prev, [orderId]: !prev[orderId] }))
 	}
@@ -194,6 +245,12 @@ const Orders = () => {
 	const handleDeleteOrder = () => {
 		if (!orderToDelete) return
 		mutateDelete({ orderId: orderToDelete })
+	}
+
+	const getOrderLabel = (count: number) => {
+		if (count === 1) return `nowe zamówienie`
+		if (count >= 2 && count <= 4) return `nowe zamówienia`
+		return `nowych zamówień`
 	}
 
 	// Перевірка на завантаження або помилку
@@ -266,11 +323,13 @@ const Orders = () => {
 
 					return (
 						<AccordionItem key={order.id} value={order.id}>
-							<AccordionTrigger className={`flex items-center gap-4 px-4 py-2 border-b hover:no-underline ${statusColorMap[order.status]} text-tetx-secondary`}>
+							<AccordionTrigger className={cn(`flex items-center gap-4 px-4 py-2 border-b hover:no-underline ${statusColorMap[order.status]} text-texе-secondary`, {
+								'bg-success/80': highlightedOrderIds.has(order.id)
+							})}>
 								<div className='flex flex-col lg:flex-row justify-between items-center w-full'>
 									<p className="w-1/12">{index + 1}</p>
 									<p className="w-2/12" onClick={() => setDeliveryMethodFilter(order.deliveryMethod)} style={{ cursor: 'pointer' }}>
-										{order.deliveryMethod === 'DELIVERY' ? 'Dostawa' : 'Odbiór'}
+										<span className='hover:text-secondary hover:underline'>{order.deliveryMethod === 'DELIVERY' ? 'Dostawa' : 'Odbiór'}</span>
 									</p>
 									<p className="w-2/12">
 										{relativeTime ? (
@@ -354,9 +413,9 @@ const Orders = () => {
 
 								<p className='text-base'><span className='text-secondary bold'>Zamówienie:</span></p>
 								<ul className="list-decimal pl-8 ml-4 text-lg font-extrabold">
-									{order.items.map((item) => (
+									{order.items?.map((item) => (
 										<li key={item.id}>
-											<span>{item.quantity}x</span> {item.menuItem?.name || 'Unknown item'} ({item.menuItem?.price} zł each)
+											<span>{item.quantity}x</span> {item.menuItem?.name || 'Unknown item'}
 										</li>
 									))}
 								</ul>
@@ -385,7 +444,18 @@ const Orders = () => {
 					</div>
 				</DialogContent>
 			</Dialog>
-		</div>
+			<Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
+				<DialogContent className='w-full items-center justify-center' aria-description={undefined}>
+					<DialogTitle className='sr-only'>Powiadomienie o nowym zamówieniu</DialogTitle>
+					<div className='flex items-center text-xl'>
+						<p>🔔 Masz {newOrderCount} {getOrderLabel(newOrderCount)}!</p>
+					</div>
+					<DialogFooter className='w-full'>
+						<Button onClick={handleCloseDialog} className='w-full'>OK</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+		</div >
 
 	)
 }
