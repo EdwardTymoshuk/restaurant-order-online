@@ -25,6 +25,7 @@ export const orderRouter = router({
 			apartment: z.number().optional(),
 			comment: z.string().max(200).optional(),
 			promoCode: z.string().max(20).optional(),
+			nip: z.string().optional(),
 		}))
 		.mutation(async ({ input }) => {
 			const orderData = {
@@ -43,6 +44,7 @@ export const orderRouter = router({
 				},
 				comment: input.comment,
 				promoCode: input.promoCode,
+				nip: input.nip
 			}
 
 			if (input.method === 'DELIVERY') {
@@ -52,6 +54,7 @@ export const orderRouter = router({
 					street: input.street,
 					buildingNumber: input.buildingNumber,
 					apartment: input.apartment ?? undefined,
+					nip: input.nip
 				})
 			}
 

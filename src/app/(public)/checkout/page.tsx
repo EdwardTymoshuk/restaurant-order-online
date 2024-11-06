@@ -5,9 +5,11 @@ import { Button } from '@/app/components/ui/button'
 import { Input } from '@/app/components/ui/input'
 import { Textarea } from '@/app/components/ui/textarea'
 import { useCart } from '@/app/context/CartContext'
+import { Checkbox } from '@/components/ui/checkbox'
 import { getCoordinates, isAddressInDeliveryArea } from '@/utils/deliveryUtils'
 import { trpc } from '@/utils/trpc'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { CheckedState } from '@radix-ui/react-checkbox'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useTransition } from 'react'
@@ -48,6 +50,13 @@ const deliverySchema = z.object({
 	]),
 	comment: z.string().max(200, 'Komentarz jest zbyt długi').optional().transform(val => val === '' ? undefined : val),
 	promoCode: z.string().max(20, 'Kod promocyjny jest zbyt długi').optional().transform(val => val === '' ? undefined : val),
+	nip: z
+		.string()
+		.optional()
+		.transform(val => val === '' ? undefined : val)
+		.refine((val) => val === undefined || /^[0-9]{10}$/.test(val), {
+			message: 'Podaj poprawny numer NIP z 10 cyfr',
+		})
 })
 
 const takeOutSchema = z.object({
@@ -60,6 +69,14 @@ const takeOutSchema = z.object({
 	]),
 	comment: z.string().max(200, 'Komentarz jest zbyt długi').optional().transform(val => val === '' ? undefined : val),
 	promoCode: z.string().max(20, 'Kod promocyjny jest zbyt długi').optional().transform(val => val === '' ? undefined : val),
+	nip: z
+		.string()
+		.optional()
+		.transform(val => val === '' ? undefined : val)
+		.refine((val) => val === undefined || /^[0-9]{10}$/.test(val), {
+			message: 'Podaj poprawny numer NIP z 10 cyfr',
+		})
+
 })
 
 type DeliveryFormData = z.infer<typeof deliverySchema>
@@ -76,6 +93,7 @@ const Checkout = () => {
 	const router = useRouter()
 	const createOrderMutation = trpc.order.create.useMutation()
 	const [isPending, startTransition] = useTransition()
+	const [isNipRequired, setIsNipRequired] = useState<CheckedState>()
 
 	const { register: registerDelivery, handleSubmit: handleSubmitDelivery, formState: formStateDelivery, setValue: setValueDelivery, getValues: getValuesDelivery, reset: resetDelivery } = useForm<DeliveryFormData>({
 		resolver: zodResolver(deliverySchema),
@@ -91,6 +109,7 @@ const Checkout = () => {
 			deliveryTime: 'asap',
 			comment: '',
 			promoCode: '',
+			nip: ''
 		},
 		mode: 'onChange',
 	})
@@ -104,6 +123,7 @@ const Checkout = () => {
 			deliveryTime: 'asap',
 			comment: '',
 			promoCode: '',
+			nip: ''
 		},
 		mode: 'onChange',
 	})
@@ -127,6 +147,13 @@ const Checkout = () => {
 			}
 		}
 	}, [setValueDelivery])
+
+	useEffect(() => {
+		if (!isNipRequired) {
+			setValueDelivery('nip', undefined) // Очищуємо поле nip
+			setValueTakeOut('nip', undefined) // Очищуємо поле nip
+		}
+	}, [isNipRequired, setValueDelivery, setValueTakeOut])
 
 	// Обробка перевірки адреси
 	const handleCheckAddress = async () => {
@@ -192,8 +219,6 @@ const Checkout = () => {
 				return
 			}
 
-			localStorage.setItem('deliveryAddress', '')
-
 			const order = await createOrderMutation.mutateAsync({
 				name: data.name,
 				phone: data.phone,
@@ -202,6 +227,7 @@ const Checkout = () => {
 				street: data.street,
 				buildingNumber: data.buildingNumber,
 				apartment: data.apartment,
+				nip: data.nip,
 				paymentMethod: data.paymentMethod,
 				deliveryMethod: deliveryMethod,
 				deliveryTime: data.deliveryTime === 'asap' ? new Date().toISOString() : data.deliveryTime.toISOString(),
@@ -212,15 +238,13 @@ const Checkout = () => {
 				totalAmount: state.totalAmount,
 				method: 'DELIVERY',
 				comment: data.comment,
-				promoCode: data.promoCode
+				promoCode: data.promoCode,
 			})
 
 			const { id, phone, name, deliveryMethod: method, deliveryTime: time } = order
 			setOrderData(id, phone, name, method, time.toISOString())
 
-
 			toast.success('Zamówienie złożone pomyślnie!')
-
 			startTransition(() => {
 				router.push('/thank-you')
 				resetDelivery()
@@ -233,6 +257,7 @@ const Checkout = () => {
 			setIsLoading(false)
 		}
 	}
+
 
 	const onTakeOutSubmit = async (data: TakeOutFormData) => {
 		try {
@@ -257,6 +282,7 @@ const Checkout = () => {
 				method: 'TAKE_OUT',
 				comment: data.comment,
 				promoCode: data.promoCode,
+				nip: data.nip
 			})
 
 			const { id, phone, name, deliveryMethod: method, deliveryTime: time } = order
@@ -282,6 +308,7 @@ const Checkout = () => {
 			setIsLoading(false)
 		}
 	}
+
 
 
 	return (
@@ -425,6 +452,7 @@ const Checkout = () => {
 										<p className="text-danger text-sm pt-1">{formStateDelivery.errors.comment?.message}</p>
 									)}
 								</div>
+
 								<div className='space-y-2'>
 									<h3 className="text-xl text-secondary font-semibold">Kod promocyjny</h3>
 									<Input
@@ -438,7 +466,42 @@ const Checkout = () => {
 									)}
 								</div>
 
+								<div className="space-y-2">
+									<h3 className="text-xl text-secondary font-semibold">Dane do faktury</h3>
 
+									<div className="flex items-center space-x-2">
+										<Checkbox
+											id="nipCheckboxDelivery"
+											checked={isNipRequired}
+											onCheckedChange={(checked) => setIsNipRequired(checked)}
+										/>
+										<label
+											htmlFor="nipCheckboxDelivery"
+											className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+										>
+											Dodać numer NIP
+										</label>
+									</div>
+
+
+									{isNipRequired && (
+										<div className="mt-4">
+											<label htmlFor="deliveryNip" className="text-sm font-medium text-text-secondary mt-2">
+												Numer NIP
+											</label>
+											<Input
+												id="deliveryNip"
+												placeholder="NIP"
+												type="string"
+												{...registerDelivery('nip')}
+												className={`mt-1 ${formStateDelivery.errors.nip ? 'border-danger' : ''}`}
+											/>
+											{formStateDelivery.errors.nip && (
+												<p className="text-danger text-sm pt-1">{formStateDelivery.errors.nip.message}</p>
+											)}
+										</div>
+									)}
+								</div>
 
 
 								<div className='space-y-2'>
@@ -576,6 +639,43 @@ const Checkout = () => {
 									/>
 									{formStateTakeOut.errors.promoCode && (
 										<p className="text-danger text-sm pt-1">{formStateTakeOut.errors.promoCode?.message}</p>
+									)}
+								</div>
+
+								<div className="space-y-2">
+									<h3 className="text-xl text-secondary font-semibold">Dane do faktury</h3>
+
+									<div className="flex items-center space-x-2">
+										<Checkbox
+											id="nipCheckboxTakeOut"
+											checked={isNipRequired}
+											onCheckedChange={(checked) => setIsNipRequired(checked)}
+										/>
+										<label
+											htmlFor="nipCheckboxTakeOut"
+											className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+										>
+											Dodać numer NIP
+										</label>
+									</div>
+
+
+									{isNipRequired && (
+										<div className="mt-4">
+											<label htmlFor="takeOutNip" className="text-sm font-medium text-text-secondary mt-2">
+												Numer NIP
+											</label>
+											<Input
+												id="takeOutNip"
+												placeholder="NIP"
+												type="string"
+												{...registerTakeOut('nip')}
+												className={`mt-1 ${formStateTakeOut.errors.nip ? 'border-danger' : ''}`}
+											/>
+											{formStateTakeOut.errors.nip && (
+												<p className="text-danger text-sm pt-1">{formStateTakeOut.errors.nip?.message}</p>
+											)}
+										</div>
 									)}
 								</div>
 

@@ -119,4 +119,5 @@ export interface OrderType {
 	promoCode?: string | null,
 	createdAt: Date,
 	updatedAt: Date,
+	nip?: string | null,
 }
