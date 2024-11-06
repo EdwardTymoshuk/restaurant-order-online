@@ -69,7 +69,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 	}
 
 	return (
-		<Card className={cn('w-full max-w-full border-0 shadow-none flex justify-between', {
+		<Card className={cn('w-full max-w-full border-0 shadow-none flex justify-between p-2', {
 			'flex-col': isVertical,
 			'flex-row items-center': !isVertical,
 		}, className)}>

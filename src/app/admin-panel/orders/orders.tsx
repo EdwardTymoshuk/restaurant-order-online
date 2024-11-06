@@ -294,7 +294,7 @@ const Orders = () => {
 
 			{/* Заголовки */}
 			{/* Заголовки */}
-			<div className='flex flex-1 justify-between items-center gap-4 w-full'>
+			<div className='hidden lg:flex flex-1 justify-between items-center gap-4 w-full'>
 				<div className="hidden w-full lg:flex justify-between items-center px-4 py-2 font-bold text-lg text-center">
 					<p className="w-1/12">#</p>
 					<p className="w-2/12 flex items-center justify-center gap-2" onClick={() => handleSort('deliveryMethod')} style={{ cursor: 'pointer' }}>
@@ -396,6 +396,7 @@ const Orders = () => {
 								<p className='text-base'><span className='text-secondary bold'>Imię klienta:</span> {order.name}</p>
 								<p className='text-base'><span className='text-secondary bold'>Nr telefonu:</span> {order.phone}</p>
 								<p className='text-base'><span className='text-secondary bold'>Komentarz:</span> {order.comment || 'Brak komentarza'}</p>
+								{order.nip && <p className='text-base'><span className='text-secondary bold'>Numer NIP:</span> {order.nip}</p>}
 								<p className='text-base'><span className='text-secondary bold'>Kwota:</span> {order.totalAmount} zł</p>
 
 								{order.deliveryMethod === 'DELIVERY' && (
@@ -436,7 +437,7 @@ const Orders = () => {
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Czy na pewno chcesz usunąć zamówienie?</DialogTitle>
-						<DialogDescription>Ta operacja usunie zamówienie bezpowrotnie.</DialogDescription>
+						<DialogDescription className='text-text-foreground'>Ta operacja usunie zamówienie bezpowrotnie.</DialogDescription>
 					</DialogHeader>
 					<div className="flex justify-end space-x-4">
 						<Button variant="secondary" onClick={closeDeleteDialog}>Anuluj</Button>
