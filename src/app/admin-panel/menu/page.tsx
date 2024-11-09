@@ -1,7 +1,9 @@
 'use client'
 
 import ImageWithFallback from '@/app/components/ImageWithFallback'
+import LoadingButton from '@/app/components/LoadingButton'
 import { Button } from '@/app/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/app/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
 import { Skeleton } from '@/app/components/ui/skeleton'
 import { Switch } from '@/app/components/ui/switch'
@@ -13,9 +15,11 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow
-} from "@/components/ui/table" // Імпортуємо компоненти таблиці з Shadcn
+} from "@/components/ui/table"
 import { trpc } from '@/utils/trpc'
+import { MenuItem } from '@prisma/client'
 import { useQueryClient } from '@tanstack/react-query'
+import { getQueryKey } from '@trpc/react-query'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { FiPlus } from "react-icons/fi"
@@ -25,20 +29,42 @@ const MenuTable = () => {
 	const [categoryFilter, setCategoryFilter] = useState<MenuItemCategory | 'all'>('all')
 	const [isOrderableFilter, setIsOrderableFilter] = useState<string>('all')
 	const [isRecommendedFilter, setIsRecommendedFilter] = useState<string>('all')
+	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+	const [menuItemToDelete, setMenuItemToDelete] = useState<string | null>(null)
 
 	const { data: menuItems = [], isLoading } = trpc.menu.getAllMenuItems.useQuery()
 	const queryClient = useQueryClient()
 	const router = useRouter()
+	const trpcUtils = trpc.useUtils()
+	const queryKey = getQueryKey(trpc.menu.getAllMenuItems)
 
 	const { mutateAsync: updateMenuItem } = trpc.menu.updateMenuItem.useMutation({
-		onSuccess: () => {
-			queryClient.invalidateQueries(['menu.getAllMenuItems'])
+		onMutate: async (updatedItem) => {
+			await queryClient.cancelQueries(queryKey)
+			const previousData = queryClient.getQueryData<MenuItem[]>(queryKey)
+			if (previousData) {
+				queryClient.setQueryData<MenuItem[]>(queryKey, (oldData) => {
+					if (!oldData) return oldData
+					return oldData.map((item) =>
+						item.id === updatedItem.id ? { ...item, ...updatedItem } : item
+					)
+				})
+			}
+			return { previousData }
+		},
+		onError: (error, variables, context) => {
+			if (context?.previousData) {
+				queryClient.setQueryData(queryKey, context.previousData)
+			}
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries(queryKey)
 		},
 	})
 
-	const { mutateAsync: deleteMenuItem } = trpc.menu.deleteMenuItem.useMutation({
-		onSuccess: () => {
-			queryClient.invalidateQueries(['menu.getAllMenuItems'])
+	const { mutateAsync: deleteMenuItem, isLoading: isLoadingDelete } = trpc.menu.deleteMenuItem.useMutation({
+		onSettled: () => {
+			queryClient.invalidateQueries(queryKey)
 		},
 	})
 
@@ -97,16 +123,17 @@ const MenuTable = () => {
 		return itemsFiltered
 	}, [menuItems, sortOption, categoryFilter, isOrderableFilter, isRecommendedFilter])
 
-	const handleToggleIsOrderable = async (id: string, value: boolean) => {
-		await updateMenuItem({ id, isOrderable: value })
+	const openDeleteDialog = (id: string) => {
+		setMenuItemToDelete(id)
+		setIsDeleteDialogOpen(true)
 	}
 
-	const handleToggleIsRecommended = async (id: string, value: boolean) => {
-		await updateMenuItem({ id, isRecommended: value })
-	}
-
-	const handleDelete = async (id: string) => {
-		await deleteMenuItem({ id })
+	const confirmDelete = async () => {
+		if (menuItemToDelete) {
+			await deleteMenuItem({ id: menuItemToDelete })
+			setMenuItemToDelete(null)
+			setIsDeleteDialogOpen(false)
+		}
 	}
 
 	const handleEdit = (id: string) => {
@@ -115,6 +142,14 @@ const MenuTable = () => {
 
 	const handleAddNewItem = () => {
 		router.push('/admin-panel/menu/create')
+	}
+
+	const handleToggleIsOrderable = async (id: string, isOrderable: boolean) => {
+		await updateMenuItem({ id, isOrderable })
+	}
+
+	const handleToggleIsRecommended = async (id: string, isRecommended: boolean) => {
+		await updateMenuItem({ id, isRecommended })
 	}
 
 	return (
@@ -127,7 +162,7 @@ const MenuTable = () => {
 			<div className="flex flex-col lg:flex-row gap-2 mb-4">
 				<div className='flex gap-2 w-full'>
 					<Select value={sortOption} onValueChange={setSortOption}>
-						<SelectTrigger aria-label="Sortowanie" > {/* Обмежуємо ширину для маленьких екранів */}
+						<SelectTrigger aria-label="Sortowanie" >
 							<SelectValue placeholder='Sortuj' />
 						</SelectTrigger>
 						<SelectContent >
@@ -141,14 +176,14 @@ const MenuTable = () => {
 						</SelectContent>
 					</Select>
 					<Select value={categoryFilter} onValueChange={(val) => setCategoryFilter(val as MenuItemCategory | 'all')}>
-						<SelectTrigger aria-label="Kategorie" > {/* Обмежуємо ширину для маленьких екранів */}
+						<SelectTrigger aria-label="Kategorie" >
 							<SelectValue placeholder='Filtruj' />
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value="all">Wszystkie</SelectItem>
 							{Array.from(new Set(menuItems.map(item => item.category as MenuItemCategory))).map(category => (
 								<SelectItem key={category} value={category}>
-									<span >{category}</span> {/* Додаємо скорочення */}
+									<span >{category}</span>
 								</SelectItem>
 							))}
 						</SelectContent>
@@ -181,17 +216,17 @@ const MenuTable = () => {
 			{isLoading ? (
 				<Skeleton className="h-40 w-full" />
 			) : (
-				<div className="overflow-x-auto"> {/* Додаємо горизонтальний скрол */}
+				<div className="overflow-x-auto">
 					<Table className="min-w-full">
 						<TableHeader>
 							<TableRow>
 								<TableHead className='text-text-foreground'>LP</TableHead>
-								<TableHead className='text-text-foreground hidden lg:table-cell'>Obraz</TableHead> {/* Приховуємо на малих екранах */}
+								<TableHead className='text-text-foreground hidden lg:table-cell'>Obraz</TableHead>
 								<TableHead className='text-text-foreground'>Nazwa</TableHead>
 								<TableHead className='text-text-foreground'>Kategoria</TableHead>
 								<TableHead className='text-text-foreground'>Cena</TableHead>
-								<TableHead className='text-text-foreground hidden lg:table-cell'>Aktywne</TableHead> {/* Приховуємо на малих екранах */}
-								<TableHead className='text-text-foreground hidden lg:table-cell'>Rekomendowane</TableHead> {/* Приховуємо на малих екранах */}
+								<TableHead className='text-text-foreground hidden lg:table-cell'>Aktywne</TableHead>
+								<TableHead className='text-text-foreground hidden lg:table-cell'>Rekomendowane</TableHead>
 								<TableHead className='text-text-foreground'>Akcje</TableHead>
 							</TableRow>
 						</TableHeader>
@@ -228,7 +263,7 @@ const MenuTable = () => {
 									</TableCell>
 									<TableCell className="text-center space-x-2">
 										<button className="text-info hover:text-info-light" onClick={() => handleEdit(item.id)}>Edytuj</button>
-										<button className="text-danger hover:text-danger-light" onClick={() => handleDelete(item.id)}>Usuń</button>
+										<button className="text-danger hover:text-danger-light" onClick={() => openDeleteDialog(item.id)}>Usuń</button>
 									</TableCell>
 								</TableRow>
 							))}
@@ -236,6 +271,26 @@ const MenuTable = () => {
 					</Table>
 				</div>
 			)}
+
+			{/* Діалогове вікно підтвердження видалення */}
+			<Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Czy na pewno chcesz usunąć tę pozycję menu?</DialogTitle>
+						<DialogDescription className='text-text-foreground'>
+							Ta operacja usunie pozycję bezpowrotnie.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="flex justify-end space-x-4">
+						<Button variant="secondary" onClick={() => setIsDeleteDialogOpen(false)}>
+							Anuluj
+						</Button>
+						<LoadingButton isLoading={isLoadingDelete} variant="destructive" onClick={confirmDelete}>
+							Usuń
+						</LoadingButton>
+					</div>
+				</DialogContent>
+			</Dialog>
 		</div>
 	)
 }
