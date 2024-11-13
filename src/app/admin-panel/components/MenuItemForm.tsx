@@ -2,11 +2,11 @@
 
 import ImageUploader from '@/app/admin-panel/components/ImageUploader'
 import LoadingButton from '@/app/components/LoadingButton'
+import { Checkbox } from '@/app/components/ui/checkbox'
 import { Input } from "@/app/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
 import { Textarea } from "@/app/components/ui/textarea"
 import { MenuItemCategory } from '@/app/types'
-import { Checkbox } from '@/components/ui/checkbox'
 import { menuItemCategories } from '@/config'
 import { useEffect, useState } from 'react'
 

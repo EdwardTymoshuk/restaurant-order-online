@@ -2,10 +2,10 @@
 
 import ImageWithFallback from '@/app/components/ImageWithFallback'
 import { Button } from '@/app/components/ui/button'
+import { Checkbox } from '@/app/components/ui/checkbox'
 import { Input } from '@/app/components/ui/input'
 import { Textarea } from '@/app/components/ui/textarea'
 import { useCart } from '@/app/context/CartContext'
-import { Checkbox } from '@/components/ui/checkbox'
 import { getCoordinates, isAddressInDeliveryArea } from '@/utils/deliveryUtils'
 import { trpc } from '@/utils/trpc'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -774,7 +774,8 @@ const Checkout = () => {
 													height={96}
 													src={item.image}
 													alt={item.name}
-													className="h-full w-full object-cover object-center"
+													className="object-cover object-center"
+													containerClassName='w-full h-full'
 												/>
 											</div>
 											<div className="ml-4 flex flex-1 flex-col justify-between">
