@@ -25,7 +25,7 @@ const RecommendDialog: React.FC<RecommendDialogProps> = ({ isOpen, onOpenChange,
 				<div className="flex justify-end space-x-4 mt-4">
 
 					{/* <Button variant="secondary" onClick={onContinue}>Kontynuuj <MdKeyboardArrowRight /></Button> */}
-					<LoadingButton isLoading={isLoading} variant="secondary" onClick={onContinue}>Kontynuuj <MdKeyboardArrowRight /></LoadingButton>
+					<LoadingButton isLoading={isLoading} variant="secondary" onClick={onContinue}>Kontynuj <MdKeyboardArrowRight /></LoadingButton>
 				</div>
 			</DialogContent>
 		</Dialog>

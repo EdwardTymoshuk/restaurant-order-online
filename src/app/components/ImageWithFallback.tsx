@@ -35,7 +35,7 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
 				/>
 			) : (
 				<div className={`bg-gray-200 flex items-center justify-center rounded-md ${containerClassName}`}>
-					{fallback || <GiMeal size={30} className="text-gray-600" />}
+					{fallback || <GiMeal size={32} className="text-gray-600" />}
 				</div>
 			)}
 		</>

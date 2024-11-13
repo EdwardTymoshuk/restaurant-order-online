@@ -7,7 +7,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
 import { Skeleton } from '@/app/components/ui/skeleton'
 import { Switch } from '@/app/components/ui/switch'
-import { MenuItemCategory } from '@/app/types'
 import {
 	Table,
 	TableBody,
@@ -15,7 +14,8 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow
-} from "@/components/ui/table"
+} from "@/app/components/ui/table"
+import { MenuItemCategory } from '@/app/types'
 import { trpc } from '@/utils/trpc'
 import { MenuItem } from '@prisma/client'
 import { useQueryClient } from '@tanstack/react-query'

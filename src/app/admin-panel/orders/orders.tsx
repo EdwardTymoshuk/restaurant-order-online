@@ -1,8 +1,8 @@
 import LoadingButton from '@/app/components/LoadingButton'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/app/components/ui/accordion'
 import { Button } from '@/app/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/app/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { useOrderSubscription } from '@/hooks/useOrderSubscription'
 import { formatTimeAgo } from '@/utils/formatTimeAgo'
 import { getOrderStatuses } from '@/utils/getOrderStatuses'

@@ -23,9 +23,10 @@ type MenuItemProps = Partial<MenuItemType> & {
 	image: string,
 	orientation?: 'vertical' | 'horizontal',
 	className?: string,
+	isBreakfastOnly?: boolean,
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image, orientation = 'vertical', className }) => {
+const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image, orientation = 'vertical', className, isBreakfastOnly, category }) => {
 	const [addedToCart, setAddedToCart] = useState(false) // Для анімації чеку
 	const isVertical = orientation === 'vertical'
 
@@ -117,7 +118,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 								'opacity-50 cursor-not-allowed': itemQuantity <= 1
 							})}
 							onClick={decrementQuantity}
-							disabled={itemQuantity <= 1}
+							disabled={itemQuantity <= 1 || !isBreakfastOnly && category === 'Śniadania'}
 						>
 							<FaMinus />
 						</Button>
@@ -128,6 +129,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 							variant='secondary'
 							className='h-6 w-6 flex items-center justify-center px-2'
 							onClick={incrementQuantity}
+							disabled={!isBreakfastOnly && category === 'Śniadania'}
 						>
 							<FaPlus />
 						</Button>
@@ -139,6 +141,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 							'text-success scale-105': addedToCart, // Додаємо анімацію
 						})}
 						onClick={addToCart}
+						disabled={!isBreakfastOnly && category === 'Śniadania'}
 					>
 						{addedToCart ? <FaCheck /> : <CiShoppingBasket />}
 					</Button>
