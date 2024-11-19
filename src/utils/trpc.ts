@@ -1,7 +1,7 @@
-// src/utils/trpc.ts
 import type { AppRouter } from '@/server/trpc/appRouter'
 import { httpBatchLink } from '@trpc/client'
 import { createTRPCNext } from '@trpc/next'
+import { getSession } from 'next-auth/react'
 import superjson from 'superjson'
 
 export const trpc = createTRPCNext<AppRouter>({
@@ -11,9 +11,15 @@ export const trpc = createTRPCNext<AppRouter>({
 			links: [
 				httpBatchLink({
 					url: '/api/trpc',
+					async headers() {
+						const session = await getSession() // Отримуємо сесію
+						return {
+							Authorization: session?.user?.accessToken ? `Bearer ${session.user.accessToken}` : '',
+						}
+					},
 				}),
 			],
 		}
 	},
-	ssr: false, // Встановіть true, якщо потрібен SSR
+	ssr: false,
 })

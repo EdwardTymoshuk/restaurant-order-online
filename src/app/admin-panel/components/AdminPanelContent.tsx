@@ -1,20 +1,23 @@
 'use client'
 
-import { Settings } from 'lucide-react'
+import LoadingScreen from '@/app/components/LoadingScreen'
+import { Button } from '@/app/components/ui/button'
+import { signOut, useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { FaThList } from 'react-icons/fa'
 import { ImStatsBars } from 'react-icons/im'
 import { IoRestaurant } from 'react-icons/io5'
 import { MdDashboard, MdMenu, MdSettingsSuggest } from 'react-icons/md'
-import Dashboard from '../dashboard/dashboard'
+import Dashboard from '../dashboard/page'
 import MenuTable from '../menu/page'
-import Orders from '../orders/orders'
+import Orders from '../orders/page'
+import Settings from '../settings/page'
 import Statistics from '../statistics/page'
 import { Sidebar } from './sidebar'
 import { SidebarLink } from './sidebar-link'
 
-export default function AdminPanelContent() {
+const AdminPanelContent = () => {
 	const router = useRouter()
 	const searchParams = useSearchParams()
 	const tabParam = searchParams.get('tab')
@@ -22,6 +25,13 @@ export default function AdminPanelContent() {
 	const tab = tabParam && validTabs.includes(tabParam) ? tabParam : 'dashboard'
 
 	const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+	const [isPageLoading, setIsPageLoading] = useState(false)
+
+	const [isPending, startTransition] = useTransition()
+	const { data: session } = useSession()
+
+	const displayName = session?.user?.name || session?.user?.userName || session?.user?.email || 'Użytkownik'
+	const initial = displayName.charAt(0).toUpperCase() // Перший символ імені користувача
 
 	// Закриття меню при кліку поза межами
 	useEffect(() => {
@@ -38,6 +48,20 @@ export default function AdminPanelContent() {
 		}
 	}, [isSidebarOpen])
 
+	useEffect(() => {
+		if (isPending) {
+			setIsPageLoading(true)
+		} else {
+			setIsPageLoading(false)
+		}
+	}, [isPending])
+
+	const handleNavigation = (url: string) => {
+		startTransition(() => {
+			router.push(url)
+		})
+	}
+
 	const menuItems = [
 		{ label: 'Pulpit', icon: <MdDashboard />, key: 'dashboard' },
 		{ label: 'Zamówienia', icon: <FaThList />, key: 'orders' },
@@ -47,43 +71,64 @@ export default function AdminPanelContent() {
 	]
 
 	return (
-		<div className="flex flex-col lg:flex-row min-h-screen bg-gray-100">
-			{/* Кнопка для відкриття меню на мобільних пристроях */}
-			<div className="lg:hidden flex w-full items-start p-6 bg-secondary shadow-sm shadow-primary">
-				<button
-					onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-					className="text-text-primary hover:text-primary transition-all"
-				>
-					<MdMenu size={28} />
-				</button>
-			</div>
-
-			{/* Бокове меню */}
-			<Sidebar
-				className={`fixed min-h-screen h-auto z-20 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-					} lg:translate-x-0 transition-transform duration-300 ease-in-out`}
-				onClose={() => setIsSidebarOpen(false)} // Закриття через кнопку
-			>
-				{menuItems.map((item) => (
-					<SidebarLink
-						key={item.key}
-						href={`/admin-panel?tab=${item.key}`}
-						isActive={tab === item.key}
-						onClick={() => setIsSidebarOpen(false)} // Закриваємо меню після вибору пункту
+		<>
+			{isPageLoading && <LoadingScreen fullScreen />}
+			<div className="flex flex-col lg:flex-row min-h-screen bg-gray-100">
+				{/* Кнопка для відкриття меню на мобільних пристроях */}
+				<div className="lg:hidden flex justify-between w-full items-center p-4 bg-secondary shadow-sm shadow-primary">
+					<button
+						onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+						className="text-text-primary hover:text-primary transition-all"
 					>
-						{item.icon} {item.label}
-					</SidebarLink>
-				))}
-			</Sidebar>
+						<MdMenu size={28} />
+					</button>
+					<div className="flex items-center gap-4">
+						<div className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-text-primary text-xl font-bold">
+							{initial}
+						</div>
+						<div className='text-center'>
+							<h3 className='text-text-primary'>Cześć, {displayName}!</h3>
+							<Button
+								onClick={() => signOut()}
+								className="text-sm text-center text-danger w-full"
+								variant='link'
+								size='link'
+							>
+								Wyloguj się
+							</Button>
+						</div>
+					</div>
+				</div>
 
-			{/* Контент */}
-			<main className="flex-1 p-2 md:p-4 lg:p-8 lg:pl-72">
-				{tab === 'dashboard' && <Dashboard />}
-				{tab === 'orders' && <Orders />}
-				{tab === 'menu' && <MenuTable />}
-				{tab === 'statistics' && <Statistics />}
-				{tab === 'settings' && <Settings />}
-			</main>
-		</div>
+				{/* Бокове меню */}
+				<Sidebar
+					className={`fixed min-h-screen h-auto z-20 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+						} lg:translate-x-0 transition-transform duration-300 ease-in-out`}
+					onClose={() => setIsSidebarOpen(false)} // Закриття через кнопку
+				>
+					{menuItems.map((item) => (
+						<SidebarLink
+							key={item.key}
+							href={`/admin-panel?tab=${item.key}`}
+							isActive={tab === item.key}
+							onClick={() => setIsSidebarOpen(false)} // Закриваємо меню після вибору пункту
+						>
+							{item.icon} {item.label}
+						</SidebarLink>
+					))}
+				</Sidebar>
+
+				{/* Контент */}
+				<main className="flex-1 p-2 md:p-4 lg:p-8 lg:pl-72">
+					{tab === 'dashboard' && <Dashboard />}
+					{tab === 'orders' && <Orders />}
+					{tab === 'menu' && <MenuTable />}
+					{tab === 'statistics' && <Statistics />}
+					{tab === 'settings' && <Settings />}
+				</main>
+			</div>
+		</>
 	)
 }
+
+export default AdminPanelContent

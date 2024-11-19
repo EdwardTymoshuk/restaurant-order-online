@@ -1,10 +1,10 @@
-// src/server/trpc.ts
-import { initTRPC } from '@trpc/server'
+// src/server/trpc/trpc.ts
+import { TRPCError, initTRPC } from '@trpc/server'
 import superjson from 'superjson'
+import { Context } from './context'
 
-// Ініціалізація tRPC з superjson
-const t = initTRPC.create({
-	transformer: superjson, // Для підтримки складних типів даних, як-от Date
+const t = initTRPC.context<Context>().create({
+	transformer: superjson,
 	errorFormatter({ shape }) {
 		return shape
 	},
@@ -12,3 +12,9 @@ const t = initTRPC.create({
 
 export const router = t.router
 export const publicProcedure = t.procedure
+export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+	if (!ctx.user) {
+		throw new TRPCError({ code: "UNAUTHORIZED" })
+	}
+	return next({ ctx })
+})

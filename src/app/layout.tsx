@@ -40,7 +40,7 @@ function RootLayout({
             children
           )}
         </Providers>
-        <Footer />
+        {!isAdminPanel && <Footer />}
       </body>
     </html>
   )

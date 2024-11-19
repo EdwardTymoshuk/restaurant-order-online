@@ -7,6 +7,7 @@ import { MenuProvider } from '@/app/context/MenuContext'
 import { OrderProvider } from '@/app/context/OrderContext'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { SessionProvider } from 'next-auth/react'
 import { ReactNode, useState } from 'react'
 import { Toaster } from 'sonner'
 import { NotificationProvider } from '../context/NotificationContext'
@@ -16,19 +17,21 @@ const Providers: React.FC<{ children: ReactNode }> = ({ children }) => {
 
 	return (
 		<QueryClientProvider client={queryClient}>
-			<CartProvider>
-				<CheckoutProvider>
-					<MenuProvider>
-						<OrderProvider>
-							<NotificationProvider>
-								{children}
-							</NotificationProvider>
-						</OrderProvider>
-					</MenuProvider>
-				</CheckoutProvider>
-			</CartProvider>
-			<Toaster position='top-center' richColors />
-			<ReactQueryDevtools initialIsOpen={false} />
+			<SessionProvider>
+				<CartProvider>
+					<CheckoutProvider>
+						<MenuProvider>
+							<OrderProvider>
+								<NotificationProvider>
+									{children}
+								</NotificationProvider>
+							</OrderProvider>
+						</MenuProvider>
+					</CheckoutProvider>
+				</CartProvider>
+				<Toaster position='top-center' richColors />
+				<ReactQueryDevtools initialIsOpen={false} />
+			</SessionProvider>
 		</QueryClientProvider>
 	)
 }
