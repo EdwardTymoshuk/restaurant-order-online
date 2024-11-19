@@ -1,4 +1,5 @@
 import LoadingButton from '@/app/components/LoadingButton'
+import LoadingScreen from '@/app/components/LoadingScreen'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/app/components/ui/accordion'
 import { Button } from '@/app/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/app/components/ui/dialog'
@@ -254,7 +255,7 @@ const Orders = () => {
 	}
 
 	// Перевірка на завантаження або помилку
-	if (isLoading) return <div>Loading...</div>
+	if (isLoading) return <LoadingScreen fullScreen />
 	if (error) return <div>Something went wrong: {error.message}</div>
 
 	return (

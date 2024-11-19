@@ -35,7 +35,6 @@ const MenuTable = () => {
 	const { data: menuItems = [], isLoading } = trpc.menu.getAllMenuItems.useQuery()
 	const queryClient = useQueryClient()
 	const router = useRouter()
-	const trpcUtils = trpc.useUtils()
 	const queryKey = getQueryKey(trpc.menu.getAllMenuItems)
 
 	const { mutateAsync: updateMenuItem } = trpc.menu.updateMenuItem.useMutation({
