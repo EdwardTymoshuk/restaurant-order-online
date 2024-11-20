@@ -1,9 +1,9 @@
 import LoadingButton from '@/app/components/LoadingButton'
-import LoadingScreen from '@/app/components/LoadingScreen'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/app/components/ui/accordion'
 import { Button } from '@/app/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/app/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
+import { Skeleton } from '@/app/components/ui/skeleton'
 import { useOrderSubscription } from '@/hooks/useOrderSubscription'
 import { formatTimeAgo } from '@/utils/formatTimeAgo'
 import { getOrderStatuses } from '@/utils/getOrderStatuses'
@@ -254,8 +254,19 @@ const Orders = () => {
 		return `nowych zamówień`
 	}
 
-	// Перевірка на завантаження або помилку
-	if (isLoading) return <LoadingScreen fullScreen />
+	if (isLoading) return (
+		<div className="w-full p-4">
+			{/* Скелетон для заголовків */}
+			<Skeleton className="w-1/4 h-8 mb-4" />
+			{/* Скелетон для таблиці */}
+			<div className="space-y-2">
+				{[...Array(3)].map((_, index) => (
+					<Skeleton key={index} className="w-full h-12" />
+				))}
+			</div>
+		</div>
+	)
+
 	if (error) return <div>Something went wrong: {error.message}</div>
 
 	return (
