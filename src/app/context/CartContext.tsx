@@ -10,9 +10,20 @@ interface CartItem {
 	image: string
 }
 
-interface CartState {
+interface DiscountInfo {
+	code: string
+	discountValue: number
+	discountType: 'PERCENTAGE' | 'FIXED'
+}
+
+export interface CartState {
 	items: CartItem[]
 	totalAmount: number
+	finalAmount: number
+	deliveryDiscount?: DiscountInfo | null // Знижка для доставки
+	takeOutDiscount?: DiscountInfo | null // Знижка для самовивозу
+	deliveryCost: number // Додаємо вартість доставки
+	deliveryMethod: 'DELIVERY' | 'TAKE_OUT' // Додаємо метод доставки
 }
 
 type CartAction =
@@ -22,58 +33,114 @@ type CartAction =
 	| { type: 'DECREASE_QUANTITY'; payload: string }
 	| { type: 'CLEAR_CART' }
 	| { type: 'SET_CART'; payload: CartState }
+	| { type: 'SET_DELIVERY_DISCOUNT'; payload: DiscountInfo | null }
+	| { type: 'SET_TAKEOUT_DISCOUNT'; payload: DiscountInfo | null }
+	| { type: 'REMOVE_DELIVERY_DISCOUNT' }
+	| { type: 'REMOVE_TAKEOUT_DISCOUNT' }
+	| { type: 'SET_DELIVERY_COST'; payload: number }
+	| { type: 'SET_DELIVERY_METHOD'; payload: 'DELIVERY' | 'TAKE_OUT' }
+
 
 const initialState: CartState = {
 	items: [],
 	totalAmount: 0,
+	finalAmount: 0,
+	deliveryDiscount: null,
+	takeOutDiscount: null,
+	deliveryCost: 0,
+	deliveryMethod: 'TAKE_OUT', // Значення за замовчуванням
 }
 
 const initCartState = (): CartState => {
-	// Перевірка, чи ми на клієнтській стороні
 	if (typeof window !== 'undefined') {
 		const storedCart = localStorage.getItem('cart')
 		if (storedCart) {
 			try {
 				const parsedCart = JSON.parse(storedCart)
-				console.log('Initializing cart from storage...', parsedCart)
-				return parsedCart
+				return {
+					...parsedCart,
+					finalAmount: calculateFinalAmount(parsedCart),
+				}
 			} catch (error) {
 				console.error('Error parsing stored cart:', error)
 				return initialState
 			}
 		}
 	}
-	// Якщо ми на сервері або немає збережених даних у localStorage
 	return initialState
 }
+
+const calculateFinalAmount = (state: CartState): number => {
+	let discount = 0
+	const { deliveryDiscount, takeOutDiscount, totalAmount, deliveryCost, deliveryMethod } = state
+
+	if (deliveryMethod === 'DELIVERY' && deliveryDiscount) {
+		discount =
+			deliveryDiscount.discountType === 'PERCENTAGE'
+				? (totalAmount * deliveryDiscount.discountValue) / 100
+				: deliveryDiscount.discountValue
+	} else if (deliveryMethod === 'TAKE_OUT' && takeOutDiscount) {
+		discount =
+			takeOutDiscount.discountType === 'PERCENTAGE'
+				? (totalAmount * takeOutDiscount.discountValue) / 100
+				: takeOutDiscount.discountValue
+	}
+
+	let finalAmount = totalAmount - discount
+
+	if (deliveryMethod === 'DELIVERY') {
+		finalAmount += deliveryCost // Додаємо вартість доставки
+	}
+
+	return finalAmount > 0 ? finalAmount : 0
+}
+
+
+
 
 const cartReducer = (state: CartState, action: CartAction): CartState => {
 	switch (action.type) {
 		case 'ADD_ITEM': {
 			const itemIndex = state.items.findIndex(item => item.id === action.payload.id)
+			let updatedItems
+			let updatedTotalAmount
+
 			if (itemIndex >= 0) {
-				const updatedItems = [...state.items]
+				updatedItems = [...state.items]
 				updatedItems[itemIndex].quantity += action.payload.quantity
-				return {
-					...state,
-					items: updatedItems,
-					totalAmount: state.totalAmount + action.payload.price * action.payload.quantity,
-				}
 			} else {
-				return {
-					...state,
-					items: [...state.items, action.payload],
-					totalAmount: state.totalAmount + action.payload.price * action.payload.quantity,
-				}
+				updatedItems = [...state.items, action.payload]
+			}
+
+			updatedTotalAmount = state.totalAmount + action.payload.price * action.payload.quantity
+
+			const newState = {
+				...state,
+				items: updatedItems,
+				totalAmount: updatedTotalAmount,
+			}
+
+			return {
+				...newState,
+				finalAmount: calculateFinalAmount(newState),
 			}
 		}
 		case 'REMOVE_ITEM': {
 			const itemToRemove = state.items.find(item => item.id === action.payload)
 			if (!itemToRemove) return state
-			return {
+
+			const updatedItems = state.items.filter(item => item.id !== action.payload)
+			const updatedTotalAmount = state.totalAmount - (itemToRemove.price * itemToRemove.quantity)
+
+			const newState = {
 				...state,
-				items: state.items.filter(item => item.id !== action.payload),
-				totalAmount: state.totalAmount - (itemToRemove.price * itemToRemove.quantity),
+				items: updatedItems,
+				totalAmount: updatedTotalAmount,
+			}
+
+			return {
+				...newState,
+				finalAmount: calculateFinalAmount(newState),
 			}
 		}
 		case 'INCREASE_QUANTITY': {
@@ -84,10 +151,18 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 			)
 			const item = state.items.find(item => item.id === action.payload)
 			if (!item) return state
-			return {
+
+			const updatedTotalAmount = state.totalAmount + item.price
+
+			const newState = {
 				...state,
 				items: updatedItems,
-				totalAmount: state.totalAmount + item.price,
+				totalAmount: updatedTotalAmount,
+			}
+
+			return {
+				...newState,
+				finalAmount: calculateFinalAmount(newState),
 			}
 		}
 		case 'DECREASE_QUANTITY': {
@@ -98,25 +173,107 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 			)
 			const item = state.items.find(item => item.id === action.payload)
 			if (!item) return state
-			return {
+
+			const updatedTotalAmount = state.totalAmount - item.price
+
+			const newState = {
 				...state,
 				items: updatedItems,
-				totalAmount: state.totalAmount - item.price,
+				totalAmount: updatedTotalAmount,
+			}
+
+			return {
+				...newState,
+				finalAmount: calculateFinalAmount(newState),
 			}
 		}
 		case 'CLEAR_CART': {
-			return {
+			const newState = {
+				...state,
 				items: [],
 				totalAmount: 0,
+				deliveryDiscount: null,
+				takeOutDiscount: null,
+			}
+
+			return {
+				...newState,
+				finalAmount: 0,
 			}
 		}
 		case 'SET_CART': {
-			return action.payload
+			return {
+				...action.payload,
+				finalAmount: calculateFinalAmount(action.payload),
+			}
+		}
+		case 'SET_DELIVERY_DISCOUNT': {
+			const newState = {
+				...state,
+				deliveryDiscount: action.payload,
+				takeOutDiscount: null, // Знімаємо знижку для самовивозу
+			}
+			return {
+				...newState,
+				finalAmount: calculateFinalAmount(newState),
+			}
+		}
+		case 'SET_TAKEOUT_DISCOUNT': {
+			const newState = {
+				...state,
+				takeOutDiscount: action.payload,
+				deliveryDiscount: null, // Знімаємо знижку для доставки
+			}
+			return {
+				...newState,
+				finalAmount: calculateFinalAmount(newState),
+			}
+		}
+		case 'REMOVE_DELIVERY_DISCOUNT': {
+			const newState = {
+				...state,
+				deliveryDiscount: null,
+			}
+			return {
+				...newState,
+				finalAmount: calculateFinalAmount(newState),
+			}
+		}
+		case 'REMOVE_TAKEOUT_DISCOUNT': {
+			const newState = {
+				...state,
+				takeOutDiscount: null,
+			}
+			return {
+				...newState,
+				finalAmount: calculateFinalAmount(newState),
+			}
+		}
+		case 'SET_DELIVERY_COST': {
+			const newState = {
+				...state,
+				deliveryCost: action.payload,
+			}
+			return {
+				...newState,
+				finalAmount: calculateFinalAmount(newState),
+			}
+		}
+		case 'SET_DELIVERY_METHOD': {
+			const newState = {
+				...state,
+				deliveryMethod: action.payload,
+			}
+			return {
+				...newState,
+				finalAmount: calculateFinalAmount(newState),
+			}
 		}
 		default:
 			return state
 	}
 }
+
 
 const CartContext = createContext<{ state: CartState; dispatch: React.Dispatch<CartAction> } | undefined>(undefined)
 
@@ -125,7 +282,6 @@ const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 	const [state, dispatch] = useReducer(cartReducer, initialState, initCartState)
 
 	useEffect(() => {
-		console.log('Saving cart state to storage:', state)
 		localStorage.setItem('cart', JSON.stringify(state))
 	}, [state])
 

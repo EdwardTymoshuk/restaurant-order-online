@@ -12,7 +12,6 @@ import {
 } from "@/app/components/ui/select"
 import { Skeleton } from '@/app/components/ui/skeleton'
 import { MenuItemCategory, MenuItemType } from '@/app/types'
-import { CAROUSEL_MAIN_IMAGES } from '@/config'
 import { trpc } from '@/utils/trpc'
 import Autoplay from "embla-carousel-autoplay"
 import Image from 'next/image'
@@ -27,6 +26,9 @@ const Order = () => {
 	const [isBreakfastOnly, setIsBreakfastOnly] = useState<boolean>(false)
 
 	const { data: menuItems = [], isLoading } = trpc.menu.getMenuItems.useQuery()
+	const { data: carouselImages = [], isLoading: isLoadingCarouselImages } = trpc.banner.getAllBanners.useQuery()
+	const { data: settings } = trpc.settings.getSettings.useQuery()
+	console.log(settings)
 
 	// Перевірка часу для обмеження доступу до меню
 	useEffect(() => {
@@ -90,11 +92,12 @@ const Order = () => {
 				]}
 			>
 				<CarouselContent className='h-full'>
-					{CAROUSEL_MAIN_IMAGES.map((item, index) => (
+					{isLoadingCarouselImages && <Skeleton className='w-[1056px] h-[384px]' />}
+					{carouselImages.map((item, index) => (
 						<CarouselItem key={index} className='relative '>
 							<div className='relative h-96 rounded-md'>
 								<Image
-									src={item.src}
+									src={item.imageUrl}
 									alt='Carousel image'
 									width={1056}
 									height={384}
@@ -109,6 +112,10 @@ const Order = () => {
 			</Carousel>
 
 			<PageSubHeader title='Wybierz na co masz dziś ochotę' />
+
+			{!settings?.isOrderingOpen &&
+				<h4 className='text-danger font-bold text-center text-2xl'>Zamawianie online jest chwilowo niedostępne. <br />W celu zamówienia zadzwoń do nas lub odwiedź nas osobiście.</h4>
+			}
 
 			<div className="flex gap-4 mb-4 w-1/2">
 				<Select
@@ -191,6 +198,7 @@ const Order = () => {
 												category={item.category}
 												orientation='horizontal'
 												isBreakfastOnly={isBreakfastOnly}
+												isOrderingActive={settings?.isOrderingOpen}
 											/>
 										))}
 								</AccordionContent>

@@ -17,6 +17,7 @@ export const orderRouter = router({
 				quantity: z.number(),
 			})),
 			totalAmount: z.number(),
+			finalAmount: z.number(),
 			method: z.enum(['DELIVERY', 'TAKE_OUT']),
 			city: z.string().optional(),
 			postalCode: z.string().optional(),
@@ -35,6 +36,7 @@ export const orderRouter = router({
 				deliveryTime: new Date(input.deliveryTime),
 				deliveryMethod: input.deliveryMethod,
 				totalAmount: input.totalAmount,
+				finalAmount: input.finalAmount,
 				status: OrderStatus.PENDING,
 				items: {
 					create: input.items.map(item => ({
@@ -43,7 +45,11 @@ export const orderRouter = router({
 					})),
 				},
 				comment: input.comment,
-				promoCode: input.promoCode,
+				...(input.promoCode && {
+					promoCode: {
+						connect: { code: input.promoCode }, // Використовуємо connect для зв'язку з існуючим промокодом
+					},
+				}),
 				nip: input.nip
 			}
 
@@ -72,6 +78,7 @@ export const orderRouter = router({
 						menuItem: true,
 					},
 				},
+				promoCode: true,
 			},
 			orderBy: {
 				createdAt: 'desc',
@@ -84,7 +91,8 @@ export const orderRouter = router({
 					include: {
 						menuItem: true
 					}
-				}
+				},
+				promoCode: true,
 			}
 		}>[]
 	}),

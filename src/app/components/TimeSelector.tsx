@@ -20,13 +20,13 @@ export function TimeSelector({
 				selected={selectedTime || undefined} // Зміна для дозволу null
 				onChange={onTimeChange}
 				showTimeSelect
-				showTimeSelectOnly
 				timeIntervals={30}
 				timeCaption="Wybierz godzinę odbioru"
 				dateFormat="HH:mm"
 				timeFormat="HH:mm"
 				className="flex text-center py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary w-full"
 				filterTime={filterTime}
+				minDate={new Date()} // Заборона вибору минулих дат
 			/>
 		</div>
 	)

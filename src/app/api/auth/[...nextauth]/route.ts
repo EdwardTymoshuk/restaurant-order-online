@@ -9,7 +9,7 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 const JWT_SECRET = process.env.JWT_SECRET!
 
 // Налаштування NextAuth
-const authOptions: AuthOptions = {
+export const authOptions: AuthOptions = {
 	providers: [
 		CredentialsProvider({
 			name: 'Credentials',
@@ -32,8 +32,7 @@ const authOptions: AuthOptions = {
 				if (user && bcrypt.compareSync(credentials.password, user.password)) {
 					const accessToken = jwt.sign(
 						{ id: user.id, role: user.role },
-						JWT_SECRET,
-						{ expiresIn: '1h' }
+						JWT_SECRET
 					)
 					return { id: user.id, name: user.username || user.email, role: user.role, accessToken }
 				}

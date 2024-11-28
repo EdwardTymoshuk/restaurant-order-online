@@ -3,6 +3,7 @@
 
 import Header from '@/app/components/Header'
 import MainContainer from '@/app/components/MainContainer'
+import useLogoutOnTabClose from '@/hooks/useLogoutOnTabClose'
 import { trpc } from '@/utils/trpc'
 import { Inter, Roboto } from 'next/font/google'
 import { usePathname, useSearchParams } from 'next/navigation'
@@ -26,7 +27,6 @@ function RootLayout({
 
   const [isLoading, setIsLoading] = useState(true)
 
-  console.log(pathname)
   // Перевірка, чи шлях містить "admin-panel"
   const isAdminPanel = pathname?.startsWith('/admin-panel')
   const isCheckout = pathname?.startsWith('/checkout')
@@ -45,6 +45,8 @@ function RootLayout({
       return () => clearTimeout(timer)
     }
   }, [shouldShowLoadingScreen])
+
+  useLogoutOnTabClose()
 
   if (isLoading && shouldShowLoadingScreen) {
     return (
