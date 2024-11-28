@@ -18,6 +18,7 @@ import { BsCashCoin, BsFillBootstrapFill } from 'react-icons/bs'
 import { FaApple, FaGoogle } from 'react-icons/fa'
 import { FaRegCreditCard } from 'react-icons/fa6'
 import { MdKeyboardArrowLeft, MdOutlineDeliveryDining, MdOutlineRestaurantMenu } from 'react-icons/md'
+import { RxCross2 } from "react-icons/rx"
 import { toast } from 'sonner'
 import { z } from 'zod'
 import LoadingButton from '../../components/LoadingButton'
@@ -88,12 +89,23 @@ const Checkout = () => {
 	const { setOrderData } = useOrder()
 	const [deliveryMethod, setDeliveryMethod] = useState<'DELIVERY' | 'TAKE_OUT'>('TAKE_OUT')
 	const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null)
+	const [isLoadingPromoCode, setIsLoadingPromoCode] = useState(false)
 	const [isLoading, setIsLoading] = useState(false)
 
 	const router = useRouter()
 	const createOrderMutation = trpc.order.create.useMutation()
 	const [isPending, startTransition] = useTransition()
 	const [isNipRequired, setIsNipRequired] = useState<CheckedState>()
+
+	const [deliveryErrorMessage, setDeliveryErrorMessage] = useState('')
+	const [takeOutErrorMessage, setTakeOutErrorMessage] = useState('')
+
+	const markPromoCodeAsUsed = trpc.promoCode.markPromoCodeAsUsed.useMutation()
+
+	const { data: settingsData, isLoading: isSettingsLoading } = trpc.settings.getSettings.useQuery()
+
+	const trpcContext = trpc.useUtils()
+
 
 	const { register: registerDelivery, handleSubmit: handleSubmitDelivery, formState: formStateDelivery, setValue: setValueDelivery, getValues: getValuesDelivery, reset: resetDelivery } = useForm<DeliveryFormData>({
 		resolver: zodResolver(deliverySchema),
@@ -134,6 +146,17 @@ const Checkout = () => {
 			setDeliveryMethod(savedMethod)
 		}
 	}, [])
+
+	useEffect(() => {
+		if (settingsData) {
+			dispatch({ type: 'SET_DELIVERY_COST', payload: settingsData.deliveryCost || 0 })
+		}
+	}, [settingsData])
+
+	// Встановлюємо метод доставки при зміні активної форми
+	useEffect(() => {
+		dispatch({ type: 'SET_DELIVERY_METHOD', payload: deliveryMethod })
+	}, [deliveryMethod])
 
 	useEffect(() => {
 		const deliveryAddress = localStorage.getItem('deliveryAddress')
@@ -202,6 +225,66 @@ const Checkout = () => {
 
 	}
 
+	const handleApplyPromoCode = async (activeForm: 'delivery' | 'takeOut') => {
+		// Скидаємо попередні помилки
+		if (activeForm === 'delivery') {
+			setDeliveryErrorMessage('')
+		} else {
+			setTakeOutErrorMessage('')
+		}
+
+		setIsLoadingPromoCode(true) // Увімкнути індикатор завантаження
+
+		const promoCode =
+			activeForm === 'delivery'
+				? getValuesDelivery('promoCode')
+				: getValuesTakeOut('promoCode')
+		// Перевірка наявності коду
+		if (!promoCode) {
+			if (activeForm === 'delivery') {
+				setDeliveryErrorMessage('Wprowadź kod promocyjny.')
+			} else {
+				setTakeOutErrorMessage('Wprowadź kod promocyjny.')
+			}
+			setIsLoadingPromoCode(false)
+			return
+		}
+
+		try {
+			const foundCode = await trpcContext.client.promoCode.validatePromoCode.query({ promoCode })
+			if (foundCode) {
+				// Якщо промокод валідний, оновлюємо глобальний стан
+				dispatch({
+					type:
+						activeForm === 'delivery'
+							? 'SET_DELIVERY_DISCOUNT'
+							: 'SET_TAKEOUT_DISCOUNT',
+					payload: {
+						code: foundCode.code,
+						discountValue: foundCode.discountValue,
+						discountType: foundCode.discountType,
+					},
+				})
+
+				toast.success(
+					`Kod ${promoCode} został zastosowany! Zniżka: ${foundCode.discountValue
+					}${foundCode.discountType === 'PERCENTAGE' ? '%' : 'zł'}.`
+				)
+				activeForm === 'delivery' ? setValueDelivery('promoCode', '') : setValueTakeOut('promoCode', '')
+			}
+		} catch (error: any) {
+			// Обробка помилок
+			if (activeForm === 'delivery') {
+				setDeliveryErrorMessage(error.message || 'Błąd podczas weryfikacji kodу.')
+			} else {
+				setTakeOutErrorMessage(error.message || 'Błąd podczas вериfikacji коду.')
+			}
+			toast.error(error.message || 'Błąd podczas вериfikacji коду.')
+		} finally {
+			setIsLoadingPromoCode(false) // Вимкнути індикатор завантаження
+		}
+	}
+
 	const onDeliverySubmit = async (data: DeliveryFormData) => {
 		try {
 			setIsLoading(true)
@@ -219,6 +302,10 @@ const Checkout = () => {
 				return
 			}
 
+			const promoCode = state.deliveryDiscount?.code // Отримуємо промокод зі стану
+			const finalAmount = state.finalAmount
+			const totalAmount = state.totalAmount
+
 			const order = await createOrderMutation.mutateAsync({
 				name: data.name,
 				phone: data.phone,
@@ -235,14 +322,20 @@ const Checkout = () => {
 					menuItemId: item.id,
 					quantity: item.quantity,
 				})),
-				totalAmount: state.totalAmount,
+				totalAmount: totalAmount,
+				finalAmount: finalAmount,
 				method: 'DELIVERY',
 				comment: data.comment,
-				promoCode: data.promoCode,
+				promoCode: promoCode,
 			})
 
 			const { id, phone, name, deliveryMethod: method, deliveryTime: time } = order
 			setOrderData(id, phone, name, method, time.toISOString())
+
+
+			if (promoCode) {
+				await markPromoCodeAsUsed.mutateAsync({ promoCode: promoCode })
+			}
 
 			toast.success('Zamówienie złożone pomyślnie!')
 			startTransition(() => {
@@ -268,6 +361,14 @@ const Checkout = () => {
 				return
 			}
 
+			console.log('State: ', state)
+
+			const promoCode = state.takeOutDiscount?.code
+			const finalAmount = state.finalAmount
+			const totalAmount = state.totalAmount
+
+			console.log(state)
+
 			const order = await createOrderMutation.mutateAsync({
 				name: data.name,
 				phone: data.phone,
@@ -278,15 +379,20 @@ const Checkout = () => {
 					menuItemId: item.id,
 					quantity: item.quantity,
 				})),
-				totalAmount: state.totalAmount,
+				totalAmount: totalAmount,
+				finalAmount: finalAmount,
 				method: 'TAKE_OUT',
 				comment: data.comment,
-				promoCode: data.promoCode,
+				promoCode: promoCode,
 				nip: data.nip
 			})
 
 			const { id, phone, name, deliveryMethod: method, deliveryTime: time } = order
 			setOrderData(id, phone, name, method, time.toISOString())
+
+			if (promoCode) {
+				await markPromoCodeAsUsed.mutateAsync({ promoCode: promoCode })
+			}
 
 			toast.success('Zamówienie złożone pomyślnie!')
 
@@ -308,8 +414,6 @@ const Checkout = () => {
 			setIsLoading(false)
 		}
 	}
-
-
 
 	return (
 		<div className="container mx-auto p-4">
@@ -338,7 +442,7 @@ const Checkout = () => {
 							<div className="space-y-4 w-full">
 								<div className="space-y-2">
 									<h3 className="text-xl text-secondary font-semibold">Czas dostawy</h3>
-									<TimeDeliverySwitcher onTimeChange={handleTimeChange} />
+									<TimeDeliverySwitcher onTimeChange={handleTimeChange} isDelivery={true} />
 								</div>
 								<div className='space-y-2'>
 									<h3 className="text-xl text-secondary font-semibold">Dane do dostawy</h3>
@@ -453,16 +557,31 @@ const Checkout = () => {
 									)}
 								</div>
 
-								<div className='space-y-2'>
+								<div className="space-y-2">
 									<h3 className="text-xl text-secondary font-semibold">Kod promocyjny</h3>
-									<Input
-										id='promoCode'
-										placeholder="Kod promocyjny"
-										{...registerDelivery('promoCode')}
-										className={`mt-1 ${formStateDelivery.errors.promoCode ? 'border-danger' : ''}`}
-									/>
-									{formStateDelivery.errors.promoCode && (
-										<p className="text-danger text-sm pt-1">{formStateDelivery.errors.promoCode?.message}</p>
+									<div className="flex gap-2 items-center">
+										<Input
+											id="promoCode"
+											placeholder="Kod promocyjny"
+											{...registerDelivery('promoCode')}
+											className={`${formStateDelivery.errors.promoCode ? 'border-danger' : ''}`}
+										/>
+										<LoadingButton variant='secondary' isLoading={isLoadingPromoCode} onClick={() => handleApplyPromoCode('delivery')}>Dodaj</LoadingButton>
+									</div>
+									{deliveryErrorMessage && (
+										<p className="text-danger text-sm pt-1">{deliveryErrorMessage}</p>
+									)}
+									{state.deliveryDiscount && (
+										<div className="flex mt-2 text-sm text-secondary bg-primary p-2 w-fit rounded-lg items-center">
+											{state.deliveryDiscount.code} : -{state.deliveryDiscount.discountValue}
+											{state.deliveryDiscount.discountType === 'PERCENTAGE' ? '%' : 'zł'}
+											<button
+												onClick={() => dispatch({ type: 'REMOVE_DELIVERY_DISCOUNT' })}
+												className="ml-2 text-danger text-sm"
+											>
+												<RxCross2 />
+											</button>
+										</div>
 									)}
 								</div>
 
@@ -584,7 +703,7 @@ const Checkout = () => {
 								<div className='space-y-2'>
 									<div className="space-y-2">
 										<h3 className="text-xl text-secondary font-semibold">Czas dostawy</h3>
-										<TimeDeliverySwitcher onTimeChange={handleTimeChange} />
+										<TimeDeliverySwitcher onTimeChange={handleTimeChange} isDelivery={false} />
 									</div>
 									<h3 className="text-xl text-secondary font-semibold">Dane do dostawy</h3>
 									<div className="flex gap-4 w-full">
@@ -629,18 +748,34 @@ const Checkout = () => {
 										<p className="text-danger text-sm pt-1">{formStateTakeOut.errors.comment?.message}</p>
 									)}
 								</div>
-								<div className='space-y-2'>
+								<div className="space-y-2">
 									<h3 className="text-xl text-secondary font-semibold">Kod promocyjny</h3>
-									<Input
-										id='promoCode'
-										placeholder="Kod promocyjny"
-										{...registerTakeOut('promoCode')}
-										className={`mt-1 ${formStateTakeOut.errors.promoCode ? 'border-danger' : ''}`}
-									/>
-									{formStateTakeOut.errors.promoCode && (
-										<p className="text-danger text-sm pt-1">{formStateTakeOut.errors.promoCode?.message}</p>
+									<div className="flex gap-2 items-center">
+										<Input
+											id="promoCode"
+											placeholder="Kod promocyjny"
+											{...registerTakeOut('promoCode')}
+											className={`${formStateTakeOut.errors.promoCode ? 'border-danger' : ''}`}
+										/>
+										<LoadingButton variant='secondary' isLoading={isLoadingPromoCode} onClick={() => handleApplyPromoCode('takeOut')}>Dodaj</LoadingButton>
+									</div>
+									{takeOutErrorMessage && (
+										<p className="text-danger text-sm pt-1">{takeOutErrorMessage}</p>
+									)}
+									{state.takeOutDiscount && (
+										<div className="flex mt-2 text-sm text-secondary bg-primary p-2 w-fit rounded-lg items-center">
+											{state.takeOutDiscount.code} : -{state.takeOutDiscount.discountValue}
+											{state.takeOutDiscount.discountType === 'PERCENTAGE' ? '%' : 'zł'}
+											<button
+												onClick={() => dispatch({ type: 'REMOVE_TAKEOUT_DISCOUNT' })}
+												className="ml-2 text-danger text-sm"
+											>
+												<RxCross2 />
+											</button>
+										</div>
 									)}
 								</div>
+
 
 								<div className="space-y-2">
 									<h3 className="text-xl text-secondary font-semibold">Dane do faktury</h3>
@@ -790,10 +925,39 @@ const Checkout = () => {
 										</li>
 									))}
 								</ul>
-								<div className="flex font-sans justify-between text-xl font-bold text-text-secondary">
-									<span>Total</span>
-									<span>{state.totalAmount} zł</span>
+								<div className="space-y-4">
+									{/* Ціна за товари */}
+									<div className="flex font-sans justify-between text-lg text-text-secondary">
+										<span>Wartość zamówienia</span>
+										<span>{state.totalAmount.toFixed(2)} zł</span>
+									</div>
+									{deliveryMethod === 'DELIVERY' &&
+										<div className="flex font-sans justify-between text-lg text-text-secondary">
+											<span>Koszt dostawy</span>
+											<span>{state.deliveryCost?.toFixed(2)} zł</span>
+										</div>
+									}
+
+
+									{/* Сума знижки */}
+									{state.deliveryDiscount || state.takeOutDiscount ? (
+										<div className="flex font-sans justify-between text-lg text-success">
+											<span>Rabat</span>
+											<span>
+												-
+												{(state.totalAmount - (state.finalAmount - (state.deliveryMethod === 'DELIVERY' ? state.deliveryCost : 0))).toFixed(2)}{' '}
+												zł
+											</span>
+										</div>
+									) : null}
+
+									{/* Загальна сума */}
+									<div className="flex font-sans justify-between text-xl font-bold text-text-secondary">
+										<span>Do zapłaty</span>
+										<span>{state.finalAmount.toFixed(2)} zł</span>
+									</div>
 								</div>
+
 								<LoadingButton form={deliveryMethod === 'DELIVERY' ? 'deliveryForm' : 'takeOutForm'} variant='secondary' isLoading={isLoading} className="w-full" type="submit">Złóż zamówienie</LoadingButton>
 							</>
 					}

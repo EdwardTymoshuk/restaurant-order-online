@@ -24,9 +24,10 @@ type MenuItemProps = Partial<MenuItemType> & {
 	orientation?: 'vertical' | 'horizontal',
 	className?: string,
 	isBreakfastOnly?: boolean,
+	isOrderingActive: boolean | undefined,
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image, orientation = 'vertical', className, isBreakfastOnly, category }) => {
+const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image, orientation = 'vertical', className, isBreakfastOnly, category, isOrderingActive }) => {
 	const [addedToCart, setAddedToCart] = useState(false) // Для анімації чеку
 	const isVertical = orientation === 'vertical'
 
@@ -141,7 +142,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 							'text-success scale-105': addedToCart, // Додаємо анімацію
 						})}
 						onClick={addToCart}
-						disabled={!isBreakfastOnly && category === 'Śniadania'}
+						disabled={!isBreakfastOnly && category === 'Śniadania' || !isOrderingActive}
 					>
 						{addedToCart ? <FaCheck /> : <CiShoppingBasket />}
 					</Button>

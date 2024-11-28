@@ -7,7 +7,8 @@ type OrderWithItems = Prisma.OrderGetPayload<{
 			include: {
 				menuItem: true
 			}
-		}
+		},
+		promoCode: true,
 	}
 }>
 

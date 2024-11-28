@@ -38,7 +38,7 @@ const UserList = () => {
 	return (
 		<div>
 			<Accordion type="single" collapsible >
-				<AccordionItem value="users" className='border-none'>
+				<AccordionItem value="users" >
 					<AccordionTrigger className="text-left font-semibold text-lg hover:no-underline">
 						Lista użytkowników
 					</AccordionTrigger>

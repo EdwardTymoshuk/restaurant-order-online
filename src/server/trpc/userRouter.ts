@@ -67,7 +67,6 @@ export const userRouter = router({
 		.input(z.object({ username: z.string(), password: z.string(), name: z.string().optional(), role: z.enum(["user", "admin"]) }))
 		.mutation(async ({ input, ctx }) => {
 			const decodedToken = ctx.token
-			console.log('Input', input, 'CTX user: ', ctx.user)
 
 			if (!decodedToken || decodedToken.role !== USER_ROLES.ADMIN) {
 				throw new TRPCError({ code: "FORBIDDEN", message: "Доступ заборонено" })

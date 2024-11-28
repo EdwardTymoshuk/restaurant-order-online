@@ -23,8 +23,9 @@ type OrderWithItems = Prisma.OrderGetPayload<{
 		items: {
 			include: {
 				menuItem: true
-			}
-		}
+			},
+		},
+		promoCode: true,
 	}
 }>
 
@@ -118,7 +119,6 @@ const Orders = () => {
 	}, [initialOrders])
 
 	useEffect(() => {
-		console.log(newOrders)
 		if (newOrders.length > 0) {
 			let newOrderIds: Set<string> = new Set() // Оголошуємо змінну поза блоком
 
@@ -408,8 +408,20 @@ const Orders = () => {
 								<p className='text-base'><span className='text-secondary bold'>Imię klienta:</span> {order.name}</p>
 								<p className='text-base'><span className='text-secondary bold'>Nr telefonu:</span> {order.phone}</p>
 								<p className='text-base'><span className='text-secondary bold'>Komentarz:</span> {order.comment || 'Brak komentarza'}</p>
+								{order.promoCode?.code &&
+									<p className='text-base'>
+										<span className='text-secondary bold'>
+											Promocja:
+										</span>
+										<ul className='text-sm'>
+											<li className='pl-8 text-secondary'> - Kod promocyjny: <span className='text-text-secondary'>{order.promoCode?.code}</span></li>
+											<li className='pl-8 text-secondary'> - Rabat: <span className='text-text-secondary'>{order.promoCode?.discountValue} {order.promoCode?.discountType === 'PERCENTAGE' ? '%' : 'zł'}</span></li>
+											<li className='pl-8 text-secondary'> - Kwota przed rabatem: <span className='text-text-secondary'>{order.totalAmount} zł</span></li>
+										</ul>
+									</p>
+								}
+								<p className='text-base'><span className='text-secondary bold'>Kwota ostateczna:</span> {order.finalAmount} zł</p>
 								{order.nip && <p className='text-base'><span className='text-secondary bold'>Numer NIP:</span> {order.nip}</p>}
-								<p className='text-base'><span className='text-secondary bold'>Kwota:</span> {order.totalAmount} zł</p>
 
 								{order.deliveryMethod === 'DELIVERY' && (
 									<div className="mt-4">

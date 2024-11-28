@@ -48,9 +48,11 @@ model Order {
   deliveryTime   DateTime
   items          OrderItem[]
   totalAmount    Float
+  finalAmount    Float?
   status         OrderStatus    @default(PENDING)
   comment        String?
-  promoCode      String?
+  promoCode      PromoCode?     @relation(fields: [promoCodeId], references: [id])
+  promoCodeId    String?        @db.ObjectId
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 }
@@ -62,6 +64,38 @@ model OrderItem {
   menuItemId String   @db.ObjectId
   order      Order    @relation(fields: [orderId], references: [id])
   orderId    String   @db.ObjectId
+}
+
+model PromoCode {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  code          String       @unique
+  discountType  DiscountType
+  discountValue Float
+  isActive      Boolean      @default(true)
+  isOneTimeUse  Boolean      @default(false)
+  isUsed        Boolean      @default(false)
+  expiresAt     DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  orders        Order[]
+}
+
+model Banner {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  imageUrl  String
+  linkUrl   String?
+  position  Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Settings {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  isOrderingOpen Boolean  @default(true)
+  orderWaitTime  Int      @default(30)
+  deliveryCost   Int      @default(0)
+  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now())
 }
 
 enum OrderStatus {
@@ -78,4 +112,9 @@ enum OrderStatus {
 enum DeliveryMethod {
   DELIVERY
   TAKE_OUT
+}
+
+enum DiscountType {
+  FIXED
+  PERCENTAGE
 }
