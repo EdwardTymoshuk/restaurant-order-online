@@ -27,8 +27,7 @@ const Order = () => {
 
 	const { data: menuItems = [], isLoading } = trpc.menu.getMenuItems.useQuery()
 	const { data: carouselImages = [], isLoading: isLoadingCarouselImages } = trpc.banner.getAllBanners.useQuery()
-	const { data: settings } = trpc.settings.getSettings.useQuery()
-	console.log(settings)
+	const { data: settings, isLoading: isLoadingSettings } = trpc.settings.getSettings.useQuery()
 
 	// Перевірка часу для обмеження доступу до меню
 	useEffect(() => {
@@ -113,9 +112,10 @@ const Order = () => {
 
 			<PageSubHeader title='Wybierz na co masz dziś ochotę' />
 
-			{!settings?.isOrderingOpen &&
-				<h4 className='text-danger font-bold text-center text-2xl'>Zamawianie online jest chwilowo niedostępne. <br />W celu zamówienia zadzwoń do nas lub odwiedź nas osobiście.</h4>
+			{isLoadingSettings ? <Skeleton className='w-full h-8' /> : (!settings?.isOrderingOpen &&
+				<h4 className='text-danger font-bold text-center text-2xl'>Zamawianie online jest chwilowo niedostępne. <br />W celu zamówienia zadzwoń do nas lub odwiedź nas osobiście.</h4>)
 			}
+
 
 			<div className="flex gap-4 mb-4 w-1/2">
 				<Select
