@@ -1,5 +1,6 @@
+import { pl } from 'date-fns/locale'
 import DatePicker from 'react-datepicker'
-import "react-datepicker/dist/react-datepicker.css"
+import 'react-datepicker/dist/react-datepicker.css'
 
 interface TimeSelectorProps {
 	selectedTime: Date | null
@@ -20,13 +21,14 @@ export function TimeSelector({
 				selected={selectedTime || undefined} // Зміна для дозволу null
 				onChange={onTimeChange}
 				showTimeSelect
-				timeIntervals={30}
+				locale={pl}
+				timeIntervals={15}
 				timeCaption="Wybierz godzinę odbioru"
-				dateFormat="HH:mm"
+				dateFormat="d MMMM yyyy, HH:mm"
 				timeFormat="HH:mm"
 				className="flex text-center py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary w-full"
-				filterTime={filterTime}
-				minDate={new Date()} // Заборона вибору минулих дат
+				filterDate={(date) => date.getTime() >= new Date().setHours(0, 0, 0, 0)} // Відображаємо лише доступні дати
+				filterTime={(time) => filterTime(time)}
 			/>
 		</div>
 	)

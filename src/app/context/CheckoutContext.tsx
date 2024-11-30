@@ -1,6 +1,10 @@
 'use client'
 
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
+
+const OPENING_HOUR = 10 // Приклад
+const CLOSING_HOUR = 22 // Приклад
+const OPENING_MINUTES_DELAY = 0
 
 interface DeliveryData {
 	city: string
@@ -15,13 +19,13 @@ interface PaymentData {
 	details: any
 }
 
-// Типи для контексту
 interface CheckoutContextType {
 	deliveryData: DeliveryData
 	paymentData: PaymentData
 	setDeliveryData: React.Dispatch<React.SetStateAction<DeliveryData>>
 	setPaymentData: React.Dispatch<React.SetStateAction<PaymentData>>
 	validate: () => boolean
+	isRestaurantClosed: boolean
 }
 
 const CheckoutContext = createContext<CheckoutContextType | undefined>(undefined)
@@ -38,6 +42,27 @@ export const CheckoutProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 		method: '',
 		details: {},
 	})
+	const [isRestaurantClosed, setIsRestaurantClosed] = useState(false)
+
+	useEffect(() => {
+		const now = new Date()
+		const openingTime = new Date(
+			now.getFullYear(),
+			now.getMonth(),
+			now.getDate(),
+			OPENING_HOUR,
+			OPENING_MINUTES_DELAY
+		)
+		const closingTime = new Date(
+			now.getFullYear(),
+			now.getMonth(),
+			now.getDate(),
+			CLOSING_HOUR
+		)
+
+		// Визначаємо, чи ресторан закритий
+		setIsRestaurantClosed(now < openingTime || now >= closingTime)
+	}, [])
 
 	const validate = () => {
 		let valid = true
@@ -51,7 +76,16 @@ export const CheckoutProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 	}
 
 	return (
-		<CheckoutContext.Provider value={{ deliveryData, paymentData, setDeliveryData, setPaymentData, validate }}>
+		<CheckoutContext.Provider
+			value={{
+				deliveryData,
+				paymentData,
+				setDeliveryData,
+				setPaymentData,
+				validate,
+				isRestaurantClosed,
+			}}
+		>
 			{children}
 		</CheckoutContext.Provider>
 	)

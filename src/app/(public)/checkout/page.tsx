@@ -6,6 +6,7 @@ import { Checkbox } from '@/app/components/ui/checkbox'
 import { Input } from '@/app/components/ui/input'
 import { Textarea } from '@/app/components/ui/textarea'
 import { useCart } from '@/app/context/CartContext'
+import { useCheckout } from '@/app/context/CheckoutContext'
 import { getCoordinates, isAddressInDeliveryArea } from '@/utils/deliveryUtils'
 import { trpc } from '@/utils/trpc'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -105,6 +106,7 @@ const Checkout = () => {
 	const { data: settingsData, isLoading: isSettingsLoading } = trpc.settings.getSettings.useQuery()
 
 	const trpcContext = trpc.useUtils()
+	const { isRestaurantClosed } = useCheckout()
 
 
 	const { register: registerDelivery, handleSubmit: handleSubmitDelivery, formState: formStateDelivery, setValue: setValueDelivery, getValues: getValuesDelivery, reset: resetDelivery } = useForm<DeliveryFormData>({
@@ -442,7 +444,7 @@ const Checkout = () => {
 							<div className="space-y-4 w-full">
 								<div className="space-y-2">
 									<h3 className="text-xl text-secondary font-semibold">Czas dostawy</h3>
-									<TimeDeliverySwitcher onTimeChange={handleTimeChange} isDelivery={true} />
+									<TimeDeliverySwitcher onTimeChange={handleTimeChange} isDelivery={true} orderWaitTime={settingsData?.orderWaitTime || 30} />
 								</div>
 								<div className='space-y-2'>
 									<h3 className="text-xl text-secondary font-semibold">Dane do dostawy</h3>
@@ -703,7 +705,7 @@ const Checkout = () => {
 								<div className='space-y-2'>
 									<div className="space-y-2">
 										<h3 className="text-xl text-secondary font-semibold">Czas dostawy</h3>
-										<TimeDeliverySwitcher onTimeChange={handleTimeChange} isDelivery={false} />
+										<TimeDeliverySwitcher onTimeChange={handleTimeChange} isDelivery={false} orderWaitTime={settingsData?.orderWaitTime || 30} />
 									</div>
 									<h3 className="text-xl text-secondary font-semibold">Dane do dostawy</h3>
 									<div className="flex gap-4 w-full">
@@ -958,7 +960,14 @@ const Checkout = () => {
 									</div>
 								</div>
 
-								<LoadingButton form={deliveryMethod === 'DELIVERY' ? 'deliveryForm' : 'takeOutForm'} variant='secondary' isLoading={isLoading} className="w-full" type="submit">Złóż zamówienie</LoadingButton>
+								<LoadingButton
+									form={deliveryMethod === 'DELIVERY' ? 'deliveryForm' : 'takeOutForm'}
+									variant='secondary'
+									isLoading={isLoading}
+									className="w-full"
+									type="submit"
+									disabled={isRestaurantClosed}
+								>Złóż zamówienie</LoadingButton>
 							</>
 					}
 				</div>
