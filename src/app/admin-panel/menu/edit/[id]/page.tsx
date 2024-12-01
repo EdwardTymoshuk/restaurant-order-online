@@ -3,7 +3,7 @@
 import MenuItemForm from '@/app/admin-panel/components/MenuItemForm'
 import PageSubHeader from '@/app/components/PageSubHeader'
 import { Button } from '@/app/components/ui/button'
-import { MenuItemCategory } from '@/app/types'
+import { MenuItemCategory } from '@/app/types/types'
 import { trpc } from '@/utils/trpc'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'

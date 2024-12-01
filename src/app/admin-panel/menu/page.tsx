@@ -15,7 +15,7 @@ import {
 	TableHeader,
 	TableRow
 } from "@/app/components/ui/table"
-import { MenuItemCategory } from '@/app/types'
+import { MenuItemCategory } from '@/app/types/types'
 import { trpc } from '@/utils/trpc'
 import { MenuItem } from '@prisma/client'
 import { useQueryClient } from '@tanstack/react-query'

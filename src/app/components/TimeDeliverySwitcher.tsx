@@ -129,13 +129,17 @@ const TimeDeliverySwitcher = ({
 
 	const filterTime = (time: Date) => {
 		const now = new Date()
+
+		// Час відкриття з урахуванням затримки
 		const openingTime = new Date(
 			time.getFullYear(),
 			time.getMonth(),
 			time.getDate(),
 			OPENING_HOUR,
-			OPENING_MINUTES_DELAY + (isDelivery ? 15 : 0)
+			OPENING_MINUTES_DELAY
 		)
+
+		// Час закриття
 		const closingTime = new Date(
 			time.getFullYear(),
 			time.getMonth(),
@@ -143,13 +147,35 @@ const TimeDeliverySwitcher = ({
 			CLOSING_HOUR
 		)
 
-		const lastOrderTime = new Date(
-			closingTime.getTime() - waitTimeWithBuffer * 60 * 1000
+		// Час мінімальної затримки (30 хв для самовивозу, 45 хв для доставки)
+		const earliestOrderTime = new Date(
+			now.getTime() + (isDelivery ? 45 : 30) * 60 * 1000
 		)
 
+		// Максимальний час для замовлень
+		const lastOrderTime = new Date(
+			closingTime.getTime() - (isDelivery ? 45 : 30) * 60 * 1000
+		)
+
+		// Забороняємо вибір часу, якщо він уже минув
+		if (time < now) {
+			return false
+		}
+
 		// Забороняємо час поза межами відкриття-закриття ресторану
-		return time >= openingTime && time <= lastOrderTime
+		if (time < openingTime || time > lastOrderTime) {
+			return false
+		}
+
+		// Забороняємо час, який не відповідає мінімальній затримці
+		if (time < earliestOrderTime) {
+			return false
+		}
+
+		return true
 	}
+
+
 
 	return (
 		<div className="container mx-auto">

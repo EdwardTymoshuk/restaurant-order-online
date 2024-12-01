@@ -1,4 +1,4 @@
-import { CarouselImage, MenuItemCategory, Opinion } from '@/app/types'
+import { CarouselImage, MenuItemCategory, Opinion } from '@/app/types/types'
 
 export const CAROUSEL_MAIN_IMAGES: CarouselImage[] = [
 	{ src: '/img/carousel-1.jpg' },
