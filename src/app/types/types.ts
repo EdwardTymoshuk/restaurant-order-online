@@ -1,4 +1,3 @@
-// Тип для навігаційних елементів
 export interface NavBarItem {
 	label: string,
 	link: string,

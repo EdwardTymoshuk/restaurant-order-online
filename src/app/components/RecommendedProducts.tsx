@@ -31,6 +31,7 @@ const RecommendedProducts = () => {
 					image={item.image!}
 					orientation="horizontal"
 					className="px-4"
+					isOrderingActive={true}
 				/>
 			))}
 		</div>

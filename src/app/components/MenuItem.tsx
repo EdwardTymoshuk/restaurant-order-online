@@ -7,7 +7,7 @@ import {
 	CardHeader
 } from "@/app/components/ui/card"
 import { useCart } from '@/app/context/CartContext'
-import { MenuItemType } from '@/app/types'
+import { MenuItemType } from '@/app/types/types'
 import { cn } from '@/utils/utils'
 import React, { useState } from 'react'
 import { CiShoppingBasket } from 'react-icons/ci'

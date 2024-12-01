@@ -1,4 +1,4 @@
-import { MenuItemCategory, MenuItemType } from '@/app/types'
+import { MenuItemCategory, MenuItemType } from '@/app/types/types'
 import { trpc } from '@/utils/trpc'
 import { createContext, useContext, useEffect, useState } from 'react'
 

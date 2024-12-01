@@ -6,7 +6,7 @@ import { Checkbox } from '@/app/components/ui/checkbox'
 import { Input } from "@/app/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
 import { Textarea } from "@/app/components/ui/textarea"
-import { MenuItemCategory } from '@/app/types'
+import { MenuItemCategory } from '@/app/types/types'
 import { menuItemCategories } from '@/config'
 import { useEffect, useState } from 'react'
 
