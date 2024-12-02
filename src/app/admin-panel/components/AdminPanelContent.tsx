@@ -4,7 +4,7 @@ import LoadingScreen from '@/app/components/LoadingScreen'
 import { Button } from '@/app/components/ui/button'
 import { signOut, useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState, useTransition } from 'react'
+import { Suspense, useEffect, useState, useTransition } from 'react'
 import { FaThList } from 'react-icons/fa'
 import { ImStatsBars } from 'react-icons/im'
 import { IoRestaurant } from 'react-icons/io5'
@@ -70,6 +70,23 @@ const AdminPanelContent = () => {
 		{ label: 'Ustawienia', icon: <MdSettingsSuggest />, key: 'settings' },
 	]
 
+	const renderTabContent = () => {
+		switch (tab) {
+			case 'dashboard':
+				return <Dashboard />
+			case 'orders':
+				return <Orders />
+			case 'menu':
+				return <MenuTable />
+			case 'statistics':
+				return <Statistics />
+			case 'settings':
+				return <Settings />
+			default:
+				return <Dashboard />
+		}
+	}
+
 	return (
 		<>
 			{isPageLoading && <LoadingScreen fullScreen />}
@@ -86,13 +103,13 @@ const AdminPanelContent = () => {
 						<div className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-text-primary text-xl font-bold">
 							{initial}
 						</div>
-						<div className='text-center'>
-							<h3 className='text-text-primary'>Cześć, {displayName}!</h3>
+						<div className="text-center">
+							<h3 className="text-text-primary">Cześć, {displayName}!</h3>
 							<Button
 								onClick={() => signOut()}
 								className="text-sm text-center text-danger w-full"
-								variant='link'
-								size='link'
+								variant="link"
+								size="link"
 							>
 								Wyloguj się
 							</Button>
@@ -120,11 +137,9 @@ const AdminPanelContent = () => {
 
 				{/* Контент */}
 				<main className="flex-1 p-2 md:p-4 lg:p-8 lg:pl-72">
-					{tab === 'dashboard' && <Dashboard />}
-					{tab === 'orders' && <Orders />}
-					{tab === 'menu' && <MenuTable />}
-					{tab === 'statistics' && <Statistics />}
-					{tab === 'settings' && <Settings />}
+					<Suspense fallback={<LoadingScreen fullScreen />}>
+						{renderTabContent()}
+					</Suspense>
 				</main>
 			</div>
 		</>
