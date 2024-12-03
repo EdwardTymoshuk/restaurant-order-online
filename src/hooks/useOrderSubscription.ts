@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 type OrderWithItems = Prisma.OrderGetPayload<{
 	include: {
@@ -7,67 +7,88 @@ type OrderWithItems = Prisma.OrderGetPayload<{
 			include: {
 				menuItem: true
 			}
-		},
-		promoCode: true,
+		}
+		promoCode: true
 	}
 }>
 
 export const useOrderSubscription = () => {
+	const [allOrders, setAllOrders] = useState<OrderWithItems[]>([])
 	const [newOrders, setNewOrders] = useState<OrderWithItems[]>([])
 	const [highlightedOrderIds, setHighlightedOrderIds] = useState<Set<string>>(new Set())
 	const [newOrderCount, setNewOrderCount] = useState(0)
 	const [isDialogOpen, setIsDialogOpen] = useState(false)
-	const [initialTitle] = useState(document?.title)
 
-	useEffect(() => {
-		const eventSource = new EventSource('/api/orders/stream')
+	const lastUpdatedAtRef = useRef<string | null>(null)
+	const isInitialLoadRef = useRef(true)
 
-		eventSource.onmessage = (event) => {
-			const orders: OrderWithItems[] = JSON.parse(event.data)
+	const fetchOrders = async () => {
+		try {
+			const query = lastUpdatedAtRef.current
+				? `?lastUpdatedAt=${encodeURIComponent(lastUpdatedAtRef.current)}`
+				: ''
+			const response = await fetch(`/api/orders/stream${query}`)
+			const orders: OrderWithItems[] = await response.json()
+
+			console.log('Fetched orders:', orders)
 
 			if (orders.length > 0) {
-				setNewOrders((prevOrders) => [...prevOrders, ...orders])
-				setNewOrderCount((prevCount) => prevCount + orders.length) // Збільшуємо лічильник нових замовлень
-				setHighlightedOrderIds((prev) => {
-					const updatedIds = new Set(prev)
-					orders.forEach((order) => updatedIds.add(order.id))
-					return updatedIds
-				})
-				setIsDialogOpen(true) // Відкриваємо діалогове вікно для нових замовлень
+				// Оновлюємо lastUpdatedAt
+				const latestOrderCreatedAt = orders[orders.length - 1].createdAt
+				lastUpdatedAtRef.current = new Date(latestOrderCreatedAt).toISOString()
 
-				// Відтворення звуку
-				const audio = new Audio('/audio/notification.wav')
-				audio.play()
+				if (isInitialLoadRef.current) {
+					// Початкове завантаження, встановлюємо всі замовлення
+					setAllOrders(orders)
+					isInitialLoadRef.current = false
+					console.log('Set isInitialLoad to false')
+				} else {
+					// Наступні завантаження, обробляємо нові замовлення
+					setAllOrders((prevOrders) => [...prevOrders, ...orders])
+					setNewOrders(orders) // Встановлюємо newOrders як останні отримані замовлення
+					setNewOrderCount(orders.length)
+					setHighlightedOrderIds((prev) => {
+						const updatedIds = new Set(prev)
+						orders.forEach((order) => updatedIds.add(order.id))
+						return updatedIds
+					})
+					setIsDialogOpen(true)
+
+					// Відтворення звуку
+					const audio = new Audio('/audio/notification.wav')
+					audio.play().catch((err) => console.error('Audio play failed:', err))
+				}
+
+				console.log('Updated lastUpdatedAt:', lastUpdatedAtRef.current)
 			}
+		} catch (error) {
+			console.error('Error fetching orders:', error)
 		}
+	}
 
-		return () => {
-			eventSource.close()
-		}
-	}, [initialTitle])
-
-	// Повернення заголовка при фокусі
 	useEffect(() => {
-		const handleVisibilityChange = () => {
-			if (document && document.visibilityState === 'visible') {
-				document.title = initialTitle
-			}
-		}
-		document.addEventListener('visibilitychange', handleVisibilityChange)
+		fetchOrders() // Початкове завантаження
+		const interval = setInterval(fetchOrders, 5000) // Запити кожні 5 секунд
+		return () => clearInterval(interval)
+	}, [])
 
-		return () => {
-			document.removeEventListener('visibilitychange', handleVisibilityChange)
-		}
-	}, [initialTitle])
-
-	// Закриття діалогу і зняття виділення через 5 секунд
 	const handleCloseDialog = () => {
 		setIsDialogOpen(false)
-		setNewOrderCount(0) // Скидаємо лічильник
+		setNewOrderCount(0)
+		setNewOrders([]) // Скидаємо newOrders після обробки
 		setTimeout(() => {
 			setHighlightedOrderIds(new Set())
 		}, 5000)
 	}
 
-	return { newOrders, highlightedOrderIds, isDialogOpen, handleCloseDialog, newOrderCount }
+	return {
+		allOrders,
+		newOrders,
+		highlightedOrderIds,
+		isDialogOpen,
+		handleCloseDialog,
+		newOrderCount,
+		fetchOrders,
+		setAllOrders, // Додаємо методи для оновлення замовлень
+	}
 }
