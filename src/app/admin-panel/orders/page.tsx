@@ -1,3 +1,5 @@
+'use client'
+
 import LoadingButton from '@/app/components/LoadingButton'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/app/components/ui/accordion'
 import { Button } from '@/app/components/ui/button'
