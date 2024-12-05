@@ -96,12 +96,14 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, productTit
     <div className="space-y-4">
       {imageToShow && (
         <div className="mb-4">
-          <Image
-            src={`${imageToShow || '/'}?updated=${new Date().getTime()}`}
+          <Image src={imageToShow}
+            key={imageToShow}
             alt="Zdjęcie pozycji menu"
             className="max-w-full h-auto"
             width={150}
-            height={150} />
+            height={150}
+            unoptimized
+          />
         </div>
       )}
 
