@@ -235,7 +235,8 @@ const MenuTable = () => {
 									<TableCell>{index + 1}</TableCell>
 									<TableCell className="hidden lg:table-cell">
 										<ImageWithFallback
-											src={`${item.image || '/'}?updated=${new Date(item.updatedAt).getTime()}`}
+											key={item.image}
+											src={item.image || ''}
 											alt={item.name}
 											width={48}
 											height={48}

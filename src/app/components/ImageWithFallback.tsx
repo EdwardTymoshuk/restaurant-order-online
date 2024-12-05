@@ -32,6 +32,7 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
 					height={height}
 					onError={() => setError(true)}
 					{...rest}
+					unoptimized
 				/>
 			) : (
 				<div className={`bg-gray-200 flex items-center justify-center rounded-md ${containerClassName}`}>
