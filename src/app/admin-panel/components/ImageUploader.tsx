@@ -96,7 +96,12 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, productTit
     <div className="space-y-4">
       {imageToShow && (
         <div className="mb-4">
-          <Image src={`${imageToShow}?t=${Date.now()}`} alt="Zdjęcie pozycji menu" className="max-w-full h-auto" width={150} height={150} />
+          <Image
+            src={`${imageToShow || '/'}?updated=${new Date().getTime()}`}
+            alt="Zdjęcie pozycji menu"
+            className="max-w-full h-auto"
+            width={150}
+            height={150} />
         </div>
       )}
 

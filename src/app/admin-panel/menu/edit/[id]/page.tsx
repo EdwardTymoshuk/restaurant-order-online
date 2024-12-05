@@ -3,6 +3,7 @@
 import MenuItemForm from '@/app/admin-panel/components/MenuItemForm'
 import PageSubHeader from '@/app/components/PageSubHeader'
 import { Button } from '@/app/components/ui/button'
+import { Skeleton } from '@/app/components/ui/skeleton'
 import { MenuItemCategory } from '@/app/types/types'
 import { trpc } from '@/utils/trpc'
 import { useQueryClient } from '@tanstack/react-query'
@@ -39,7 +40,21 @@ const EditMenuItemPage = ({ params }: { params: { id: string } }) => {
 	}
 
 	if (isLoading || !menuItem) {
-		return <div>Loading...</div>
+		return (
+			<div className="container mx-auto space-y-8 px-4 py-6">
+				<Skeleton className='h-8 w-1/6 lg:w-1/12' />
+				<Skeleton className='h-14 w-1/2 mx-auto' />
+				<Skeleton className='h-10 w-full mx-auto' />
+				<div className='flex flex-row gap-4'>
+					<Skeleton className='h-10 w-full mx-auto' />
+					<Skeleton className='h-10 w-full mx-auto' />
+				</div>
+				<Skeleton className='h-32 w-full mx-auto' />
+				<Skeleton className='h-52 w-full md:w-1/6' />
+				<Skeleton className='h-32 w-full mx-auto' />
+				<Skeleton className='h-8 w-1/6 lg:w-1/12 justify-end' />
+			</div>
+		)
 	}
 
 	return (
