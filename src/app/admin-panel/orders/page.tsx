@@ -134,6 +134,8 @@ const Orders = () => {
 		)
 		: allOrders
 
+
+
 	const handleSort = (key: 'status' | 'deliveryMethod' | 'createdAt' | 'deliveryTime') => {
 		setSortConfig((prev) => {
 			if (prev?.key === key) {
@@ -314,6 +316,8 @@ const Orders = () => {
 				{filteredOrders.map((order, index) => {
 					const { relativeTime, fullDate, fullTime } = formatTimeAgo(new Date(order.createdAt))
 					const statusButton = statusButtonMap(order.deliveryMethod, order.status)
+
+					console.log(order)
 
 					return (
 						<AccordionItem key={order.id} value={order.id}>

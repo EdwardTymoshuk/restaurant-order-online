@@ -189,7 +189,7 @@ const TimeDeliverySwitcher = ({
 			{isRestaurantClosed && (
 				<div className="mt-4 p-2 bg-red-100 text-danger text-center rounded-md">
 					Restauracja jest zamknięta. Zamówienia są realizowane od godziny{' '}
-					{OPENING_HOUR}:{OPENING_MINUTES_DELAY.toString().padStart(2, '0')} до{' '}
+					{OPENING_HOUR}:00 do{' '}
 					{CLOSING_HOUR}:00.
 				</div>
 			)}
@@ -203,7 +203,7 @@ const TimeDeliverySwitcher = ({
 			{isClosingSoon && timeLeftToOrder === '0:00' && (
 				<div className="mt-4 p-2 bg-red-100 text-danger text-center rounded-md">
 					Zamówienia na dzisiaj są już niedostępne. Zapraszamy jutro od godziny{' '}
-					{OPENING_HOUR}:{OPENING_MINUTES_DELAY.toString().padStart(2, '0')}.
+					{OPENING_HOUR}:00.
 				</div>
 			)}
 

@@ -30,6 +30,7 @@ const EditMenuItemPage = ({ params }: { params: { id: string } }) => {
 		image: string
 		isOrderable: boolean
 		isRecommended: boolean
+		isOnMainPage: boolean
 	}) => {
 		try {
 			await updateMenuItem({ id: params.id, ...values })
@@ -73,6 +74,7 @@ const EditMenuItemPage = ({ params }: { params: { id: string } }) => {
 					image: menuItem.image || '',
 					isOrderable: menuItem.isOrderable,
 					isRecommended: menuItem.isRecommended,
+					isOnMainPage: menuItem.isOnMainPage,
 				}}
 				isLoading={false}
 				onSubmit={handleSubmit}

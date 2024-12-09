@@ -19,6 +19,7 @@ interface MenuItemFormProps {
 		image: string
 		isOrderable: boolean
 		isRecommended: boolean
+		isOnMainPage: boolean
 	}
 	isLoading: boolean
 	onSubmit: (values: {
@@ -29,6 +30,7 @@ interface MenuItemFormProps {
 		image: string
 		isOrderable: boolean
 		isRecommended: boolean
+		isOnMainPage: boolean
 	}) => void
 }
 
@@ -40,6 +42,7 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({ initialValues, isLoading, o
 	const [image, setImage] = useState(initialValues.image)
 	const [isOrderable, setIsOrderable] = useState(initialValues.isOrderable)
 	const [isRecommended, setIsRecommended] = useState(initialValues.isRecommended)
+	const [isOnMainPage, setIsOnMainPage] = useState(initialValues.isOnMainPage)
 
 	const [errors, setErrors] = useState<{ name?: string; price?: string }>({}) // Стан для помилок
 
@@ -51,6 +54,7 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({ initialValues, isLoading, o
 		setImage(initialValues.image)
 		setIsOrderable(initialValues.isOrderable)
 		setIsRecommended(initialValues.isRecommended)
+		setIsOnMainPage(initialValues.isOnMainPage)
 	}, [initialValues])
 
 	const handleImageUpload = (imageUrl: string) => {
@@ -79,6 +83,7 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({ initialValues, isLoading, o
 				image,
 				isOrderable,
 				isRecommended,
+				isOnMainPage
 			})
 		}
 	}
@@ -157,6 +162,15 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({ initialValues, isLoading, o
 						onCheckedChange={(value) => setIsRecommended(value as boolean)}
 					/>
 					<label htmlFor="isRecommended" className="font-medium text-secondary">Polecane</label>
+				</div>
+
+				<div className="flex items-center space-x-2">
+					<Checkbox
+						id="isOnMainPage"
+						checked={isOnMainPage}
+						onCheckedChange={(value) => setIsOnMainPage(value as boolean)}
+					/>
+					<label htmlFor="isOnMainPage" className="font-medium text-secondary">Specjał</label>
 				</div>
 			</div>
 
