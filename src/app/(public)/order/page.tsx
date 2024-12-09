@@ -12,6 +12,7 @@ import {
 } from "@/app/components/ui/select"
 import { Skeleton } from '@/app/components/ui/skeleton'
 import { MenuItemCategory, MenuItemType } from '@/app/types/types'
+import { CLOSING_HOUR, OPENING_HOUR } from '@/config/constants'
 import { trpc } from '@/utils/trpc'
 import Autoplay from "embla-carousel-autoplay"
 import Image from 'next/image'
@@ -24,10 +25,26 @@ const Order = () => {
 	const [categoryFilter, setCategoryFilter] = useState<string | undefined>('all')
 	const [activeAccordion, setActiveAccordion] = useState<string | null>(null)
 	const [isBreakfastOnly, setIsBreakfastOnly] = useState<boolean>(false)
+	const [isOpen, setIsOpen] = useState(true)
 
 	const { data: menuItems = [], isLoading } = trpc.menu.getMenuItems.useQuery()
 	const { data: carouselImages = [], isLoading: isLoadingCarouselImages } = trpc.banner.getAllBanners.useQuery()
 	const { data: settings, isLoading: isLoadingSettings } = trpc.settings.getSettings.useQuery()
+
+	const isRestaurantOpen = () => {
+		const now = new Date()
+		const openingTime = new Date()
+		openingTime.setHours(OPENING_HOUR, 0, 0, 0)
+		const closingTime = new Date()
+		closingTime.setHours(CLOSING_HOUR, 0, 0, 0)
+
+		return now >= openingTime && now < closingTime
+	}
+
+	useEffect(() => {
+		setIsOpen(isRestaurantOpen())
+	}, [])
+
 
 	// Перевірка часу для обмеження доступу до меню
 	useEffect(() => {
@@ -158,6 +175,16 @@ const Order = () => {
 					W godzinach 8:00 - 12:00 dostępne są tylko śniadania.
 				</div>
 			)}
+
+
+			{!isOpen && (
+				<div className="mt-4 p-2 bg-red-100 text-danger text-center rounded-md">
+					Restauracja jest zamknięta. Zamówienia są realizowane od godziny{' '}
+					{OPENING_HOUR}:00 do{' '}
+					{CLOSING_HOUR}:00.
+				</div>
+			)}
+
 			<Accordion
 				type="single"
 				collapsible
@@ -198,7 +225,7 @@ const Order = () => {
 												category={item.category}
 												orientation='horizontal'
 												isBreakfastOnly={isBreakfastOnly}
-												isOrderingActive={settings?.isOrderingOpen}
+												isOrderingActive={settings?.isOrderingOpen && isOpen}
 											/>
 										))}
 								</AccordionContent>

@@ -369,7 +369,7 @@ const Checkout = () => {
 			const finalAmount = state.finalAmount
 			const totalAmount = state.totalAmount
 
-			console.log(state)
+			console.log(promoCode)
 
 			const order = await createOrderMutation.mutateAsync({
 				name: data.name,

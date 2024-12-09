@@ -85,6 +85,8 @@ export const orderRouter = router({
 			},
 		})
 
+		console.log('Orders: ', orders)
+
 		return orders as Prisma.OrderGetPayload<{
 			include: {
 				items: {

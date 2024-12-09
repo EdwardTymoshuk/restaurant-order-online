@@ -1,3 +1,5 @@
+import { z } from 'zod'
+
 export interface NavBarItem {
 	label: string,
 	link: string,
@@ -21,6 +23,7 @@ export type MenuItemCategory =
 	'Dania główne' |
 	'Pizza' |
 	'Burgery' |
+	'Makarony/Ravioli' |
 	'Dla dzieci' |
 	'Dodatki' |
 	'Desery' |
@@ -120,3 +123,56 @@ export interface OrderType {
 	updatedAt: Date,
 	nip?: string | null,
 }
+
+export const deliverySchema = z.object({
+	name: z.string().min(1, 'Podaj imię').max(20, 'Imię jest zbyt długie'),
+	phone: z.string().regex(/^\+?[0-9]{9}$/, 'Podaj numer telefonu w formacie xxxxxxxxxx'),
+	city: z.string().min(3, 'Podaj miasto').max(50),
+	postalCode: z.string().regex(/^\d{2}-\d{3}$/, 'Kod pocztowy musi być w formacie 00-000'),
+	street: z.string().min(1, 'Podaj ulicę').max(50),
+	buildingNumber: z.preprocess(
+		(val) => val === '' ? undefined : (isNaN(Number(val)) ? undefined : Number(val)),
+		z.number({ required_error: 'Podaj numer budynku' })
+			.min(1, 'Podaj poprawny numer budynku')
+	),
+	apartment: z.preprocess(
+		(val) => val === '' ? undefined : (isNaN(Number(val)) ? undefined : Number(val)),
+		z.number().positive().optional()
+	),
+	paymentMethod: z.string().min(1, 'Wybierz metodę płatności'),
+	deliveryTime: z.union([
+		z.literal('asap'),
+		z.date().refine((date) => date > new Date(), { message: 'Podaj poprawną godzinę dostawy' }),
+	]),
+	comment: z.string().max(200, 'Komentarz jest zbyt długi').optional().transform(val => val === '' ? undefined : val),
+	promoCode: z.string().max(20, 'Kod promocyjny jest zbyt długi').optional().transform(val => val === '' ? undefined : val),
+	nip: z
+		.string()
+		.optional()
+		.transform(val => val === '' ? undefined : val)
+		.refine((val) => val === undefined || /^[0-9]{10}$/.test(val), {
+			message: 'Podaj poprawny numer NIP z 10 cyfr',
+		})
+})
+
+export const takeOutSchema = z.object({
+	name: z.string().min(1, 'Podaj imię').max(20, 'Imię jest zbyt długie'),
+	phone: z.string().regex(/^\+?[0-9]{9}$/, 'Podaj numer w formacie xxxxxxxxxx'),
+	paymentMethod: z.string().min(1, 'Wybierz metodę płatności'),
+	deliveryTime: z.union([
+		z.literal('asap'),
+		z.date().refine((date) => date > new Date(), { message: 'Podaj poprawną godzinę dostawy' }),
+	]),
+	comment: z.string().max(200, 'Komentarz jest zbyt długi').optional().transform(val => val === '' ? undefined : val),
+	promoCode: z.string().max(20, 'Kod promocyjny jest zbyt długi').optional().transform(val => val === '' ? undefined : val),
+	nip: z
+		.string()
+		.optional()
+		.transform(val => val === '' ? undefined : val)
+		.refine((val) => val === undefined || /^[0-9]{10}$/.test(val), {
+			message: 'Podaj poprawny numer NIP z 10 cyfr',
+		})
+})
+
+export type DeliveryFormData = z.infer<typeof deliverySchema>
+export type TakeOutFormData = z.infer<typeof takeOutSchema>

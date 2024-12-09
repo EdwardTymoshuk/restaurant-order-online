@@ -47,6 +47,8 @@ export const menuRouter = router({
 			image: z.string().optional(),
 			isOrderable: z.boolean().default(true),
 			isRecommended: z.boolean().default(false),
+			isOnMainPage: z.boolean().default(false),
+
 		}))
 		.mutation(async ({ input }) => {
 			const newItem = await prisma.menuItem.create({
@@ -58,6 +60,7 @@ export const menuRouter = router({
 					image: input.image,
 					isOrderable: input.isOrderable,
 					isRecommended: input.isRecommended,
+					isOnMainPage: input.isOnMainPage,
 				},
 			})
 			return newItem
@@ -73,6 +76,7 @@ export const menuRouter = router({
 			category: z.string().optional(),
 			isRecommended: z.boolean().optional(),
 			isOrderable: z.boolean().optional(),
+			isOnMainPage: z.boolean().optional(),
 		}))
 		.mutation(async ({ input }) => {
 			const { id, ...data } = input

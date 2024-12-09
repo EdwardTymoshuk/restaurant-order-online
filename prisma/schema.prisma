@@ -26,6 +26,7 @@ model MenuItem {
   category      String
   isRecommended Boolean     @default(false)
   isOrderable   Boolean     @default(true)
+  isOnMainPage  Boolean     @default(false)
   orders        OrderItem[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt

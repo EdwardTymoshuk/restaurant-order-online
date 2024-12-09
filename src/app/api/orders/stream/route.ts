@@ -13,6 +13,14 @@ export async function GET(req: NextRequest) {
 	const newOrders = await prisma.order.findMany({
 		where: whereCondition,
 		orderBy: { createdAt: 'asc' },
+		include: {
+			items: {
+				include: {
+					menuItem: true, // Включаємо пов’язані дані про меню
+				},
+			},
+			promoCode: true, // Включаємо пов’язані дані про промокод
+		},
 	})
 
 	return NextResponse.json(newOrders)

@@ -50,6 +50,7 @@ const CreateMenuItemPage = () => {
 					image: '',
 					isOrderable: true,
 					isRecommended: false,
+					isOnMainPage: false,
 				}}
 				isLoading={isLoading}
 				onSubmit={handleSubmit}
