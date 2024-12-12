@@ -70,6 +70,7 @@ export interface MenuItemType {
 	image: string | null | undefined,
 	isOrderable?: boolean,
 	isRecommended?: boolean,
+	isOnMainPage?: boolean,
 	createdAt: Date,
 	updatedAt: Date,
 }

@@ -6,16 +6,20 @@ import { Oval } from "react-loader-spinner"
 interface LoadingButtonProps extends ButtonProps {
 	isLoading: boolean
 	loadingText?: string // Optional text to show while loading
+	disabled?: boolean
+	buttonType?: "button" | "submit" | "reset" | undefined
 }
 
 const LoadingButton: React.FC<LoadingButtonProps> = ({
 	isLoading,
 	children,
 	loadingText,
+	disabled,
+	buttonType,
 	...props
 }) => {
 	return (
-		<Button {...props} disabled={isLoading}>
+		<Button {...props} disabled={isLoading || disabled} type={buttonType || 'submit'}>
 			{isLoading ? (
 				<div className="flex items-center space-x-2">
 					<Oval

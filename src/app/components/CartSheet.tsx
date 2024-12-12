@@ -4,6 +4,7 @@ import { Button } from '@/app/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/app/components/ui/dialog'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/app/components/ui/sheet'
 import { useCart } from '@/app/context/CartContext'
+import { MIN_ORDER_AMOUNT } from '@/config/constants'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { FaMinus, FaPlus } from 'react-icons/fa'
@@ -20,6 +21,8 @@ const CartSheet = ({ onClose }: { onClose: () => void }) => {
 
 	const router = useRouter()
 	const [isPending, startTransition] = useTransition()
+
+	const amountNeeded = Math.max(0, MIN_ORDER_AMOUNT - state.totalAmount)
 
 	const incrementQuantity = (id: string) => {
 		dispatch({ type: 'INCREASE_QUANTITY', payload: id })
@@ -132,9 +135,14 @@ const CartSheet = ({ onClose }: { onClose: () => void }) => {
 							</ul>
 							<p className='border-b border w-full mt-8 -px-2'></p>
 							<div className="mt-6 flex justify-between text-lg font-semibold text-text-secondary">
-								<p>Total</p>
+								<p>Łączna kwota</p>
 								<p>{state.totalAmount} zł</p>
 							</div>
+							{state.totalAmount < MIN_ORDER_AMOUNT && (
+								<div className="mt-4 p-2 bg-warning-light text-warning text-center rounded-md">
+									Brakuje jeszcze {amountNeeded.toFixed(2)} zł do minimalnej kwoty zamówienia, która wynosi 50 zł.
+								</div>
+							)}
 							<div className="mt-6">
 								<Button variant='secondary' className='w-full flex items-center justify-center' onClick={handleRecommendDialogOpen}>
 									<span>Do podsumowania</span> <MdKeyboardArrowRight />
