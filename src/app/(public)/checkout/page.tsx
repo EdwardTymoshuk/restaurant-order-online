@@ -7,6 +7,7 @@ import { Input } from '@/app/components/ui/input'
 import { Textarea } from '@/app/components/ui/textarea'
 import { useCart } from '@/app/context/CartContext'
 import { useCheckout } from '@/app/context/CheckoutContext'
+import { MIN_ORDER_AMOUNT } from '@/config/constants'
 import { getCoordinates, isAddressInDeliveryArea } from '@/utils/deliveryUtils'
 import { trpc } from '@/utils/trpc'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -107,6 +108,8 @@ const Checkout = () => {
 
 	const trpcContext = trpc.useUtils()
 	const { isRestaurantClosed } = useCheckout()
+
+	const amountNeeded = Math.max(0, MIN_ORDER_AMOUNT - state.totalAmount)
 
 
 	const { register: registerDelivery, handleSubmit: handleSubmitDelivery, formState: formStateDelivery, setValue: setValueDelivery, getValues: getValuesDelivery, reset: resetDelivery } = useForm<DeliveryFormData>({
@@ -277,11 +280,11 @@ const Checkout = () => {
 		} catch (error: any) {
 			// Обробка помилок
 			if (activeForm === 'delivery') {
-				setDeliveryErrorMessage(error.message || 'Błąd podczas weryfikacji kodу.')
+				setDeliveryErrorMessage(error.message || 'Błąd podczas weryfikacji kodu.')
 			} else {
-				setTakeOutErrorMessage(error.message || 'Błąd podczas вериfikacji коду.')
+				setTakeOutErrorMessage(error.message || 'Błąd podczas weryfikacji kodu.')
 			}
-			toast.error(error.message || 'Błąd podczas вериfikacji коду.')
+			toast.error(error.message || 'Błąd podczas weryfikacji kodu.')
 		} finally {
 			setIsLoadingPromoCode(false) // Вимкнути індикатор завантаження
 		}
@@ -466,7 +469,7 @@ const Checkout = () => {
 												<label htmlFor="phone" className="block text-sm font-medium text-text-secondary mt-2">Nr telefonu <span className='text-danger'>*</span></label>
 												<Input
 													id='phone'
-													placeholder="Numer телефону"
+													placeholder="Numer telefonu"
 													{...registerDelivery('phone')}
 													className={`mt-1 ${formStateDelivery.errors.phone ? 'border-danger' : ''}`}
 												/>
@@ -568,7 +571,7 @@ const Checkout = () => {
 											{...registerDelivery('promoCode')}
 											className={`${formStateDelivery.errors.promoCode ? 'border-danger' : ''}`}
 										/>
-										<LoadingButton variant='secondary' isLoading={isLoadingPromoCode} onClick={() => handleApplyPromoCode('delivery')}>Dodaj</LoadingButton>
+										<LoadingButton variant='secondary' isLoading={isLoadingPromoCode} buttonType='button' onClick={() => handleApplyPromoCode('delivery')}>Dodaj</LoadingButton>
 									</div>
 									{deliveryErrorMessage && (
 										<p className="text-danger text-sm pt-1">{deliveryErrorMessage}</p>
@@ -725,7 +728,7 @@ const Checkout = () => {
 											<label htmlFor="phone" className="block text-sm font-medium text-text-secondary">Nr telefonu <span className='text-danger'>*</span></label>
 											<Input
 												id='phone'
-												placeholder="Numer телефону"
+												placeholder="Numer telefonu"
 												{...registerTakeOut('phone')}
 												className={`flex-1 mt-1 ${formStateTakeOut.errors.phone ? 'border-danger' : ''}`}
 											/>
@@ -759,7 +762,7 @@ const Checkout = () => {
 											{...registerTakeOut('promoCode')}
 											className={`${formStateTakeOut.errors.promoCode ? 'border-danger' : ''}`}
 										/>
-										<LoadingButton variant='secondary' isLoading={isLoadingPromoCode} onClick={() => handleApplyPromoCode('takeOut')}>Dodaj</LoadingButton>
+										<LoadingButton variant='secondary' isLoading={isLoadingPromoCode} buttonType='button' onClick={() => handleApplyPromoCode('takeOut')}>Dodaj</LoadingButton>
 									</div>
 									{takeOutErrorMessage && (
 										<p className="text-danger text-sm pt-1">{takeOutErrorMessage}</p>
@@ -953,6 +956,12 @@ const Checkout = () => {
 										</div>
 									) : null}
 
+									{state.totalAmount < MIN_ORDER_AMOUNT && (
+										<div className="mt-4 p-2 bg-warning-light text-warning text-center rounded-md">
+											Brakuje jeszcze {amountNeeded.toFixed(2)} zł do minimalnej kwoty zamówienia, która wynosi 50 zł.
+										</div>
+									)}
+
 									{/* Загальна сума */}
 									<div className="flex font-sans justify-between text-xl font-bold text-text-secondary">
 										<span>Do zapłaty</span>
@@ -966,7 +975,7 @@ const Checkout = () => {
 									isLoading={isLoading}
 									className="w-full"
 									type="submit"
-									disabled={isRestaurantClosed}
+									disabled={state.totalAmount < MIN_ORDER_AMOUNT}
 								>Złóż zamówienie</LoadingButton>
 							</>
 					}

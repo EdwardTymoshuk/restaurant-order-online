@@ -22,6 +22,7 @@ const CreateMenuItemPage = () => {
 		image: string
 		isOrderable: boolean
 		isRecommended: boolean
+		isOnMainPage: boolean
 	}) => {
 		setIsLoading(true)
 		try {
