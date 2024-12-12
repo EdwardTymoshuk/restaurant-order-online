@@ -40,7 +40,7 @@ const TimeDeliverySwitcher = ({
 			now.getMonth(),
 			now.getDate(),
 			OPENING_HOUR,
-			OPENING_MINUTES_DELAY + (isDelivery ? 15 : 0)
+			OPENING_MINUTES_DELAY
 		)
 		const closingTimeToday = new Date(
 			now.getFullYear(),
@@ -49,32 +49,31 @@ const TimeDeliverySwitcher = ({
 			CLOSING_HOUR
 		)
 
-		// Максимальний час для замовлення
+		// Calculate the last order time for today
 		const lastOrderTimeToday = new Date(
 			closingTimeToday.getTime() - waitTimeWithBuffer * 60 * 1000
 		)
 
-		// Час, коли починає з'являтися повідомлення
-		const closingSoonStart = new Date(
-			lastOrderTimeToday.getTime() - 30 * 60 * 1000 // 30 хвилин до закінчення прийому замовлень
-		)
-
-		// Визначаємо стан ресторану
+		// Determine whether the restaurant is closed
 		if (now >= closingTimeToday || now < openingTimeToday) {
-			// Ресторан закритий
 			setIsRestaurantClosed(true)
 			setIsClosingSoon(false)
 			setTimeLeftToOrder('')
-			const nextDayOpening = new Date(openingTimeToday)
-			if (now >= closingTimeToday) {
-				nextDayOpening.setDate(now.getDate() + 1)
-			}
+
+			// Calculate the next day's opening time
+			const nextDayOpening = new Date(
+				now.getFullYear(),
+				now.getMonth(),
+				now.getDate() + 1,
+				OPENING_HOUR,
+				OPENING_MINUTES_DELAY
+			)
+
 			setSelectedTime(nextDayOpening)
 			onTimeChange(nextDayOpening)
 		} else {
-			// Ресторан відкритий
 			setIsRestaurantClosed(false)
-			if (now >= closingSoonStart && now < lastOrderTimeToday) {
+			if (now >= lastOrderTimeToday) {
 				setIsClosingSoon(true)
 				updateTimeLeft(lastOrderTimeToday)
 				const interval = setInterval(() => updateTimeLeft(lastOrderTimeToday), 1000)
@@ -83,12 +82,12 @@ const TimeDeliverySwitcher = ({
 				setIsClosingSoon(false)
 				setTimeLeftToOrder('')
 			}
-		}
 
-		// Встановлюємо найближчий доступний час
-		const nearestTime = getNearestAvailableTime(now, openingTimeToday)
-		setSelectedTime(nearestTime)
-		onTimeChange(nearestTime)
+			// Set the nearest available time
+			const nearestTime = getNearestAvailableTime(now, openingTimeToday, closingTimeToday)
+			setSelectedTime(nearestTime)
+			onTimeChange(nearestTime)
+		}
 	}, [isDelivery, orderWaitTime])
 
 	const updateTimeLeft = (cutOffTime: Date) => {
@@ -112,9 +111,20 @@ const TimeDeliverySwitcher = ({
 		}
 	}
 
-	const getNearestAvailableTime = (now: Date, openingTime: Date): Date => {
+	const getNearestAvailableTime = (now: Date, openingTime: Date, closingTime: Date): Date => {
 		if (now < openingTime) {
 			return openingTime
+		}
+
+		if (now >= closingTime) {
+			// If closed, return the next day's opening time
+			return new Date(
+				now.getFullYear(),
+				now.getMonth(),
+				now.getDate() + 1,
+				OPENING_HOUR,
+				OPENING_MINUTES_DELAY
+			)
 		}
 
 		const nearestMinutes = Math.ceil(now.getMinutes() / 30) * 30
@@ -130,7 +140,7 @@ const TimeDeliverySwitcher = ({
 	const filterTime = (time: Date) => {
 		const now = new Date()
 
-		// Час відкриття з урахуванням затримки
+		// Calculate opening and closing times for the given day
 		const openingTime = new Date(
 			time.getFullYear(),
 			time.getMonth(),
@@ -138,8 +148,6 @@ const TimeDeliverySwitcher = ({
 			OPENING_HOUR,
 			OPENING_MINUTES_DELAY
 		)
-
-		// Час закриття
 		const closingTime = new Date(
 			time.getFullYear(),
 			time.getMonth(),
@@ -147,35 +155,17 @@ const TimeDeliverySwitcher = ({
 			CLOSING_HOUR
 		)
 
-		// Час мінімальної затримки (30 хв для самовивозу, 45 хв для доставки)
+		// Calculate the earliest and latest order times
 		const earliestOrderTime = new Date(
 			now.getTime() + (isDelivery ? 45 : 30) * 60 * 1000
 		)
-
-		// Максимальний час для замовлень
 		const lastOrderTime = new Date(
 			closingTime.getTime() - (isDelivery ? 45 : 30) * 60 * 1000
 		)
 
-		// Забороняємо вибір часу, якщо він уже минув
-		if (time < now) {
-			return false
-		}
-
-		// Забороняємо час поза межами відкриття-закриття ресторану
-		if (time < openingTime || time > lastOrderTime) {
-			return false
-		}
-
-		// Забороняємо час, який не відповідає мінімальній затримці
-		if (time < earliestOrderTime) {
-			return false
-		}
-
-		return true
+		// Allow only valid times within opening hours
+		return time >= openingTime && time <= lastOrderTime && time >= earliestOrderTime
 	}
-
-
 
 	return (
 		<div className="container mx-auto">
@@ -211,7 +201,7 @@ const TimeDeliverySwitcher = ({
 				<TimeSelector
 					selectedTime={selectedTime}
 					onTimeChange={handleTimeChange}
-					setNearestHour={() => getNearestAvailableTime(new Date(), new Date())}
+					setNearestHour={() => getNearestAvailableTime(new Date(), new Date(), new Date())}
 					filterTime={filterTime}
 				/>
 			)}
