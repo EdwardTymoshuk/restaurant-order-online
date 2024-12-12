@@ -14,6 +14,7 @@ import { CiShoppingBasket } from 'react-icons/ci'
 import { FaCheck, FaMinus, FaPlus } from 'react-icons/fa'
 import ImageWithFallback from './ImageWithFallback'
 import { Button } from './ui/button'
+import { Skeleton } from './ui/skeleton'
 
 type MenuItemProps = Partial<MenuItemType> & {
 	id: string,
@@ -28,12 +29,13 @@ type MenuItemProps = Partial<MenuItemType> & {
 }
 
 const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image, orientation = 'vertical', className, isBreakfastOnly, category, isOrderingActive }) => {
-	const [addedToCart, setAddedToCart] = useState(false) // Для анімації чеку
+	const [addedToCart, setAddedToCart] = useState(false) // Animation for added item
+	const [isImageLoaded, setIsImageLoaded] = useState(false) // To manage Skeleton Loader
 	const isVertical = orientation === 'vertical'
 
 	const { state, dispatch } = useCart()
 
-	// Перевіряємо, чи продукт вже є в кошику, і якщо є - отримуємо його кількість
+	// Check if the item already exists in the cart and get its quantity
 	const existingItem = state.items.find(item => item.id === id)
 	const itemQuantity = existingItem ? existingItem.quantity : 0
 
@@ -57,7 +59,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 		}
 	}
 
-	// Функції для зміни кількості товару
+	// Functions to manage quantity
 	const incrementQuantity = () => {
 		dispatch({ type: 'INCREASE_QUANTITY', payload: id })
 	}
@@ -70,6 +72,8 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 		}
 	}
 
+	const showSkeleton = image && !isImageLoaded
+
 	return (
 		<Card className={cn('w-full max-w-full border-0 shadow-none flex justify-between p-2', {
 			'flex-col': isVertical,
@@ -80,6 +84,14 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 				'w-24 h-24': !isVertical,
 			})}>
 				<div className='relative w-48 h-48'>
+					{showSkeleton && (
+						<Skeleton
+							className={cn('absolute inset-0 rounded-md', {
+								'w-full h-48': isVertical,
+								'w-24 h-24': !isVertical,
+							})}
+						/>
+					)}
 					<ImageWithFallback
 						src={image}
 						alt={name ?? 'Menu item image'}
@@ -91,6 +103,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 							'w-full h-48': isVertical,
 							'w-24 h-24': !isVertical,
 						})}
+						onLoad={() => setIsImageLoaded(true)} // Update state when the image is loaded
 					/>
 				</div>
 			</CardHeader>
@@ -109,10 +122,10 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 			})}>
 				<span className='text-secondary'>{price} zł</span>
 
-				{/* Якщо товар доданий до кошика, відображаємо кількість */}
+				{/* If the item is in the cart, display quantity */}
 				{itemQuantity > 0 && !addedToCart ? (
 					<div className='flex items-center space-x-2'>
-						{/* Кнопка для зменшення кількості */}
+						{/* Button to decrease quantity */}
 						<Button
 							variant='secondary'
 							className={cn('h-6 w-6 flex items-center justify-center px-2', {
@@ -123,9 +136,9 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 						>
 							<FaMinus />
 						</Button>
-						{/* Виводимо кількість товару */}
+						{/* Display item quantity */}
 						<span className="text-sm">{itemQuantity}</span>
-						{/* Кнопка для збільшення кількості */}
+						{/* Button to increase quantity */}
 						<Button
 							variant='secondary'
 							className='h-6 w-6 flex items-center justify-center px-2'
@@ -139,7 +152,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 					<Button
 						variant='secondary'
 						className={cn('h-6 transition-colors duration-300', {
-							'text-success scale-105': addedToCart, // Додаємо анімацію
+							'text-success scale-105': addedToCart, // Animation
 						})}
 						onClick={addToCart}
 						disabled={!isBreakfastOnly && category === 'Śniadania'}
