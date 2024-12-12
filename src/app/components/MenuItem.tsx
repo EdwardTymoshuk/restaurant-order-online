@@ -142,7 +142,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 							'text-success scale-105': addedToCart, // Додаємо анімацію
 						})}
 						onClick={addToCart}
-						disabled={!isBreakfastOnly && category === 'Śniadania' || !isOrderingActive}
+						disabled={!isBreakfastOnly && category === 'Śniadania'}
 					>
 						{addedToCart ? <FaCheck /> : <CiShoppingBasket />}
 					</Button>

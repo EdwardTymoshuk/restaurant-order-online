@@ -10,7 +10,6 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { SessionProvider } from 'next-auth/react'
 import { ReactNode, useState } from 'react'
 import { Toaster } from 'sonner'
-import { OrdersProvider } from '../context/OrdersContext'
 
 const Providers: React.FC<{ children: ReactNode }> = ({ children }) => {
 	const [queryClient] = useState(() => new QueryClient())
@@ -22,9 +21,7 @@ const Providers: React.FC<{ children: ReactNode }> = ({ children }) => {
 					<CheckoutProvider>
 						<MenuProvider>
 							<OrderProvider>
-								<OrdersProvider>
-									{children}
-								</OrdersProvider>
+								{children}
 							</OrderProvider>
 						</MenuProvider>
 					</CheckoutProvider>
