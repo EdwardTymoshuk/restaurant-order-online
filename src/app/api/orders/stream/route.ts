@@ -16,10 +16,10 @@ export async function GET(req: NextRequest) {
 		include: {
 			items: {
 				include: {
-					menuItem: true, // Включаємо пов’язані дані про меню
+					menuItem: true,
 				},
 			},
-			promoCode: true, // Включаємо пов’язані дані про промокод
+			promoCode: true,
 		},
 	})
 
