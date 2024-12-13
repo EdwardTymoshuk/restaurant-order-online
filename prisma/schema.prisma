@@ -25,7 +25,8 @@ model MenuItem {
   image         String?
   category      String
   isRecommended Boolean     @default(false)
-  isOrderable   Boolean     @default(true)
+  isActive      Boolean     @default(true)
+  isOrderable   Boolean     @default(false)
   isOnMainPage  Boolean     @default(false)
   orders        OrderItem[]
   createdAt     DateTime    @default(now())

@@ -66,7 +66,7 @@ const Order = () => {
 				...item,
 				category: item.category as MenuItemCategory,
 			}))
-			.filter(item => item.isOrderable)
+			.filter(item => item.isActive)
 
 		// Обмеження відображення тільки сніданків, якщо активний режим сніданку
 		if (isBreakfastOnly && categoryFilter !== 'Śniadania') {

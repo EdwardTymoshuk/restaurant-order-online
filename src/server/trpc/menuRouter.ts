@@ -7,7 +7,7 @@ export const menuRouter = router({
 	getMenuItems: publicProcedure.query(async () => {
 		const items = await prisma.menuItem.findMany({
 			where: {
-				isOrderable: true,
+				isActive: true,
 			},
 		})
 		return items
@@ -45,7 +45,8 @@ export const menuRouter = router({
 			description: z.string().optional(),
 			category: z.string(),
 			image: z.string().optional(),
-			isOrderable: z.boolean().default(true),
+			isActive: z.boolean().default(true),
+			isOrderable: z.boolean().default(false),
 			isRecommended: z.boolean().default(false),
 			isOnMainPage: z.boolean().default(false),
 
@@ -58,7 +59,7 @@ export const menuRouter = router({
 					description: input.description,
 					category: input.category,
 					image: input.image,
-					isOrderable: input.isOrderable,
+					isActive: input.isActive,
 					isRecommended: input.isRecommended,
 					isOnMainPage: input.isOnMainPage,
 				},
@@ -75,6 +76,7 @@ export const menuRouter = router({
 			image: z.string().optional(),
 			category: z.string().optional(),
 			isRecommended: z.boolean().optional(),
+			isActive: z.boolean().optional(),
 			isOrderable: z.boolean().optional(),
 			isOnMainPage: z.boolean().optional(),
 		}))
