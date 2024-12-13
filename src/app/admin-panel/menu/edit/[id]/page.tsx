@@ -28,7 +28,7 @@ const EditMenuItemPage = ({ params }: { params: { id: string } }) => {
 		description: string
 		category: MenuItemCategory
 		image: string
-		isOrderable: boolean
+		isActive: boolean
 		isRecommended: boolean
 		isOnMainPage: boolean
 	}) => {
@@ -72,6 +72,7 @@ const EditMenuItemPage = ({ params }: { params: { id: string } }) => {
 					description: menuItem.description || '',
 					category: menuItem.category as MenuItemCategory,
 					image: menuItem.image || '',
+					isActive: menuItem.isActive,
 					isOrderable: menuItem.isOrderable,
 					isRecommended: menuItem.isRecommended,
 					isOnMainPage: menuItem.isOnMainPage,

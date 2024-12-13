@@ -20,9 +20,10 @@ const CreateMenuItemPage = () => {
 		description: string
 		category: string
 		image: string
-		isOrderable: boolean
+		isActive: boolean
 		isRecommended: boolean
 		isOnMainPage: boolean
+		isOrderable: boolean
 	}) => {
 		setIsLoading(true)
 		try {
@@ -49,9 +50,10 @@ const CreateMenuItemPage = () => {
 					description: '',
 					category: 'Inne',
 					image: '',
-					isOrderable: true,
+					isActive: true,
 					isRecommended: false,
 					isOnMainPage: false,
+					isOrderable: false,
 				}}
 				isLoading={isLoading}
 				onSubmit={handleSubmit}

@@ -27,8 +27,8 @@ import { FiPlus } from "react-icons/fi"
 const MenuTable = () => {
 	const [sortOption, setSortOption] = useState<string | undefined>('default')
 	const [categoryFilter, setCategoryFilter] = useState<MenuItemCategory | 'all'>('all')
+	const [isActiveFilter, setisActiveFilter] = useState<string>('all')
 	const [isOrderableFilter, setIsOrderableFilter] = useState<string>('all')
-	const [isRecommendedFilter, setIsRecommendedFilter] = useState<string>('all')
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 	const [menuItemToDelete, setMenuItemToDelete] = useState<string | null>(null)
 
@@ -82,15 +82,15 @@ const MenuTable = () => {
 		}
 
 		// Фільтруємо за активністю
-		if (isOrderableFilter !== 'all') {
-			const isOrderableValue = isOrderableFilter === 'true'
-			itemsFiltered = itemsFiltered.filter(item => item.isOrderable === isOrderableValue)
+		if (isActiveFilter !== 'all') {
+			const isActiveValue = isActiveFilter === 'true'
+			itemsFiltered = itemsFiltered.filter(item => item.isActive === isActiveValue)
 		}
 
 		// Фільтруємо за рекомендаціями
-		if (isRecommendedFilter !== 'all') {
-			const isRecommendedValue = isRecommendedFilter === 'true'
-			itemsFiltered = itemsFiltered.filter(item => item.isRecommended === isRecommendedValue)
+		if (isOrderableFilter !== 'all') {
+			const isOrderableValue = isOrderableFilter === 'true'
+			itemsFiltered = itemsFiltered.filter(item => item.isOrderable === isOrderableValue)
 		}
 
 		// Сортування
@@ -120,7 +120,7 @@ const MenuTable = () => {
 		}
 
 		return itemsFiltered
-	}, [menuItems, sortOption, categoryFilter, isOrderableFilter, isRecommendedFilter])
+	}, [menuItems, sortOption, categoryFilter, isActiveFilter, isOrderableFilter])
 
 	const openDeleteDialog = (id: string) => {
 		setMenuItemToDelete(id)
@@ -143,12 +143,12 @@ const MenuTable = () => {
 		router.push('/admin-panel/menu/create')
 	}
 
-	const handleToggleIsOrderable = async (id: string, isOrderable: boolean) => {
-		await updateMenuItem({ id, isOrderable })
+	const handleToggleisActive = async (id: string, isActive: boolean) => {
+		await updateMenuItem({ id, isActive })
 	}
 
-	const handleToggleIsRecommended = async (id: string, isRecommended: boolean) => {
-		await updateMenuItem({ id, isRecommended })
+	const handleToggleIsOrderable = async (id: string, isOrderable: boolean) => {
+		await updateMenuItem({ id, isOrderable })
 	}
 
 	return (
@@ -189,7 +189,7 @@ const MenuTable = () => {
 					</Select>
 				</div>
 				<div className='flex w-full gap-2'>
-					<Select value={isOrderableFilter} onValueChange={setIsOrderableFilter}>
+					<Select value={isActiveFilter} onValueChange={setisActiveFilter}>
 						<SelectTrigger aria-label="Aktywność" >
 							<SelectValue placeholder='Filtruj po aktywności' />
 						</SelectTrigger>
@@ -199,14 +199,14 @@ const MenuTable = () => {
 							<SelectItem value="false">Nieaktywne</SelectItem>
 						</SelectContent>
 					</Select>
-					<Select value={isRecommendedFilter} onValueChange={setIsRecommendedFilter}>
-						<SelectTrigger aria-label="Rekomendacje" >
-							<SelectValue placeholder='Filtruj po rekomendacjach' />
+					<Select value={isOrderableFilter} onValueChange={setIsOrderableFilter}>
+						<SelectTrigger aria-label="Zamawialość" >
+							<SelectValue placeholder='Filtruj po dostępności do zamówienia' />
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value="all">Wszystkie</SelectItem>
-							<SelectItem value="true">Rekomendowane</SelectItem>
-							<SelectItem value="false">Nierekomendowane</SelectItem>
+							<SelectItem value="true">Dostępne do zamówienia</SelectItem>
+							<SelectItem value="false">Wyłączone z zamówienia</SelectItem>
 						</SelectContent>
 					</Select>
 				</div>
@@ -225,7 +225,7 @@ const MenuTable = () => {
 								<TableHead className='text-text-foreground'>Kategoria</TableHead>
 								<TableHead className='text-text-foreground'>Cena</TableHead>
 								<TableHead className='text-text-foreground hidden lg:table-cell'>Aktywne</TableHead>
-								<TableHead className='text-text-foreground hidden lg:table-cell'>Rekomendowane</TableHead>
+								<TableHead className='text-text-foreground hidden lg:table-cell'>Zamówienie</TableHead>
 								<TableHead className='text-text-foreground'>Akcje</TableHead>
 							</TableRow>
 						</TableHeader>
@@ -251,14 +251,14 @@ const MenuTable = () => {
 									<TableCell className="text-right">{item.price} zł</TableCell>
 									<TableCell className="text-center hidden lg:table-cell">
 										<Switch
-											checked={item.isOrderable}
-											onCheckedChange={(value) => handleToggleIsOrderable(item.id, value)}
+											checked={item.isActive}
+											onCheckedChange={(value) => handleToggleisActive(item.id, value)}
 										/>
 									</TableCell>
 									<TableCell className="text-center hidden lg:table-cell">
 										<Switch
-											checked={item.isRecommended}
-											onCheckedChange={(value) => handleToggleIsRecommended(item.id, value)}
+											checked={item.isOrderable}
+											onCheckedChange={(value) => handleToggleIsOrderable(item.id, value)}
 										/>
 									</TableCell>
 									<TableCell className="text-center space-x-2">

@@ -17,9 +17,10 @@ interface MenuItemFormProps {
 		description: string
 		category: MenuItemCategory
 		image: string
-		isOrderable: boolean
+		isActive: boolean
 		isRecommended: boolean
 		isOnMainPage: boolean
+		isOrderable: boolean
 	}
 	isLoading: boolean
 	onSubmit: (values: {
@@ -28,9 +29,10 @@ interface MenuItemFormProps {
 		description: string
 		category: MenuItemCategory
 		image: string
-		isOrderable: boolean
+		isActive: boolean
 		isRecommended: boolean
 		isOnMainPage: boolean
+		isOrderable: boolean
 	}) => void
 }
 
@@ -40,9 +42,10 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({ initialValues, isLoading, o
 	const [description, setDescription] = useState(initialValues.description)
 	const [category, setCategory] = useState<MenuItemCategory>(initialValues.category)
 	const [image, setImage] = useState(initialValues.image)
-	const [isOrderable, setIsOrderable] = useState(initialValues.isOrderable)
+	const [isActive, setIsActive] = useState(initialValues.isActive)
 	const [isRecommended, setIsRecommended] = useState(initialValues.isRecommended)
 	const [isOnMainPage, setIsOnMainPage] = useState(initialValues.isOnMainPage)
+	const [isOrderable, setIsOrderable] = useState(initialValues.isOrderable)
 
 	const [errors, setErrors] = useState<{ name?: string; price?: string }>({}) // Стан для помилок
 
@@ -52,9 +55,10 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({ initialValues, isLoading, o
 		setDescription(initialValues.description)
 		setCategory(initialValues.category)
 		setImage(initialValues.image)
-		setIsOrderable(initialValues.isOrderable)
+		setIsActive(initialValues.isActive)
 		setIsRecommended(initialValues.isRecommended)
 		setIsOnMainPage(initialValues.isOnMainPage)
+		setIsOrderable(initialValues.isOrderable)
 	}, [initialValues])
 
 	const handleImageUpload = (imageUrl: string) => {
@@ -81,9 +85,10 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({ initialValues, isLoading, o
 				description,
 				category,
 				image,
-				isOrderable,
+				isActive,
 				isRecommended,
-				isOnMainPage
+				isOnMainPage,
+				isOrderable
 			})
 		}
 	}
@@ -148,11 +153,19 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({ initialValues, isLoading, o
 
 				<div className="flex items-center space-x-2">
 					<Checkbox
+						id="isActive"
+						checked={isActive}
+						onCheckedChange={(value) => setIsActive(value as boolean)}
+					/>
+					<label htmlFor="isActive" className="font-medium text-secondary">Aktywne</label>
+				</div>
+				<div className="flex items-center space-x-2">
+					<Checkbox
 						id="isOrderable"
 						checked={isOrderable}
 						onCheckedChange={(value) => setIsOrderable(value as boolean)}
 					/>
-					<label htmlFor="isOrderable" className="font-medium text-secondary">Aktywne</label>
+					<label htmlFor="isOrderable" className="font-medium text-secondary">Dostępne do zamówienia</label>
 				</div>
 
 				<div className="flex items-center space-x-2">
