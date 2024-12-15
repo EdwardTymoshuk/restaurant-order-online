@@ -402,7 +402,6 @@ const Checkout = () => {
 			toast.success('Zamówienie złożone pomyślnie!')
 
 			startTransition(() => {
-				// Робимо перехід менш пріоритетним, що дозволяє зберігати стан завантаження
 				router.push('/thank-you')
 			})
 
