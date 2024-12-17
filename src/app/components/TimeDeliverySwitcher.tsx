@@ -49,46 +49,50 @@ const TimeDeliverySwitcher = ({
 			CLOSING_HOUR
 		)
 
-		// Calculate the last order time for today
 		const lastOrderTimeToday = new Date(
 			closingTimeToday.getTime() - waitTimeWithBuffer * 60 * 1000
 		)
 
-		// Determine whether the restaurant is closed
+		// Якщо ресторан закритий
 		if (now >= closingTimeToday || now < openingTimeToday) {
 			setIsRestaurantClosed(true)
 			setIsClosingSoon(false)
 			setTimeLeftToOrder('')
 
-			// Calculate the next day's opening time
+			// Встановлюємо наступний день як час відкриття
 			const nextDayOpening = new Date(
 				now.getFullYear(),
 				now.getMonth(),
-				now.getDate() + 1,
+				now.getDate() + (now >= closingTimeToday ? 1 : 0),
 				OPENING_HOUR,
 				OPENING_MINUTES_DELAY
 			)
 
 			setSelectedTime(nextDayOpening)
 			onTimeChange(nextDayOpening)
-		} else {
-			setIsRestaurantClosed(false)
-			if (now >= lastOrderTimeToday) {
-				setIsClosingSoon(true)
-				updateTimeLeft(lastOrderTimeToday)
-				const interval = setInterval(() => updateTimeLeft(lastOrderTimeToday), 1000)
-				return () => clearInterval(interval)
-			} else {
-				setIsClosingSoon(false)
-				setTimeLeftToOrder('')
-			}
-
-			// Set the nearest available time
-			const nearestTime = getNearestAvailableTime(now, openingTimeToday, closingTimeToday)
-			setSelectedTime(nearestTime)
-			onTimeChange(nearestTime)
+			return
 		}
+
+		// Якщо ресторан ще працює
+		setIsRestaurantClosed(false)
+
+		// Якщо наближається час закриття
+		if (now >= lastOrderTimeToday) {
+			setIsClosingSoon(true)
+			updateTimeLeft(lastOrderTimeToday)
+			const interval = setInterval(() => updateTimeLeft(lastOrderTimeToday), 1000)
+			return () => clearInterval(interval)
+		} else {
+			setIsClosingSoon(false)
+			setTimeLeftToOrder('')
+		}
+
+		// Встановлюємо найближчий доступний час
+		const nearestTime = getNearestAvailableTime(now, openingTimeToday, closingTimeToday)
+		setSelectedTime(nearestTime)
+		onTimeChange(nearestTime)
 	}, [isDelivery, orderWaitTime])
+
 
 	const updateTimeLeft = (cutOffTime: Date) => {
 		const now = new Date()
@@ -111,31 +115,53 @@ const TimeDeliverySwitcher = ({
 		}
 	}
 
-	const getNearestAvailableTime = (now: Date, openingTime: Date, closingTime: Date): Date => {
-		if (now < openingTime) {
-			return openingTime
-		}
+	const getNearestAvailableTime = (
+		now: Date,
+		openingTime: Date,
+		closingTime: Date
+	): Date => {
+		const delayMinutes = isDelivery ? 45 : 30
 
-		if (now >= closingTime) {
-			// If closed, return the next day's opening time
+		// Час останнього можливого замовлення
+		const lastOrderTime = new Date(
+			closingTime.getTime() - delayMinutes * 60 * 1000
+		)
+
+		// Якщо зараз перед відкриттям або після закриття ресторану
+		if (now < openingTime || now >= closingTime) {
 			return new Date(
-				now.getFullYear(),
-				now.getMonth(),
-				now.getDate() + 1,
-				OPENING_HOUR,
-				OPENING_MINUTES_DELAY
+				openingTime.getFullYear(),
+				openingTime.getMonth(),
+				now >= closingTime ? openingTime.getDate() + 1 : openingTime.getDate(),
+				openingTime.getHours(),
+				openingTime.getMinutes()
 			)
 		}
 
-		const nearestMinutes = Math.ceil(now.getMinutes() / 30) * 30
-		return new Date(
-			now.getFullYear(),
-			now.getMonth(),
-			now.getDate(),
-			now.getHours(),
+		// Додаємо затримку до поточного часу
+		const adjustedNow = new Date(now.getTime() + delayMinutes * 60 * 1000)
+
+		// Округлення до найближчих 15 хвилин
+		const nearestMinutes = Math.ceil(adjustedNow.getMinutes() / 15) * 15
+
+		const nearestTime = new Date(
+			adjustedNow.getFullYear(),
+			adjustedNow.getMonth(),
+			adjustedNow.getDate(),
+			adjustedNow.getHours(),
 			nearestMinutes
 		)
+
+		// Якщо найближчий час перевищує останній доступний час, повертаємо `lastOrderTime`
+		if (nearestTime > lastOrderTime) {
+			return lastOrderTime
+		}
+
+		return nearestTime
 	}
+
+
+
 
 	const filterTime = (time: Date) => {
 		const now = new Date()

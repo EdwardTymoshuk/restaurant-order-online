@@ -7,6 +7,7 @@ export const menuRouter = router({
 	getMenuItems: publicProcedure.query(async () => {
 		const items = await prisma.menuItem.findMany({
 			where: {
+				isOrderable: true,
 				isActive: true,
 			},
 		})

@@ -18,9 +18,9 @@ const RecommendDialog: React.FC<RecommendDialogProps> = ({ isOpen, onOpenChange,
 	const { state } = useCart()
 	return (
 		<Dialog open={isOpen} onOpenChange={onOpenChange}>
-			<DialogContent className='h-5/6'>
+			<DialogContent className='h-fit'>
 				<DialogHeader>
-					<h3 className="text-xl font-semibold text-text-secondary mb-4">Nasi klienci często dobierają:</h3>
+					<h3 className="text-xl font-semibold text-text-secondary mb-4">Polecamy również:</h3>
 				</DialogHeader>
 				<div className="overflow-auto">
 					<RecommendedProducts />
