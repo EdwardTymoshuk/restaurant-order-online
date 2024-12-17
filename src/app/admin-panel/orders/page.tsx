@@ -275,11 +275,11 @@ const Orders = () => {
 			</div>
 
 			{/* Заголовки */}
-			<div className="hidden lg:flex flex-1 justify-between items-center gap-4 w-full">
-				<div className="hidden w-full lg:flex justify-between items-center px-4 py-2 font-bold text-lg text-center">
-					<p className="w-1/12">#</p>
+			<div className="flex flex-1 justify-between items-center gap-4 w-full">
+				<div className=" w-full flex justify-between items-center px-4 py-2 font-bold text-secondary text-sm md:text-lg text-center">
+					<p className="w-1/12 hidden md:block">#</p>
 					<p
-						className="w-2/12 flex items-center justify-center gap-2"
+						className="w-2/12 hidden md:flex items-center justify-center gap-2 "
 						onClick={() => handleSort('deliveryMethod')}
 						style={{ cursor: 'pointer' }}
 					>
@@ -293,7 +293,7 @@ const Orders = () => {
 						Czas utworzenia {getSortIcon('createdAt')}
 					</p>
 					<p
-						className="w-2/12 flex items-center justify-center gap-2"
+						className="w-2/12 hidden md:flex items-center justify-center gap-2"
 						onClick={() => handleSort('deliveryTime')}
 						style={{ cursor: 'pointer' }}
 					>
@@ -316,23 +316,20 @@ const Orders = () => {
 				{filteredOrders.map((order, index) => {
 					const { relativeTime, fullDate, fullTime } = formatTimeAgo(new Date(order.createdAt))
 					const statusButton = statusButtonMap(order.deliveryMethod, order.status)
-
-					console.log(order)
-
 					return (
 						<AccordionItem key={order.id} value={order.id}>
 							<AccordionTrigger
 								className={cn(
-									`flex items-center gap-4 px-4 py-2 border-b hover:no-underline ${statusColorMap[order.status]} text-text-secondary`,
+									`flex items-center gap-2 px-0 py-2 border-b hover:no-underline ${statusColorMap[order.status]} text-text-secondary text-sm md:text-base`,
 									{
 										'bg-success/80': highlightedOrderIds.has(order.id),
 									}
 								)}
 							>
-								<div className="flex flex-col lg:flex-row justify-between items-center w-full">
-									<p className="w-1/12">{index + 1}</p>
+								<div className="flex justify-between items-center w-full">
+									<p className="w-1/12 hidden md:block">{index + 1}</p>
 									<p
-										className="w-2/12"
+										className="w-2/12 hidden md:block"
 										onClick={() => setDeliveryMethodFilter(order.deliveryMethod)}
 										style={{ cursor: 'pointer' }}
 									>
@@ -340,7 +337,7 @@ const Orders = () => {
 											{order.deliveryMethod === 'DELIVERY' ? 'Dostawa' : 'Odbiór'}
 										</span>
 									</p>
-									<p className="w-2/12">
+									<p className="w-4/12 md:w-2/12">
 										{relativeTime ? (
 											relativeTime
 										) : (
@@ -350,14 +347,14 @@ const Orders = () => {
 											</div>
 										)}
 									</p>
-									<p className="w-2/12">
+									<p className="w-2/12 hidden md:block">
 										<div className="flex flex-col">
 											<span>{new Date(order.deliveryTime).toLocaleDateString()}</span>
 											<span>{new Date(order.deliveryTime).toLocaleTimeString()}</span>
 										</div>
 									</p>
 									<p
-										className={`w-2/12 flex gap-2 items-center justify-center ${statusColorMap[order.status]}`}
+										className={`w-4/12 md:w-2/12 flex gap-2 items-center justify-center ${statusColorMap[order.status]}`}
 									>
 										{isEditingStatus[order.id] ? (
 											<Select
@@ -394,7 +391,7 @@ const Orders = () => {
 											{isEditingStatus[order.id] ? <IoCheckmark /> : <RiPencilLine />}
 										</Button>
 									</p>
-									<div className="w-2/12 flex items-center justify-center">
+									<div className="w-4/12 md:w-2/12 flex items-center justify-center">
 										{statusButton?.nextStatus ? (
 											<Button
 												variant="default"
@@ -409,7 +406,14 @@ const Orders = () => {
 									</div>
 								</div>
 							</AccordionTrigger>
-							<AccordionContent className="p-4 font-bold">
+							<AccordionContent className="p-4">
+								<p className="text-base flex md:hidden">
+									<span className="text-secondary font-bold">Metod dostawy: </span> {order.deliveryMethod === 'DELIVERY' ? 'DOSTAWA' : 'ODBIÓR'}
+								</p>
+								<p className="text-base flex md:hidden">
+									<span className="text-secondary font-bold ">Czas dostawy/odbioru: </span>
+									{`${new Date(order.deliveryTime).toLocaleDateString()}  ${new Date(order.deliveryTime).toLocaleTimeString()}`}
+								</p>
 								<p className="text-base">
 									<span className="text-secondary bold">Numer zamówienia:</span> {order.id}
 								</p>

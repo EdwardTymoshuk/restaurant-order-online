@@ -130,8 +130,10 @@ const Order = () => {
 			<PageSubHeader title='Wybierz na co masz dziś ochotę' />
 
 			{isLoadingSettings ? <Skeleton className='w-full h-8' /> : (!settings?.isOrderingOpen &&
-				<h4 className='text-danger font-bold text-center text-2xl'>Zamawianie online jest chwilowo niedostępne. <br />W celu zamówienia zadzwoń do nas lub odwiedź nas osobiście.</h4>)
-			}
+				<div className="flex justify-self-center w-fit p-2 bg-red-100 text-danger text-center rounded-md">
+					Zamawianie online jest chwilowo niedostępne. <br />W celu zamówienia zadzwoń do nas lub odwiedź nas osobiście.
+				</div>
+			)}
 
 
 			<div className="flex gap-4 mb-4 w-1/2">
