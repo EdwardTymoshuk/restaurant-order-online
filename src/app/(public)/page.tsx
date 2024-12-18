@@ -130,8 +130,8 @@ const Home = () => {
                     <div className='space-y-4 mb-8'>
                       <div className='flex flex-col text-lg text-center text-text-secondary'>
                         <span className='text-secondary'>Hestii 3, Sopot</span>
-                        <span>Pn-Pt: 12:00 - 22:00</span>
-                        <span>Sb-Nd 8:00 - 22:00</span>
+                        <span>Pn-Pt: 10:00 - 19:00</span>
+                        <span>Sb-Nd 8:00 - 19:00</span>
                       </div>
                       <LoadingButton
                         isLoading={isPending}

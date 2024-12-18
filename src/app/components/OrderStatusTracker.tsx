@@ -31,19 +31,24 @@ const OrderStatusTracker: React.FC<OrderStatusTrackerProps> = ({ status, deliver
 			label: deliveryMethod === 'DELIVERY' ? 'dostarczono' : 'odebrane',
 			icon: <FaHandHoldingHeart />,
 		},
+		{
+			key: 'COMPLETED',
+			label: deliveryMethod === 'DELIVERY' ? 'dostarczono' : 'odebrane',
+			icon: <FaHandHoldingHeart />,
+		},
 	]
 
 	const currentStatus = statuses.find(s => s.key === status)
 
 	return (
-		<div className="flex flex-col items-center space-y-4">
-			<div className="flex flex-col items-center">
-				<div className="h-12 w-12 rounded-full flex items-center justify-center bg-secondary text-white">
+		<div className="flex flex-col items-center space-y-4 w-full">
+			<div className="flex flex-col w-full">
+				<div className="h-12 w-12 rounded-full flex self-center items-center justify-center bg-secondary text-white">
 					{React.cloneElement(currentStatus?.icon || <FaClipboardList />, {
 						className: 'h-8 w-8',
 					})}
 				</div>
-				<p className="text-lg font-semibold text-secondary mt-2">Status Twojego zamówienia: <span className='text-primary uppercase'>{currentStatus?.label}</span></p>
+				<p className="text-base lg:text-lg text-start font-semibold text-secondary mt-2">Status Twojego zamówienia: <span className='text-primary uppercase'>{currentStatus?.label}</span></p>
 			</div>
 		</div>
 	)

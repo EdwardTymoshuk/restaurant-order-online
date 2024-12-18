@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { OrderStatus, Prisma } from '@prisma/client' // Додаємо Prisma для типів
+import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { publicProcedure, router } from './trpc'
 
@@ -106,26 +107,33 @@ export const orderRouter = router({
 		}))
 		.query(async ({ input }) => {
 			const { phone } = input
-			const order = await prisma.order.findFirst({
-				where: {
-					phone: phone,
-				},
-				orderBy: {
-					createdAt: 'desc',
+
+			// Отримання замовлень за номером телефону
+			const orders = await prisma.order.findMany({
+				where: { phone },
+				orderBy: { createdAt: 'desc' },
+				select: {
+					id: true,
+					status: true,
+					deliveryMethod: true,
+					deliveryTime: true,
 				},
 			})
 
-			if (!order) {
-				throw new Error('Order not found')
+			if (!orders || orders.length === 0) {
+				throw new TRPCError({ code: 'NOT_FOUND', message: 'Order not found' })
 			}
 
+			// Розділення замовлень на активні та завершені
+			const activeOrder = orders.find(order => !['DELIVERED', 'COMPLETED', 'CANCELLED'].includes(order.status))
+			const completedOrder = !activeOrder ? orders[0] : null // Найсвіжіше завершене замовлення
+
 			return {
-				status: order.status,
-				orderId: order.id,
-				deliveryMethod: order.deliveryMethod,
-				deliveryTime: order.deliveryTime,
+				activeOrder,
+				completedOrder,
 			}
 		}),
+
 
 	// Оновлення статусу замовлення
 	updateStatus: publicProcedure

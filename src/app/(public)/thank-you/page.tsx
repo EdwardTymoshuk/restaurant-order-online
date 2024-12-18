@@ -1,6 +1,7 @@
 'use client'
 
 import { Skeleton } from '@/app/components/ui/skeleton'
+import { formatDate } from '@/utils/formateDate'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -24,17 +25,7 @@ const ThankYouPage = () => {
 	// 	}
 	// }, [orderId, phoneNumber, router])
 
-	// Функція для форматування дати
-	const formatDate = (isoDateString: string): string => {
-		const date = new Date(isoDateString)
-		return date.toLocaleString('pl-PL', {
-			day: 'numeric',
-			month: 'long',
-			year: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit',
-		})
-	}
+
 
 	if (isLoading) {
 		// Показуємо Skeleton під час завантаження або перевірки
