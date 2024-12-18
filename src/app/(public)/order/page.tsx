@@ -110,7 +110,7 @@ const Order = () => {
 				<CarouselContent className='h-full'>
 					{isLoadingCarouselImages && <Skeleton className='w-[1056px] h-[384px]' />}
 					{carouselImages.map((item, index) => (
-						<CarouselItem key={index} className='relative '>
+						<CarouselItem key={index} className='relative'>
 							<div className='relative h-96 rounded-md'>
 								<Image
 									src={item.imageUrl}

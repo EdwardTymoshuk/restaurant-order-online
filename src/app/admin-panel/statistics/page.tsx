@@ -1,8 +1,12 @@
+import AdminGuard from '../components/AdminGuard'
+
 const Statistics = () => {
 	return (
-		<div>
-			Statistics page
-		</div>
+		<AdminGuard>
+			<div>
+				Statistics page
+			</div>
+		</AdminGuard>
 	)
 }
 

@@ -552,6 +552,7 @@ const Settings = () => {
 											})
 										}}
 									/>
+									<p className='text-text-foreground italic'>*Zalecany rozmiar banera - to <span className='text-text-secondary'>1056 px x 384 px</span></p>
 								</div>
 							</AccordionContent>
 						</AccordionItem>
