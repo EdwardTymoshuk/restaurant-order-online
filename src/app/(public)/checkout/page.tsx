@@ -516,9 +516,13 @@ const Checkout = () => {
 												<p className="text-danger text-sm pt-1">{formStateDelivery.errors.street?.message}</p>
 											)}
 										</div>
-										<div className='flex w-full gap-4 items-start'>
+										<div className='flex w-full gap-4'>
 											<div className='w-full flex flex-col'>
-												<label htmlFor="buildingNumber" className="block text-sm font-medium text-text-secondary mt-2">Nr budynku <span className='text-danger'>*</span></label>
+												<label
+													htmlFor="buildingNumber"
+													className="text-sm font-medium text-text-secondary mt-2 min-h-[48px] flex items-end">
+													Nr budynku <span className='text-danger'>*</span>
+												</label>
 												<Input
 													id="buildingNumber"
 													placeholder="Nr budynku"
@@ -531,7 +535,11 @@ const Checkout = () => {
 												)}
 											</div>
 											<div className='w-full flex flex-col'>
-												<label htmlFor="apartment" className="block text-sm font-medium text-text-secondary mt-2">Nr mieszkania (opcjonalnie)</label>
+												<label
+													htmlFor="apartment"
+													className="text-sm font-medium text-text-secondary mt-2 min-h-[48px] flex items-end ">
+													Nr mieszkania (opcjonalnie)
+												</label>
 												<Input
 													id="apartment"
 													placeholder="Nr mieszkania"
@@ -544,6 +552,7 @@ const Checkout = () => {
 												)}
 											</div>
 										</div>
+
 									</div>
 								</div>
 
