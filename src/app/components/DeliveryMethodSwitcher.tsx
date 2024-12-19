@@ -24,13 +24,6 @@ interface OptionsProps {
 }
 
 const DeliveryMethodSwitcher: React.FC<DeliveryMethodSwitcherProps> = ({ deliveryMethod, setDeliveryMethod, setAddress, onValidate }) => {
-	// const [deliveryData, setdeliveryData] = useState({
-	// 	city: '',
-	// 	postalCode: '',
-	// 	street: '',
-	// 	buildingNumber: '',
-	// 	flatNumber: ''
-	// })
 	const [loading, setLoading] = useState(false)
 	const [errors, setErrors] = useState({
 		city: '',

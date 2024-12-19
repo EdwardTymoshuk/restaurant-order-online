@@ -37,11 +37,7 @@ const deliverySchema = z.object({
 	city: z.string().min(3, 'Podaj miasto').max(50),
 	postalCode: z.string().regex(/^\d{2}-\d{3}$/, 'Kod pocztowy musi być w formacie 00-000'),
 	street: z.string().min(1, 'Podaj ulicę').max(50),
-	buildingNumber: z.preprocess(
-		(val) => val === '' ? undefined : (isNaN(Number(val)) ? undefined : Number(val)),
-		z.number({ required_error: 'Podaj numer budynku' })
-			.min(1, 'Podaj poprawny numer budynku')
-	),
+	buildingNumber: z.string().min(1, 'Podaj numer budynku').max(10),
 	apartment: z.preprocess(
 		(val) => val === '' ? undefined : (isNaN(Number(val)) ? undefined : Number(val)),
 		z.number().positive().optional()
@@ -121,7 +117,7 @@ const Checkout = () => {
 			city: '',
 			postalCode: '',
 			street: '',
-			buildingNumber: undefined,
+			buildingNumber: '',
 			apartment: undefined,
 			deliveryTime: 'asap',
 			comment: '',
@@ -171,7 +167,7 @@ const Checkout = () => {
 				setValueDelivery('city', parts[1].split(' ')[1])
 				setValueDelivery('postalCode', parts[1].split(' ')[0])
 				setValueDelivery('street', parts[0].split(' ')[0])
-				setValueDelivery('buildingNumber', parseInt(parts[0].split(' ')[1], 10))
+				setValueDelivery('buildingNumber', parts[0].split(' ')[1])
 			}
 		}
 	}, [setValueDelivery])
@@ -526,8 +522,8 @@ const Checkout = () => {
 												<Input
 													id="buildingNumber"
 													placeholder="Nr budynku"
-													type="number"
-													{...registerDelivery('buildingNumber', { valueAsNumber: true })}
+													type="string"
+													{...registerDelivery('buildingNumber')}
 													className={`mt-1 ${formStateDelivery.errors.buildingNumber ? 'border-danger' : ''}`}
 												/>
 												{formStateDelivery.errors.buildingNumber && (
