@@ -23,7 +23,7 @@ export const orderRouter = router({
 			city: z.string().optional(),
 			postalCode: z.string().optional(),
 			street: z.string().optional(),
-			buildingNumber: z.number().optional(),
+			buildingNumber: z.string().optional(),
 			apartment: z.number().optional(),
 			comment: z.string().max(200).optional(),
 			promoCode: z.string().max(20).optional(),

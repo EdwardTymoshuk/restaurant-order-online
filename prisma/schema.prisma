@@ -42,7 +42,7 @@ model Order {
   city           String?
   postalCode     String?
   street         String?
-  buildingNumber Int?
+  buildingNumber String?
   apartment      Int?
   nip            String?
   deliveryMethod DeliveryMethod

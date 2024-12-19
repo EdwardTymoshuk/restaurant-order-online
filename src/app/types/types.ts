@@ -110,7 +110,7 @@ export interface OrderType {
 	city?: string | null,
 	postalCode?: string | null,
 	street?: string | null,
-	buildingNumber?: number | null,
+	buildingNumber?: string | null,
 	apartment?: number | null,
 	deliveryMethod: DeliveryMethod,
 	paymentMethod: string,
@@ -131,11 +131,7 @@ export const deliverySchema = z.object({
 	city: z.string().min(3, 'Podaj miasto').max(50),
 	postalCode: z.string().regex(/^\d{2}-\d{3}$/, 'Kod pocztowy musi być w formacie 00-000'),
 	street: z.string().min(1, 'Podaj ulicę').max(50),
-	buildingNumber: z.preprocess(
-		(val) => val === '' ? undefined : (isNaN(Number(val)) ? undefined : Number(val)),
-		z.number({ required_error: 'Podaj numer budynku' })
-			.min(1, 'Podaj poprawny numer budynku')
-	),
+	buildingNumber: z.string().min(1, 'Podaj numer budynku').max(10),
 	apartment: z.preprocess(
 		(val) => val === '' ? undefined : (isNaN(Number(val)) ? undefined : Number(val)),
 		z.number().positive().optional()
