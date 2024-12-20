@@ -1,7 +1,5 @@
-// OrdersContext.tsx
-
 import { Prisma } from '@prisma/client'
-import { Dispatch, ReactNode, SetStateAction, createContext, useContext, useEffect, useRef, useState } from 'react'
+import { Dispatch, ReactNode, SetStateAction, createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 
 type OrderWithItems = Prisma.OrderGetPayload<{
   include: {
@@ -40,16 +38,15 @@ export const OrdersProvider = ({ children }: { children: ReactNode }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const lastUpdatedAtRef = useRef<string | null>(null)
-  const loginTimeRef = useRef<Date>(new Date()) // Store the login time
-  const audioIntervalRef = useRef<NodeJS.Timeout | null>(null) // Reference to the audio interval timer
+  const loginTimeRef = useRef<Date>(new Date())
+  const audioIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Function to play the notification sound
-  const playNotificationSound = () => {
+  const playNotificationSound = useCallback(() => {
     const audio = new Audio('/audio/notification.wav')
     audio.play().catch((err) => console.error('Audio play failed:', err))
-  }
+  }, [])
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       const query = lastUpdatedAtRef.current
         ? `?lastUpdatedAt=${encodeURIComponent(lastUpdatedAtRef.current)}`
@@ -58,29 +55,23 @@ export const OrdersProvider = ({ children }: { children: ReactNode }) => {
       const orders: OrderWithItems[] = await response.json()
 
       if (orders.length > 0) {
-        // Оновлення lastUpdatedAt
         const latestOrderCreatedAt = orders[orders.length - 1].createdAt
         lastUpdatedAtRef.current = new Date(latestOrderCreatedAt).toISOString()
 
-        // Запобігання дублюванню
         setAllOrders((prevOrders) => {
           const existingOrderIds = new Set(prevOrders.map((order) => order.id))
           const newUniqueOrders = orders.filter((order) => !existingOrderIds.has(order.id))
           return [...prevOrders, ...newUniqueOrders]
         })
 
-        // Перевірка PENDING-замовлень
         const now = new Date()
         const delayedPendingOrders = orders.filter(
           (order) =>
             order.status === 'PENDING' &&
-            // new Date(order.statusUpdatedAt) <= new Date(now.getTime() - 10 * 60 * 1000)
             new Date(order.statusUpdatedAt) <= new Date(now.getTime() - 10 * 1000)
-
         )
 
         if (delayedPendingOrders.length > 0) {
-          // Відправлення повідомлення для кожного замовлення
           await Promise.all(
             delayedPendingOrders.map((order) =>
               fetch('/api/orders/notify-pending', {
@@ -93,7 +84,6 @@ export const OrdersProvider = ({ children }: { children: ReactNode }) => {
           console.log(`Sent notifications for delayed orders: ${delayedPendingOrders.map(o => o.id).join(', ')}`)
         }
 
-        // Логіка для нових замовлень
         const newOrders = orders.filter(
           (order) => new Date(order.createdAt) > loginTimeRef.current
         )
@@ -109,23 +99,21 @@ export const OrdersProvider = ({ children }: { children: ReactNode }) => {
 
           if (!audioIntervalRef.current) {
             playNotificationSound()
-            audioIntervalRef.current = setInterval(playNotificationSound, 15000) // 15 секунд
+            audioIntervalRef.current = setInterval(playNotificationSound, 15000)
           }
         }
       }
     } catch (error) {
       console.error('Error fetching orders:', error)
     }
-  }
-
+  }, [playNotificationSound])
 
   useEffect(() => {
-    fetchOrders() // Initial fetch
-    const interval = setInterval(fetchOrders, 5000) // Fetch every 5 seconds
+    fetchOrders()
+    const interval = setInterval(fetchOrders, 5000)
     return () => clearInterval(interval)
-  }, [])
+  }, [fetchOrders])
 
-  // Use useEffect to manage the audio playback based on isDialogOpen
   useEffect(() => {
     if (!isDialogOpen && audioIntervalRef.current) {
       clearInterval(audioIntervalRef.current)

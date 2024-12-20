@@ -5,7 +5,7 @@ import {
 	OPENING_HOUR,
 	OPENING_MINUTES_DELAY,
 } from '@/config/constants'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { BsClockHistory, BsLightning } from 'react-icons/bs'
 import Switcher from '../components/Switcher'
 import { TimeSelector } from '../components/TimeSelector'
@@ -32,7 +32,7 @@ const TimeDeliverySwitcher = ({
 	const waitTimeWithBuffer = orderWaitTime + deliveryTime
 
 	// Returns the last possible order time of a given day (15 minutes before closing)
-	const getLastPossibleOrderTime = (day: Date) => {
+	const getLastPossibleOrderTime = useCallback((day: Date) => {
 		const closingTime = new Date(
 			day.getFullYear(),
 			day.getMonth(),
@@ -40,80 +40,9 @@ const TimeDeliverySwitcher = ({
 			CLOSING_HOUR
 		)
 		return new Date(closingTime.getTime() - 15 * 60 * 1000)
-	}
+	}, [])
 
-	useEffect(() => {
-		const now = new Date()
-		const openingTimeToday = new Date(
-			now.getFullYear(),
-			now.getMonth(),
-			now.getDate(),
-			OPENING_HOUR,
-			OPENING_MINUTES_DELAY
-		)
-		const closingTimeToday = new Date(
-			now.getFullYear(),
-			now.getMonth(),
-			now.getDate(),
-			CLOSING_HOUR
-		)
-		const lastOrderTimeToday = getLastPossibleOrderTime(now)
-
-		if (now >= closingTimeToday || now < openingTimeToday) {
-			// Restaurant is closed, calculate time for the next day
-			setIsRestaurantClosed(true)
-			setIsClosingSoon(false)
-			setTimeLeftToOrder('')
-			const nextDayNearestTime = getNextDayAvailableTime(now)
-			setSelectedTime(nextDayNearestTime)
-			onTimeChange(nextDayNearestTime)
-			return
-		}
-
-		// Restaurant is open
-		setIsRestaurantClosed(false)
-
-		if (now >= lastOrderTimeToday) {
-			// Approaching closing time
-			setIsClosingSoon(true)
-			updateTimeLeft(lastOrderTimeToday)
-			const interval = setInterval(() => updateTimeLeft(lastOrderTimeToday), 1000)
-			return () => clearInterval(interval)
-		} else {
-			setIsClosingSoon(false)
-			setTimeLeftToOrder('')
-		}
-
-		const nearestTime = getNearestAvailableTime(now)
-		setSelectedTime(nearestTime)
-		onTimeChange(nearestTime)
-	}, [isDelivery, orderWaitTime])
-
-	// Updates the countdown until no more orders can be placed today
-	const updateTimeLeft = (cutOffTime: Date) => {
-		const now = new Date()
-		const diff = cutOffTime.getTime() - now.getTime()
-
-		if (diff <= 0) {
-			setTimeLeftToOrder('0:00')
-			return
-		}
-
-		const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-		const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-		setTimeLeftToOrder(`${minutes}:${seconds.toString().padStart(2, '0')}`)
-	}
-
-	// Rounds time up to the nearest quarter-hour slot
-	const roundToQuarterHour = (date: Date): Date => {
-		const minutes = date.getMinutes()
-		const rounded = Math.ceil(minutes / 15) * 15
-		date.setMinutes(rounded, 0, 0)
-		return date
-	}
-
-	// Calculates the earliest available time on the next day
-	const getNextDayAvailableTime = (now: Date): Date => {
+	const getNextDayAvailableTime = useCallback((now: Date): Date => {
 		const nextDay = new Date(
 			now.getFullYear(),
 			now.getMonth(),
@@ -124,13 +53,10 @@ const TimeDeliverySwitcher = ({
 		let latest: Date
 
 		if (isBreakfast) {
-			// Breakfast: 8:00 to 12:00 plus waiting/delivery time
 			earliest = new Date(nextDay.getFullYear(), nextDay.getMonth(), nextDay.getDate(), 8)
 			earliest = new Date(earliest.getTime() + waitTimeWithBuffer * 60000)
 			latest = new Date(nextDay.getFullYear(), nextDay.getMonth(), nextDay.getDate(), 12)
-			latest = new Date(latest.getTime() + waitTimeWithBuffer * 60000)
 		} else {
-			// Non-breakfast: 12:00 to closing plus waiting/delivery time
 			earliest = new Date(nextDay.getFullYear(), nextDay.getMonth(), nextDay.getDate(), 12)
 			earliest = new Date(earliest.getTime() + waitTimeWithBuffer * 60000)
 			const closingTimeNextDay = new Date(nextDay.getFullYear(), nextDay.getMonth(), nextDay.getDate(), CLOSING_HOUR)
@@ -143,10 +69,10 @@ const TimeDeliverySwitcher = ({
 		}
 
 		return adjusted
-	}
+	}, [isBreakfast, waitTimeWithBuffer])
 
-	// Calculates the nearest available time for the current day
-	const getNearestAvailableTime = (now: Date): Date => {
+
+	const getNearestAvailableTime = useCallback((now: Date): Date => {
 		const openingTime = new Date(
 			now.getFullYear(),
 			now.getMonth(),
@@ -193,12 +119,79 @@ const TimeDeliverySwitcher = ({
 			}
 		}
 
-		// Ensure that we do not exceed the last order time
 		if (adjusted > lastOrderTime) {
 			adjusted = lastOrderTime
 		}
 
 		return adjusted
+	}, [getLastPossibleOrderTime, getNextDayAvailableTime, isBreakfast, waitTimeWithBuffer])
+
+
+	useEffect(() => {
+		const now = new Date()
+		const openingTimeToday = new Date(
+			now.getFullYear(),
+			now.getMonth(),
+			now.getDate(),
+			OPENING_HOUR,
+			OPENING_MINUTES_DELAY
+		)
+		const closingTimeToday = new Date(
+			now.getFullYear(),
+			now.getMonth(),
+			now.getDate(),
+			CLOSING_HOUR
+		)
+		const lastOrderTimeToday = getLastPossibleOrderTime(now)
+
+		if (now >= closingTimeToday || now < openingTimeToday) {
+			setIsRestaurantClosed(true)
+			setIsClosingSoon(false)
+			setTimeLeftToOrder('')
+			const nextDayNearestTime = getNextDayAvailableTime(now)
+			setSelectedTime(nextDayNearestTime)
+			onTimeChange(nextDayNearestTime)
+			return
+		}
+
+		setIsRestaurantClosed(false)
+
+		if (now >= lastOrderTimeToday) {
+			setIsClosingSoon(true)
+			updateTimeLeft(lastOrderTimeToday)
+			const interval = setInterval(() => updateTimeLeft(lastOrderTimeToday), 1000)
+			return () => clearInterval(interval)
+		} else {
+			setIsClosingSoon(false)
+			setTimeLeftToOrder('')
+		}
+
+		const nearestTime = getNearestAvailableTime(now)
+		setSelectedTime(nearestTime)
+		onTimeChange(nearestTime)
+	}, [isDelivery, orderWaitTime, getNearestAvailableTime, getNextDayAvailableTime, onTimeChange, getLastPossibleOrderTime])
+
+	// Updates the countdown until no more orders can be placed today
+	const updateTimeLeft = (cutOffTime: Date) => {
+		const now = new Date()
+		const diff = cutOffTime.getTime() - now.getTime()
+
+		if (diff <= 0) {
+			setTimeLeftToOrder('0:00')
+			return
+		}
+
+		const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+		const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+		setTimeLeftToOrder(`${minutes}:${seconds.toString().padStart(2, '0')}`)
+	}
+
+	// Rounds time up to the nearest quarter-hour slot
+	const roundToQuarterHour = (date: Date): Date => {
+		const minutes = date.getMinutes()
+		const rounded = Math.ceil(minutes / 15) * 15
+		date.setMinutes(rounded, 0, 0)
+		return date
 	}
 
 	const handleTimeChange = (date: Date | null) => {
