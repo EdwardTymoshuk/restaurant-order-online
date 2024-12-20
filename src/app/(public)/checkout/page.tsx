@@ -156,12 +156,12 @@ const Checkout = () => {
 		if (settingsData) {
 			dispatch({ type: 'SET_DELIVERY_COST', payload: settingsData.deliveryCost || 0 })
 		}
-	}, [settingsData])
+	}, [settingsData, dispatch])
 
 	// Встановлюємо метод доставки при зміні активної форми
 	useEffect(() => {
 		dispatch({ type: 'SET_DELIVERY_METHOD', payload: deliveryMethod })
-	}, [deliveryMethod])
+	}, [deliveryMethod, dispatch])
 
 	useEffect(() => {
 		const deliveryAddress = localStorage.getItem('deliveryAddress')
