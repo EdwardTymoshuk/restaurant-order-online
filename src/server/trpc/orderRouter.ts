@@ -142,7 +142,10 @@ export const orderRouter = router({
 		.mutation(async ({ input }) => {
 			return await prisma.order.update({
 				where: { id: input.orderId },
-				data: { status: OrderStatus[input.status] },
+				data: {
+					status: OrderStatus[input.status],
+					statusUpdatedAt: new Date(),
+				},
 			})
 		}),
 
@@ -162,5 +165,19 @@ export const orderRouter = router({
 			})
 
 			return order
+		}),
+	markNotified: publicProcedure
+		.input(z.object({
+			orderIds: z.array(z.string()),
+		}))
+		.mutation(async ({ input }) => {
+			await prisma.order.updateMany({
+				where: { id: { in: input.orderIds } },
+				data: {
+					notifiedAt: new Date(),
+				},
+			})
+
+			return { success: true }
 		}),
 })

@@ -1,7 +1,7 @@
 'use client'
 
 import RecommendedProducts from '@/app/components/RecommendedProducts'
-import { Dialog, DialogContent, DialogHeader } from '@/app/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/app/components/ui/dialog'
 import { MIN_ORDER_AMOUNT } from '@/config/constants'
 import { MdKeyboardArrowRight } from 'react-icons/md'
 import { useCart } from '../context/CartContext'
@@ -19,6 +19,8 @@ const RecommendDialog: React.FC<RecommendDialogProps> = ({ isOpen, onOpenChange,
 	return (
 		<Dialog open={isOpen} onOpenChange={onOpenChange}>
 			<DialogContent className='h-fit'>
+				<DialogDescription hidden>Polecane produkty</DialogDescription>
+				<DialogTitle hidden>Polecane produkty</DialogTitle>
 				<DialogHeader>
 					<h3 className="text-xl font-semibold text-text-secondary mb-4">Polecamy również:</h3>
 				</DialogHeader>
