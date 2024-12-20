@@ -48,7 +48,7 @@ export const orderRouter = router({
 				comment: input.comment,
 				...(input.promoCode && {
 					promoCode: {
-						connect: { code: input.promoCode }, // Використовуємо connect для зв'язку з існуючим промокодом
+						connect: { code: input.promoCode },
 					},
 				}),
 				nip: input.nip
@@ -124,9 +124,8 @@ export const orderRouter = router({
 				throw new TRPCError({ code: 'NOT_FOUND', message: 'Order not found' })
 			}
 
-			// Розділення замовлень на активні та завершені
 			const activeOrder = orders.find(order => !['DELIVERED', 'COMPLETED', 'CANCELLED'].includes(order.status))
-			const completedOrder = !activeOrder ? orders[0] : null // Найсвіжіше завершене замовлення
+			const completedOrder = !activeOrder ? orders[0] : null
 
 			return {
 				activeOrder,
@@ -135,7 +134,6 @@ export const orderRouter = router({
 		}),
 
 
-	// Оновлення статусу замовлення
 	updateStatus: publicProcedure
 		.input(z.object({
 			orderId: z.string(),
@@ -144,29 +142,25 @@ export const orderRouter = router({
 		.mutation(async ({ input }) => {
 			return await prisma.order.update({
 				where: { id: input.orderId },
-				data: { status: OrderStatus[input.status] }, // Використовуємо enum OrderStatus
+				data: { status: OrderStatus[input.status] },
 			})
 		}),
 
-	// Видалення замовлення
 	deleteOrder: publicProcedure
 		.input(z.object({
 			orderId: z.string(),
 		}))
 		.mutation(async ({ input }) => {
-			// Спочатку видаляємо всі записи в OrderItem, що пов'язані з цим замовленням
 			await prisma.orderItem.deleteMany({
 				where: {
 					orderId: input.orderId,
 				},
 			})
 
-			// Після цього видаляємо саме замовлення
 			const order = await prisma.order.delete({
 				where: { id: input.orderId },
 			})
 
 			return order
 		}),
-
 })

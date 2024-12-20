@@ -57,27 +57,48 @@ export const OrdersProvider = ({ children }: { children: ReactNode }) => {
       const response = await fetch(`/api/orders/stream${query}`)
       const orders: OrderWithItems[] = await response.json()
 
-      console.log('Fetched orders:', orders)
-
       if (orders.length > 0) {
-        // Update lastUpdatedAt
+        // Оновлення lastUpdatedAt
         const latestOrderCreatedAt = orders[orders.length - 1].createdAt
         lastUpdatedAtRef.current = new Date(latestOrderCreatedAt).toISOString()
 
-        // Prevent duplicates
+        // Запобігання дублюванню
         setAllOrders((prevOrders) => {
           const existingOrderIds = new Set(prevOrders.map((order) => order.id))
           const newUniqueOrders = orders.filter((order) => !existingOrderIds.has(order.id))
           return [...prevOrders, ...newUniqueOrders]
         })
 
-        // Filter orders to find new ones based on login time
+        // Перевірка PENDING-замовлень
+        const now = new Date()
+        const delayedPendingOrders = orders.filter(
+          (order) =>
+            order.status === 'PENDING' &&
+            // new Date(order.statusUpdatedAt) <= new Date(now.getTime() - 10 * 60 * 1000)
+            new Date(order.statusUpdatedAt) <= new Date(now.getTime() - 10 * 1000)
+
+        )
+
+        if (delayedPendingOrders.length > 0) {
+          // Відправлення повідомлення для кожного замовлення
+          await Promise.all(
+            delayedPendingOrders.map((order) =>
+              fetch('/api/orders/notify-pending', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: order.id, phone: order.phone, name: order.name, finalAmount: order.finalAmount }),
+              })
+            )
+          )
+          console.log(`Sent notifications for delayed orders: ${delayedPendingOrders.map(o => o.id).join(', ')}`)
+        }
+
+        // Логіка для нових замовлень
         const newOrders = orders.filter(
           (order) => new Date(order.createdAt) > loginTimeRef.current
         )
 
         if (newOrders.length > 0) {
-          // Handle new orders
           setNewOrderCount((prevCount) => prevCount + newOrders.length)
           setHighlightedOrderIds((prev) => {
             const updatedIds = new Set(prev)
@@ -86,21 +107,17 @@ export const OrdersProvider = ({ children }: { children: ReactNode }) => {
           })
           setIsDialogOpen(true)
 
-          // Start playing audio if not already started
           if (!audioIntervalRef.current) {
-            playNotificationSound() // Play immediately
-            audioIntervalRef.current = setInterval(() => {
-              playNotificationSound()
-            }, 15000) // 15 seconds
+            playNotificationSound()
+            audioIntervalRef.current = setInterval(playNotificationSound, 15000) // 15 секунд
           }
         }
-
-        console.log('Updated lastUpdatedAt:', lastUpdatedAtRef.current)
       }
     } catch (error) {
       console.error('Error fetching orders:', error)
     }
   }
+
 
   useEffect(() => {
     fetchOrders() // Initial fetch
