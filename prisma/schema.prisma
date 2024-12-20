@@ -53,6 +53,7 @@ model Order {
   finalAmount     Float?
   status          OrderStatus    @default(PENDING)
   statusUpdatedAt DateTime       @default(now())
+  notifiedAt      DateTime?
   comment         String?
   promoCode       PromoCode?     @relation(fields: [promoCodeId], references: [id])
   promoCodeId     String?        @db.ObjectId
