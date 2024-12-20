@@ -89,6 +89,8 @@ const Checkout = () => {
 	const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null)
 	const [isLoadingPromoCode, setIsLoadingPromoCode] = useState(false)
 	const [isLoading, setIsLoading] = useState(false)
+	const [acceptPrivacy, setAcceptPrivacy] = useState(false)
+	const [privacyError, setPrivacyError] = useState(false)
 
 	const router = useRouter()
 	const createOrderMutation = trpc.order.create.useMutation()
@@ -106,6 +108,8 @@ const Checkout = () => {
 	const { isRestaurantClosed } = useCheckout()
 
 	const amountNeeded = Math.max(0, MIN_ORDER_AMOUNT - state.totalAmount)
+	const now = new Date()
+	const isBreakfast = now.getHours() < 12
 
 
 	const { register: registerDelivery, handleSubmit: handleSubmitDelivery, formState: formStateDelivery, setValue: setValueDelivery, getValues: getValuesDelivery, reset: resetDelivery } = useForm<DeliveryFormData>({
@@ -290,6 +294,13 @@ const Checkout = () => {
 		try {
 			setIsLoading(true)
 
+			setPrivacyError(false)
+
+			if (!acceptPrivacy) {
+				setPrivacyError(true)
+				return
+			}
+
 			let isValid = await handleCheckAddress()
 
 			if (!data.paymentMethod) {
@@ -356,19 +367,23 @@ const Checkout = () => {
 	const onTakeOutSubmit = async (data: TakeOutFormData) => {
 		try {
 			setIsLoading(true)
+
+			setPrivacyError(false)
+
+			if (!acceptPrivacy) {
+				setPrivacyError(true)
+				return
+			}
+
 			if (!data.paymentMethod) {
 				toast.error('Nie wybrano metody opłaty')
 				setIsLoading(false)
 				return
 			}
 
-			console.log('State: ', state)
-
 			const promoCode = state.takeOutDiscount?.code
 			const finalAmount = state.finalAmount
 			const totalAmount = state.totalAmount
-
-			console.log(promoCode)
 
 			const order = await createOrderMutation.mutateAsync({
 				name: data.name,
@@ -442,7 +457,7 @@ const Checkout = () => {
 							<div className="space-y-4 w-full">
 								<div className="space-y-2">
 									<h3 className="text-xl text-secondary font-semibold">Czas dostawy</h3>
-									<TimeDeliverySwitcher onTimeChange={handleTimeChange} isDelivery={true} orderWaitTime={settingsData?.orderWaitTime || 30} />
+									<TimeDeliverySwitcher isBreakfast={isBreakfast} onTimeChange={handleTimeChange} isDelivery={true} orderWaitTime={settingsData?.orderWaitTime || 30} />
 								</div>
 								<div className='space-y-2'>
 									<h3 className="text-xl text-secondary font-semibold">Dane do dostawy</h3>
@@ -712,7 +727,7 @@ const Checkout = () => {
 								<div className='space-y-2'>
 									<div className="space-y-2">
 										<h3 className="text-xl text-secondary font-semibold">Czas dostawy</h3>
-										<TimeDeliverySwitcher onTimeChange={handleTimeChange} isDelivery={false} orderWaitTime={settingsData?.orderWaitTime || 30} />
+										<TimeDeliverySwitcher isBreakfast={isBreakfast} onTimeChange={handleTimeChange} isDelivery={false} orderWaitTime={settingsData?.orderWaitTime || 30} />
 									</div>
 									<h3 className="text-xl text-secondary font-semibold">Dane do dostawy</h3>
 									<div className="flex gap-4 w-full">
@@ -971,6 +986,35 @@ const Checkout = () => {
 										<span>Do zapłaty</span>
 										<span>{state.finalAmount.toFixed(2)} zł</span>
 									</div>
+								</div>
+
+								<div className="flex flex-col space-y-1">
+									<div className="flex items-start space-x-2">
+										<Checkbox
+											id="privacy"
+											checked={acceptPrivacy}
+											onCheckedChange={(checked) => {
+												setAcceptPrivacy(Boolean(checked))
+												if (privacyError && checked) {
+													setPrivacyError(false)
+												}
+											}}
+											className={privacyError ? 'border-danger' : ''}
+										/>
+										<label htmlFor="privacy" className="leading-tight">
+											Zapoznałem się z{' '}
+											<Link href="/privacy-policy" className="text-primary underline" target="_blank" rel="noopener noreferrer"
+											>
+												Polityką Prywatności
+											</Link>
+											{' '}i wyrażam zgodę na przetwarzanie moich danych w celu realizacji zamówienia.
+										</label>
+									</div>
+									{privacyError && (
+										<span className="text-danger text-sm">
+											Musisz zaakceptować politykę prywatności, aby złożyć zamówienie.
+										</span>
+									)}
 								</div>
 
 								<LoadingButton
