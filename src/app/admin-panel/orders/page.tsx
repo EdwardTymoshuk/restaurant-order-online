@@ -98,15 +98,17 @@ const Orders = () => {
 
 	const updateStatus = trpc.order.updateStatus.useMutation({
 		onSuccess: (data, variables) => {
-			// Оновлюємо статус замовлення в allOrders
 			setAllOrders((prevOrders) =>
 				prevOrders.map((order) =>
-					order.id === variables.orderId ? { ...order, status: variables.status } : order
+					order.id === variables.orderId
+						? { ...order, status: variables.status, statusUpdatedAt: new Date() }
+						: order
 				)
 			)
 			toast.success('Status zamówienia został pomyślnie zmieniony')
 		},
 	})
+
 
 	const { mutate: mutateDelete, isLoading: isLoadingDelete } = trpc.order.deleteOrder.useMutation({
 		onSuccess: (data, variables) => {

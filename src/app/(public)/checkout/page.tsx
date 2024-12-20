@@ -1001,7 +1001,7 @@ const Checkout = () => {
 											}}
 											className={privacyError ? 'border-danger' : ''}
 										/>
-										<label htmlFor="privacy" className="leading-tight">
+										<label htmlFor="privacy" className="leading-tight text-sm font-normal text-muted-foreground">
 											Zapoznałem się z{' '}
 											<Link href="/privacy-policy" className="text-primary underline" target="_blank" rel="noopener noreferrer"
 											>
