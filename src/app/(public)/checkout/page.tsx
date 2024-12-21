@@ -670,13 +670,14 @@ const Checkout = () => {
 											<span>Gotówкa</span>
 										</Button>
 									</div>
-									<h3 className="text-xl text-secondary font-semibold">Płatność online</h3>
+									<h3 className="text-xl text-secondary font-semibold">Płatność online (chwilowo niedostępna)</h3>
 									<div className="grid grid-cols-2 gap-4">
 										<Button
 											type="button"
 											variant={selectedPaymentMethod === 'credit_card_online' ? 'default' : 'secondary'}
 											onClick={() => handlePaymentMethodSelect('credit_card_online')}
-											className="flex items-center space-x-2"
+											className="flex items-center space-x-2 disabled"
+											disabled
 										>
 											<FaRegCreditCard size={18} />
 											<span>Karta płatnicza</span>
@@ -686,7 +687,8 @@ const Checkout = () => {
 											type="button"
 											variant={selectedPaymentMethod === 'blik' ? 'default' : 'secondary'}
 											onClick={() => handlePaymentMethodSelect('blik')}
-											className="flex items-center space-x-2"
+											className="flex items-center space-x-2 disabled"
+											disabled
 										>
 											<BsFillBootstrapFill size={18} />
 											<span>Blik</span>
@@ -697,6 +699,7 @@ const Checkout = () => {
 											variant={selectedPaymentMethod === 'apple_pay' ? 'default' : 'secondary'}
 											onClick={() => handlePaymentMethodSelect('apple_pay')}
 											className="flex items-center space-x-2"
+											disabled
 										>
 											<FaApple size={18} />
 											<span>Apple Pay</span>
@@ -707,6 +710,7 @@ const Checkout = () => {
 											variant={selectedPaymentMethod === 'google_pay' ? 'default' : 'secondary'}
 											onClick={() => handlePaymentMethodSelect('google_pay')}
 											className="flex items-center space-x-2"
+											disabled
 										>
 											<FaGoogle size={18} />
 											<span>Google Pay</span>
@@ -861,13 +865,14 @@ const Checkout = () => {
 											<span>Gotówкa</span>
 										</Button>
 									</div>
-									<h3 className="text-xl text-secondary font-semibold">Płatność online</h3>
+									<h3 className="text-xl text-secondary font-semibold">Płatność online (chwilowo niedostępna)</h3>
 									<div className="grid grid-cols-2 gap-4">
 										<Button
 											type="button"
 											variant={selectedPaymentMethod === 'credit_card_online' ? 'default' : 'secondary'}
 											onClick={() => handlePaymentMethodSelect('credit_card_online')}
 											className="flex items-center space-x-2"
+											disabled
 										>
 											<FaRegCreditCard size={18} />
 											<span>Karta płatnicza</span>
@@ -878,6 +883,7 @@ const Checkout = () => {
 											variant={selectedPaymentMethod === 'blik' ? 'default' : 'secondary'}
 											onClick={() => handlePaymentMethodSelect('blik')}
 											className="flex items-center space-x-2"
+											disabled
 										>
 											<BsFillBootstrapFill size={18} />
 											<span>Blik</span>
@@ -888,6 +894,7 @@ const Checkout = () => {
 											variant={selectedPaymentMethod === 'apple_pay' ? 'default' : 'secondary'}
 											onClick={() => handlePaymentMethodSelect('apple_pay')}
 											className="flex items-center space-x-2"
+											disabled
 										>
 											<FaApple size={18} />
 											<span>Apple Pay</span>
@@ -898,6 +905,7 @@ const Checkout = () => {
 											variant={selectedPaymentMethod === 'google_pay' ? 'default' : 'secondary'}
 											onClick={() => handlePaymentMethodSelect('google_pay')}
 											className="flex items-center space-x-2"
+											disabled
 										>
 											<FaGoogle size={18} />
 											<span>Google Pay</span>
