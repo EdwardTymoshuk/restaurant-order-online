@@ -19,6 +19,9 @@ const CartSheet = ({ onClose }: { onClose: () => void }) => {
 	const [isRecommendDialogOpen, setIsRecommendDialogOpen] = useState(false)
 	const [isLoading, setIsLoading] = useState(false)
 
+	const now = new Date()
+	const isBreakfastOnly = now.getHours() >= 8 && now.getHours() < 12
+
 	const router = useRouter()
 	const [isPending, startTransition] = useTransition()
 
@@ -183,6 +186,7 @@ const CartSheet = ({ onClose }: { onClose: () => void }) => {
 				onOpenChange={setIsRecommendDialogOpen}
 				onContinue={handleContinue}
 				isLoading={isLoading}
+				isBreakfastOnly={isBreakfastOnly}
 			/>
 		</Sheet>
 	)
