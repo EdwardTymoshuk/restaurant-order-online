@@ -122,28 +122,30 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 			})}>
 				<span className='text-secondary'>{price} zł</span>
 
-				{/* If the item is in the cart, display quantity */}
+				{/* Якщо товар у кошику, показати кількість */}
 				{itemQuantity > 0 && !addedToCart ? (
 					<div className='flex items-center space-x-2'>
-						{/* Button to decrease quantity */}
+						{/* Кнопка для зменшення кількості */}
 						<Button
 							variant='secondary'
 							className={cn('h-6 w-6 flex items-center justify-center px-2', {
-								'opacity-50 cursor-not-allowed': itemQuantity <= 1
+								'opacity-50 cursor-not-allowed': itemQuantity <= 1 || !isOrderingActive || (!isBreakfastOnly && category === 'Śniadania'),
 							})}
 							onClick={decrementQuantity}
-							disabled={itemQuantity <= 1 || !isBreakfastOnly && category === 'Śniadania'}
+							disabled={itemQuantity <= 1 || !isOrderingActive || (!isBreakfastOnly && category === 'Śniadania')}
 						>
 							<FaMinus />
 						</Button>
-						{/* Display item quantity */}
+						{/* Відображення кількості товару */}
 						<span className="text-sm">{itemQuantity}</span>
-						{/* Button to increase quantity */}
+						{/* Кнопка для збільшення кількості */}
 						<Button
 							variant='secondary'
-							className='h-6 w-6 flex items-center justify-center px-2'
+							className={cn('h-6 w-6 flex items-center justify-center px-2', {
+								'opacity-50 cursor-not-allowed': !isOrderingActive || (!isBreakfastOnly && category === 'Śniadania'),
+							})}
 							onClick={incrementQuantity}
-							disabled={!isBreakfastOnly && category === 'Śniadania'}
+							disabled={!isOrderingActive || (!isBreakfastOnly && category === 'Śniadania')}
 						>
 							<FaPlus />
 						</Button>
@@ -152,15 +154,18 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 					<Button
 						variant='secondary'
 						className={cn('h-6 transition-colors duration-300', {
-							'text-success scale-105': addedToCart, // Animation
+							'opacity-50 cursor-not-allowed': !isOrderingActive || (!isBreakfastOnly && category === 'Śniadania'),
+							'text-success scale-105': addedToCart,
 						})}
 						onClick={addToCart}
-						disabled={!isBreakfastOnly && category === 'Śniadania'}
+						disabled={!isOrderingActive || (!isBreakfastOnly && category === 'Śniadania')}
 					>
 						{addedToCart ? <FaCheck /> : <CiShoppingBasket />}
 					</Button>
 				)}
 			</CardFooter>
+
+
 		</Card>
 	)
 }

@@ -12,7 +12,7 @@ export const trpc = createTRPCNext<AppRouter>({
 				httpBatchLink({
 					url: '/api/trpc',
 					async headers() {
-						const session = await getSession() // Отримуємо сесію
+						const session = await getSession()
 						return {
 							Authorization: session?.user?.accessToken ? `Bearer ${session.user.accessToken}` : '',
 						}

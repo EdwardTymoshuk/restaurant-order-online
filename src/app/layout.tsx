@@ -1,48 +1,29 @@
-'use client'
-
-import Header from '@/app/components/Header'
-import MainContainer from '@/app/components/MainContainer'
-import useLogoutOnTabClose from '@/hooks/useLogoutOnTabClose'
-import { trpc } from '@/utils/trpc'
-import { Inter, Roboto } from 'next/font/google'
-import { usePathname } from 'next/navigation'
-import Footer from './components/Footer'
+import { Metadata } from 'next'
+import { Roboto } from 'next/font/google'
+import ClientRoutingHandler from './components/ClientRoutingHandler'
 import PageLoader from './components/PageLoader'
 import Providers from './components/Providers'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
 const roboto = Roboto({ weight: '400', subsets: ['latin'] })
 
-function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
-  const isAdminPanel = usePathname()?.startsWith('/admin-panel')
-  const isHomePage = usePathname() === '/'
+export const metadata: Metadata = {
+  title: 'Zamówienia | Spoko Sopot',
+  description: 'Zamów online swoje ulubione dania z dostawą do domu lub odbiorem osobistym w Spoko Sopot. Szybko, wygodnie i smacznie!',
+}
 
-  useLogoutOnTabClose()
-
+function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pl">
       <body className={roboto.className}>
         <Providers>
           <PageLoader>
-            {!isAdminPanel && <Header />}
-            {!isAdminPanel && !isHomePage ? (
-              <MainContainer>
-                {children}
-              </MainContainer>
-            ) : (
-              children
-            )}
+            <ClientRoutingHandler>{children}</ClientRoutingHandler>
           </PageLoader>
-          {!isAdminPanel && <Footer />}
         </Providers>
       </body>
     </html>
   )
 }
 
-export default trpc.withTRPC(RootLayout)
+export default RootLayout

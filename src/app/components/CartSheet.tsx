@@ -187,6 +187,8 @@ const CartSheet = ({ onClose }: { onClose: () => void }) => {
 				onContinue={handleContinue}
 				isLoading={isLoading}
 				isBreakfastOnly={isBreakfastOnly}
+				totalAmount={state.totalAmount}
+				amountNeeded={amountNeeded}
 			/>
 		</Sheet>
 	)
