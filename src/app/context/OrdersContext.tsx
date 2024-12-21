@@ -96,7 +96,7 @@ export const OrdersProvider = ({ children }: { children: ReactNode }) => {
           (order) =>
             order.status === 'PENDING' &&
             order.notifiedAt == null &&
-            new Date(order.statusUpdatedAt) <= new Date(now.getTime() - 10 * 1000)
+            new Date(order.statusUpdatedAt) <= new Date(now.getTime() - 10 * 60 * 1000)
         )
 
         if (delayedPendingOrders.length > 0) {

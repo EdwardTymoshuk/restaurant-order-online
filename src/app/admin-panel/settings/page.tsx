@@ -74,7 +74,7 @@ const Settings = () => {
 	})
 
 	// Стан для налаштувань
-	const [isOrderingOpen, setIsOrderingOpen] = useState<boolean>(true)
+	const [isOrderingOpen, setIsOrderingOpen] = useState<boolean>(false)
 	const [orderWaitTime, setOrderWaitTime] = useState<number>(30)
 	const [deliveryCost, setDeliveryCost] = useState<number>(15)
 

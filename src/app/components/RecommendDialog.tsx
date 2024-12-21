@@ -12,9 +12,10 @@ interface RecommendDialogProps {
 	onOpenChange: (isOpen: boolean) => void
 	onContinue: () => void
 	isLoading: boolean
+	isBreakfastOnly: boolean
 }
 
-const RecommendDialog: React.FC<RecommendDialogProps> = ({ isOpen, onOpenChange, onContinue, isLoading }) => {
+const RecommendDialog: React.FC<RecommendDialogProps> = ({ isOpen, onOpenChange, onContinue, isLoading, isBreakfastOnly }) => {
 	const { state } = useCart()
 	return (
 		<Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -25,12 +26,12 @@ const RecommendDialog: React.FC<RecommendDialogProps> = ({ isOpen, onOpenChange,
 					<h3 className="text-xl font-semibold text-text-secondary mb-4">Polecamy również:</h3>
 				</DialogHeader>
 				<div className="overflow-auto">
-					<RecommendedProducts />
+					<RecommendedProducts isBreakfastOnly={isBreakfastOnly} />
 				</div>
 				<div className="flex justify-end space-x-4 mt-4">
-
-					{/* <Button variant="secondary" onClick={onContinue}>Kontynuuj <MdKeyboardArrowRight /></Button> */}
-					<LoadingButton isLoading={isLoading} disabled={state.totalAmount < MIN_ORDER_AMOUNT} variant="secondary" onClick={onContinue}>Kontynuj <MdKeyboardArrowRight /></LoadingButton>
+					<LoadingButton isLoading={isLoading} disabled={state.totalAmount < MIN_ORDER_AMOUNT} variant="secondary" onClick={onContinue}>
+						Kontynuuj <MdKeyboardArrowRight />
+					</LoadingButton>
 				</div>
 			</DialogContent>
 		</Dialog>
