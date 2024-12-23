@@ -6,6 +6,7 @@ import { Button } from '@/app/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/app/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select'
 import { Skeleton } from '@/app/components/ui/skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/components/ui/tabs'
 import { useOrders } from '@/app/context/OrdersContext'
 import { formatTimeAgo } from '@/utils/formatTimeAgo'
 import { getOrderStatuses } from '@/utils/getOrderStatuses'
@@ -18,6 +19,7 @@ import { GoSortAsc, GoSortDesc } from 'react-icons/go'
 import { IoCheckmark } from 'react-icons/io5'
 import { RiArrowDropRightLine, RiPencilLine } from 'react-icons/ri'
 import { toast } from 'sonner'
+import EmptyOrders from '../components/EmptyOrders'
 
 type OrderWithItems = Prisma.OrderGetPayload<{
 	include: {
@@ -221,6 +223,244 @@ const Orders = () => {
 		return `nowych zamówień`
 	}
 
+	const renderOrders = (orders: OrderWithItems[]) => {
+		return (
+			<>
+				{/* Заголовки */}
+				<div className="flex flex-1 justify-between items-center gap-4 w-full">
+					<div className=" w-full flex justify-between items-center px-4 py-2 font-bold text-secondary text-sm md:text-lg text-center">
+						<p className="w-1/12 hidden md:block">#</p>
+						<p
+							className="w-2/12 hidden md:flex items-center justify-center gap-2 "
+							onClick={() => handleSort('deliveryMethod')}
+							style={{ cursor: 'pointer' }}
+						>
+							Metoda dostawy {getSortIcon('deliveryMethod')}
+						</p>
+						<p
+							className="w-2/12 flex items-center justify-center gap-2"
+							onClick={() => handleSort('createdAt')}
+							style={{ cursor: 'pointer' }}
+						>
+							Czas utworzenia {getSortIcon('createdAt')}
+						</p>
+						<p
+							className="w-2/12 hidden md:flex items-center justify-center gap-2"
+							onClick={() => handleSort('deliveryTime')}
+							style={{ cursor: 'pointer' }}
+						>
+							Czas dostawy {getSortIcon('deliveryTime')}
+						</p>
+						<p
+							className="w-2/12 flex items-center justify-center gap-2"
+							onClick={() => handleSort('status')}
+							style={{ cursor: 'pointer' }}
+						>
+							Status {getSortIcon('status')}
+						</p>
+						<p className="w-2/12">Akcje</p>
+					</div>
+					<RiArrowDropRightLine className="h-4 w-4 shrink-0" />
+				</div>
+				<Accordion type="single" collapsible>
+					{(orders.length === 0) && <EmptyOrders />}
+					{orders.map((order, index) => {
+						const { relativeTime, fullDate, fullTime } = formatTimeAgo(new Date(order.createdAt))
+						const statusButton = statusButtonMap(order.deliveryMethod, order.status)
+						return (
+							<AccordionItem key={order.id} value={order.id}>
+								<AccordionTrigger
+									className={cn(
+										`flex items-center gap-2 px-0 py-2 border-b hover:no-underline ${statusColorMap[order.status]} text-text-secondary text-sm md:text-base`,
+										{
+											'bg-success/80': highlightedOrderIds.has(order.id),
+										}
+									)}
+								>
+									<div className="flex justify-between items-center w-full">
+										<p className="w-1/12 hidden md:block">{index + 1}</p>
+										<p
+											className="w-2/12 hidden md:block"
+											onClick={() => setDeliveryMethodFilter(order.deliveryMethod)}
+											style={{ cursor: 'pointer' }}
+										>
+											<span className="hover:text-secondary hover:underline">
+												{order.deliveryMethod === 'DELIVERY' ? 'Dostawa' : 'Odbiór'}
+											</span>
+										</p>
+										<p className="w-4/12 md:w-2/12">
+											{relativeTime ? (
+												relativeTime
+											) : (
+												<div className="flex flex-col">
+													<span>{fullDate}</span>
+													<span>{fullTime}</span>
+												</div>
+											)}
+										</p>
+										<p className="w-2/12 hidden md:block">
+											<div className="flex flex-col">
+												<span>{new Date(order.deliveryTime).toLocaleDateString()}</span>
+												<span>{new Date(order.deliveryTime).toLocaleTimeString()}</span>
+											</div>
+										</p>
+										<p
+											className={`w-4/12 md:w-2/12 flex gap-2 items-center justify-center ${statusColorMap[order.status]}`}
+										>
+											{isEditingStatus[order.id] ? (
+												<Select
+													value={selectedStatus[order.id]}
+													onValueChange={(value) => handleStatusChange(order.id, value as OrderStatus)}
+												>
+													<SelectTrigger className="text-sm">
+														<SelectValue />
+													</SelectTrigger>
+													<SelectContent>
+														{getOrderStatuses(order.deliveryMethod).map((status) => (
+															<SelectItem key={status.key} value={status.key}>
+																{status.label}
+															</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
+											) : (
+												<span>
+													{getOrderStatuses(order.deliveryMethod).find((s) => s.key === order.status)?.label}
+												</span>
+											)}
+
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={(event) =>
+													isEditingStatus[order.id]
+														? confirmStatusChange(order.id, event, selectedStatus[order.id])
+														: toggleStatusEdit(order.id, event)
+												}
+												className="text-success hover:text-success-light p-0"
+											>
+												{isEditingStatus[order.id] ? <IoCheckmark /> : <RiPencilLine />}
+											</Button>
+										</p>
+										<div className="w-4/12 md:w-2/12 flex items-center justify-center">
+											{statusButton?.nextStatus ? (
+												<Button
+													variant="default"
+													size="sm"
+													onClick={(event) => confirmStatusChange(order.id, event, statusButton.nextStatus)}
+												>
+													{statusButton.label} <RiArrowDropRightLine size={18} />
+												</Button>
+											) : (
+												<p className="italic">Zakończone</p>
+											)}
+										</div>
+									</div>
+								</AccordionTrigger>
+								<AccordionContent className="p-4">
+									<p className="text-base flex md:hidden">
+										<span className="text-secondary font-bold">Metoda dostawy: </span> {order.deliveryMethod === 'DELIVERY' ? 'DOSTAWA' : 'ODBIÓR'}
+									</p>
+									<p className="text-base flex md:hidden">
+										<span className="text-secondary font-bold ">Czas dostawy/odbioru: </span>
+										{`${new Date(order.deliveryTime).toLocaleDateString()}  ${new Date(order.deliveryTime).toLocaleTimeString()}`}
+									</p>
+									<p className="text-base">
+										<span className="text-secondary bold">Numer zamówienia:</span> {order.id}
+									</p>
+									<p className="text-base">
+										<span className="text-secondary bold">Imię klienta:</span> {order.name}
+									</p>
+									<p className="text-base">
+										<span className="text-secondary bold">Nr telefonu:</span> {order.phone}
+									</p>
+									<p className="text-base">
+										<span className="text-secondary bold">Komentarz:</span> {order.comment || 'Brak komentarza'}
+									</p>
+									{order.promoCode?.code && (
+										<p className="text-base">
+											<span className="text-secondary bold">Promocja:</span>
+											<ul className="text-sm">
+												<li className="pl-8 text-secondary">
+													{' '}
+													- Kod promocyjny: <span className="text-text-secondary">{order.promoCode?.code}</span>
+												</li>
+												<li className="pl-8 text-secondary">
+													{' '}
+													- Rabat:{' '}
+													<span className="text-text-secondary">
+														{order.promoCode?.discountValue}{' '}
+														{order.promoCode?.discountType === 'PERCENTAGE' ? '%' : 'zł'}
+													</span>
+												</li>
+												<li className="pl-8 text-secondary">
+													{' '}
+													- Kwota przed rabatem: <span className="text-text-secondary">{order.totalAmount} zł</span>
+												</li>
+											</ul>
+										</p>
+									)}
+									<p className="text-base">
+										<span className="text-secondary bold">Kwota ostateczna:</span> {order.finalAmount} zł
+									</p>
+									{order.nip && (
+										<p className="text-base">
+											<span className="text-secondary bold">Numer NIP:</span> {order.nip}
+										</p>
+									)}
+
+									{order.deliveryMethod === 'DELIVERY' && (
+										<div className="mt-4">
+											<p className="text-base">
+												<span className="text-secondary bold">Adres dostawy:</span>
+											</p>
+											<ul className="pl-8 ml-4 text-lg font-extrabold">
+												<li>
+													<span className="bold">Miasto:</span> {order.city || 'Brak danych'}
+												</li>
+												<li>
+													<span className="bold">Kod pocztowy:</span> {order.postalCode || 'Brak danych'}
+												</li>
+												<li>
+													<span className="bold">Ulica:</span> {order.street || 'Brak danych'}
+												</li>
+												<li>
+													<span className="bold">Numer budynku:</span> {order.buildingNumber || 'Brak danych'}
+												</li>
+												<li>
+													<span className="bold">Numer mieszkania:</span> {order.apartment || 'Brak danych'}
+												</li>
+											</ul>
+										</div>
+									)}
+
+									<p className="text-base">
+										<span className="text-secondary bold">Zamówienie:</span>
+									</p>
+									<ul className="list-decimal pl-8 ml-4 text-lg font-extrabold">
+										{order.items?.map((item) => (
+											<li key={item.id}>
+												<span>{item.quantity}x</span> {item.menuItem?.name || 'Unknown item'}
+											</li>
+										))}
+									</ul>
+									<Button
+										variant="destructive"
+										size="sm"
+										onClick={() => openDeleteDialog(order.id)}
+										className="mt-4"
+									>
+										Usuń zamówienie
+									</Button>
+								</AccordionContent>
+							</AccordionItem>
+						)
+					})}
+				</Accordion>
+			</>
+		)
+	}
+
 	if (!allOrders) {
 		return (
 			<div className="w-full p-4">
@@ -276,238 +516,30 @@ const Orders = () => {
 				</Select>
 			</div>
 
-			{/* Заголовки */}
-			<div className="flex flex-1 justify-between items-center gap-4 w-full">
-				<div className=" w-full flex justify-between items-center px-4 py-2 font-bold text-secondary text-sm md:text-lg text-center">
-					<p className="w-1/12 hidden md:block">#</p>
-					<p
-						className="w-2/12 hidden md:flex items-center justify-center gap-2 "
-						onClick={() => handleSort('deliveryMethod')}
-						style={{ cursor: 'pointer' }}
-					>
-						Metoda dostawy {getSortIcon('deliveryMethod')}
-					</p>
-					<p
-						className="w-2/12 flex items-center justify-center gap-2"
-						onClick={() => handleSort('createdAt')}
-						style={{ cursor: 'pointer' }}
-					>
-						Czas utworzenia {getSortIcon('createdAt')}
-					</p>
-					<p
-						className="w-2/12 hidden md:flex items-center justify-center gap-2"
-						onClick={() => handleSort('deliveryTime')}
-						style={{ cursor: 'pointer' }}
-					>
-						Czas dostawy {getSortIcon('deliveryTime')}
-					</p>
-					<p
-						className="w-2/12 flex items-center justify-center gap-2"
-						onClick={() => handleSort('status')}
-						style={{ cursor: 'pointer' }}
-					>
-						Status {getSortIcon('status')}
-					</p>
-					<p className="w-2/12">Akcje</p>
-				</div>
-				<RiArrowDropRightLine className="h-4 w-4 shrink-0" />
-			</div>
 
 			{/* Замовлення */}
-			<Accordion type="single" collapsible>
-				{filteredOrders.map((order, index) => {
-					const { relativeTime, fullDate, fullTime } = formatTimeAgo(new Date(order.createdAt))
-					const statusButton = statusButtonMap(order.deliveryMethod, order.status)
-					return (
-						<AccordionItem key={order.id} value={order.id}>
-							<AccordionTrigger
-								className={cn(
-									`flex items-center gap-2 px-0 py-2 border-b hover:no-underline ${statusColorMap[order.status]} text-text-secondary text-sm md:text-base`,
-									{
-										'bg-success/80': highlightedOrderIds.has(order.id),
-									}
-								)}
-							>
-								<div className="flex justify-between items-center w-full">
-									<p className="w-1/12 hidden md:block">{index + 1}</p>
-									<p
-										className="w-2/12 hidden md:block"
-										onClick={() => setDeliveryMethodFilter(order.deliveryMethod)}
-										style={{ cursor: 'pointer' }}
-									>
-										<span className="hover:text-secondary hover:underline">
-											{order.deliveryMethod === 'DELIVERY' ? 'Dostawa' : 'Odbiór'}
-										</span>
-									</p>
-									<p className="w-4/12 md:w-2/12">
-										{relativeTime ? (
-											relativeTime
-										) : (
-											<div className="flex flex-col">
-												<span>{fullDate}</span>
-												<span>{fullTime}</span>
-											</div>
-										)}
-									</p>
-									<p className="w-2/12 hidden md:block">
-										<div className="flex flex-col">
-											<span>{new Date(order.deliveryTime).toLocaleDateString()}</span>
-											<span>{new Date(order.deliveryTime).toLocaleTimeString()}</span>
-										</div>
-									</p>
-									<p
-										className={`w-4/12 md:w-2/12 flex gap-2 items-center justify-center ${statusColorMap[order.status]}`}
-									>
-										{isEditingStatus[order.id] ? (
-											<Select
-												value={selectedStatus[order.id]}
-												onValueChange={(value) => handleStatusChange(order.id, value as OrderStatus)}
-											>
-												<SelectTrigger className="text-sm">
-													<SelectValue />
-												</SelectTrigger>
-												<SelectContent>
-													{getOrderStatuses(order.deliveryMethod).map((status) => (
-														<SelectItem key={status.key} value={status.key}>
-															{status.label}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-										) : (
-											<span>
-												{getOrderStatuses(order.deliveryMethod).find((s) => s.key === order.status)?.label}
-											</span>
-										)}
+			<Tabs defaultValue="new" className='w-full'>
+				<TabsList className='w-full lg:gap-4 p-8'>
+					<TabsTrigger
+						value="new"
+						className='flex flex-col md:flex-row md:gap-2 text-xl md:text-2xl lg:text-4xl text-text-foreground h-fit data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-4 border-primary rounded-none transition-all'>
+						<p>Nowe</p>
+						<p>{filteredOrders.filter((order) => order.status === 'PENDING').length}</p>
 
-										<Button
-											variant="ghost"
-											size="sm"
-											onClick={(event) =>
-												isEditingStatus[order.id]
-													? confirmStatusChange(order.id, event, selectedStatus[order.id])
-													: toggleStatusEdit(order.id, event)
-											}
-											className="text-success hover:text-success-light p-0"
-										>
-											{isEditingStatus[order.id] ? <IoCheckmark /> : <RiPencilLine />}
-										</Button>
-									</p>
-									<div className="w-4/12 md:w-2/12 flex items-center justify-center">
-										{statusButton?.nextStatus ? (
-											<Button
-												variant="default"
-												size="sm"
-												onClick={(event) => confirmStatusChange(order.id, event, statusButton.nextStatus)}
-											>
-												{statusButton.label} <RiArrowDropRightLine size={18} />
-											</Button>
-										) : (
-											<p className="italic">Zakończone</p>
-										)}
-									</div>
-								</div>
-							</AccordionTrigger>
-							<AccordionContent className="p-4">
-								<p className="text-base flex md:hidden">
-									<span className="text-secondary font-bold">Metod dostawy: </span> {order.deliveryMethod === 'DELIVERY' ? 'DOSTAWA' : 'ODBIÓR'}
-								</p>
-								<p className="text-base flex md:hidden">
-									<span className="text-secondary font-bold ">Czas dostawy/odbioru: </span>
-									{`${new Date(order.deliveryTime).toLocaleDateString()}  ${new Date(order.deliveryTime).toLocaleTimeString()}`}
-								</p>
-								<p className="text-base">
-									<span className="text-secondary bold">Numer zamówienia:</span> {order.id}
-								</p>
-								<p className="text-base">
-									<span className="text-secondary bold">Imię klienta:</span> {order.name}
-								</p>
-								<p className="text-base">
-									<span className="text-secondary bold">Nr telefonu:</span> {order.phone}
-								</p>
-								<p className="text-base">
-									<span className="text-secondary bold">Komentarz:</span> {order.comment || 'Brak komentarza'}
-								</p>
-								{order.promoCode?.code && (
-									<p className="text-base">
-										<span className="text-secondary bold">Promocja:</span>
-										<ul className="text-sm">
-											<li className="pl-8 text-secondary">
-												{' '}
-												- Kod promocyjny: <span className="text-text-secondary">{order.promoCode?.code}</span>
-											</li>
-											<li className="pl-8 text-secondary">
-												{' '}
-												- Rabat:{' '}
-												<span className="text-text-secondary">
-													{order.promoCode?.discountValue}{' '}
-													{order.promoCode?.discountType === 'PERCENTAGE' ? '%' : 'zł'}
-												</span>
-											</li>
-											<li className="pl-8 text-secondary">
-												{' '}
-												- Kwota przed rabatem: <span className="text-text-secondary">{order.totalAmount} zł</span>
-											</li>
-										</ul>
-									</p>
-								)}
-								<p className="text-base">
-									<span className="text-secondary bold">Kwota ostateczna:</span> {order.finalAmount} zł
-								</p>
-								{order.nip && (
-									<p className="text-base">
-										<span className="text-secondary bold">Numer NIP:</span> {order.nip}
-									</p>
-								)}
-
-								{order.deliveryMethod === 'DELIVERY' && (
-									<div className="mt-4">
-										<p className="text-base">
-											<span className="text-secondary bold">Adres dostawy:</span>
-										</p>
-										<ul className="pl-8 ml-4 text-lg font-extrabold">
-											<li>
-												<span className="bold">Miasto:</span> {order.city || 'Brak danych'}
-											</li>
-											<li>
-												<span className="bold">Kod pocztowy:</span> {order.postalCode || 'Brak danych'}
-											</li>
-											<li>
-												<span className="bold">Ulica:</span> {order.street || 'Brak danych'}
-											</li>
-											<li>
-												<span className="bold">Numer budynku:</span> {order.buildingNumber || 'Brak danych'}
-											</li>
-											<li>
-												<span className="bold">Numer mieszkania:</span> {order.apartment || 'Brak danych'}
-											</li>
-										</ul>
-									</div>
-								)}
-
-								<p className="text-base">
-									<span className="text-secondary bold">Zamówienie:</span>
-								</p>
-								<ul className="list-decimal pl-8 ml-4 text-lg font-extrabold">
-									{order.items?.map((item) => (
-										<li key={item.id}>
-											<span>{item.quantity}x</span> {item.menuItem?.name || 'Unknown item'}
-										</li>
-									))}
-								</ul>
-								<Button
-									variant="destructive"
-									size="sm"
-									onClick={() => openDeleteDialog(order.id)}
-									className="mt-4"
-								>
-									Usuń zamówienie
-								</Button>
-							</AccordionContent>
-						</AccordionItem>
-					)
-				})}
-			</Accordion>
+					</TabsTrigger>
+					<TabsTrigger value="in-progress" className='flex flex-col md:flex-row md:gap-2 text-xl md:text-2xl lg:text-4xl text-text-foreground h-fit data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-4 border-primary rounded-none transition-all'>
+						<p>W trakcie</p>
+						<p>{filteredOrders.filter((order) => ['ACCEPTED', 'IN_PROGRESS', 'READY'].includes(order.status)).length}</p>
+					</TabsTrigger>
+					<TabsTrigger value="completed" className='flex flex-col md:flex-row md:gap-2 text-xl md:text-2xl lg:text-4xl text-text-foreground h-fit data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-4 border-primary rounded-none transition-all'>
+						<p>Zakończone</p>
+						<p>{filteredOrders.filter((order) => ['COMPLETED', 'CANCELED', 'DELIVERED'].includes(order.status)).length}</p>
+					</TabsTrigger>
+				</TabsList>
+				<TabsContent value="new">{renderOrders(filteredOrders.filter((order) => order.status === 'PENDING'))}</TabsContent>
+				<TabsContent value="in-progress">{renderOrders(filteredOrders.filter((order) => ['ACCEPTED', 'IN_PROGRESS', 'READY'].includes(order.status)))}</TabsContent>
+				<TabsContent value="completed">{renderOrders(filteredOrders.filter((order) => order.status === 'COMPLETED'))}</TabsContent>
+			</Tabs>
 
 			{/* Діалог видалення */}
 			<Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
