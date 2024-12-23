@@ -365,21 +365,25 @@ const Orders = () => {
 										<span className="text-secondary font-bold ">Czas dostawy/odbioru: </span>
 										{`${new Date(order.deliveryTime).toLocaleDateString()}  ${new Date(order.deliveryTime).toLocaleTimeString()}`}
 									</p>
-									<p className="text-base">
-										<span className="text-secondary bold">Numer zamówienia:</span> {order.id}
+									<p className="text-base flex ">
+										<span className="text-secondary font-bold ">Metoda dostawy: </span>
+										{order.deliveryMethod}
 									</p>
 									<p className="text-base">
-										<span className="text-secondary bold">Imię klienta:</span> {order.name}
+										<span className="text-secondary font-bold">Numer zamówienia:</span> {order.id}
 									</p>
 									<p className="text-base">
-										<span className="text-secondary bold">Nr telefonu:</span> {order.phone}
+										<span className="text-secondary font-bold">Imię klienta:</span> {order.name}
 									</p>
 									<p className="text-base">
-										<span className="text-secondary bold">Komentarz:</span> {order.comment || 'Brak komentarza'}
+										<span className="text-secondary font-bold">Nr telefonu:</span> {order.phone}
+									</p>
+									<p className="text-base">
+										<span className="text-secondary font-bold">Komentarz:</span> {order.comment || 'Brak komentarza'}
 									</p>
 									{order.promoCode?.code && (
 										<p className="text-base">
-											<span className="text-secondary bold">Promocja:</span>
+											<span className="text-secondary font-bold">Promocja:</span>
 											<ul className="text-sm">
 												<li className="pl-8 text-secondary">
 													{' '}
@@ -401,41 +405,41 @@ const Orders = () => {
 										</p>
 									)}
 									<p className="text-base">
-										<span className="text-secondary bold">Kwota ostateczna:</span> {order.finalAmount} zł
+										<span className="text-secondary font-bold">Kwota ostateczna:</span> {order.finalAmount} zł
 									</p>
 									{order.nip && (
 										<p className="text-base">
-											<span className="text-secondary bold">Numer NIP:</span> {order.nip}
+											<span className="text-secondary font-bold">Numer NIP:</span> {order.nip}
 										</p>
 									)}
 
 									{order.deliveryMethod === 'DELIVERY' && (
 										<div className="mt-4">
 											<p className="text-base">
-												<span className="text-secondary bold">Adres dostawy:</span>
+												<span className="text-secondary font-bold">Adres dostawy:</span>
 											</p>
 											<ul className="pl-8 ml-4 text-lg font-extrabold">
 												<li>
-													<span className="bold">Miasto:</span> {order.city || 'Brak danych'}
+													<span className="font-bold">Miasto:</span> {order.city || 'Brak danych'}
 												</li>
 												<li>
-													<span className="bold">Kod pocztowy:</span> {order.postalCode || 'Brak danych'}
+													<span className="font-bold">Kod pocztowy:</span> {order.postalCode || 'Brak danych'}
 												</li>
 												<li>
-													<span className="bold">Ulica:</span> {order.street || 'Brak danych'}
+													<span className="font-bold">Ulica:</span> {order.street || 'Brak danych'}
 												</li>
 												<li>
-													<span className="bold">Numer budynku:</span> {order.buildingNumber || 'Brak danych'}
+													<span className="font-bold">Numer budynku:</span> {order.buildingNumber || 'Brak danych'}
 												</li>
 												<li>
-													<span className="bold">Numer mieszkania:</span> {order.apartment || 'Brak danych'}
+													<span className="font-bold">Numer mieszkania:</span> {order.apartment || 'Brak danych'}
 												</li>
 											</ul>
 										</div>
 									)}
 
 									<p className="text-base">
-										<span className="text-secondary bold">Zamówienie:</span>
+										<span className="text-secondary font-bold">Zamówienie:</span>
 									</p>
 									<ul className="list-decimal pl-8 ml-4 text-lg font-extrabold">
 										{order.items?.map((item) => (
