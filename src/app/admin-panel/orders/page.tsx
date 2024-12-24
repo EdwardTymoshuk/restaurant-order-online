@@ -366,8 +366,8 @@ const Orders = () => {
 										{`${new Date(order.deliveryTime).toLocaleDateString()}  ${new Date(order.deliveryTime).toLocaleTimeString()}`}
 									</p>
 									<p className="text-base flex ">
-										<span className="text-secondary font-bold ">Metoda dostawy: </span>
-										{order.deliveryMethod}
+										<span className="text-secondary font-bold ">Metoda płatności: </span>
+										{order.paymentMethod}
 									</p>
 									<p className="text-base">
 										<span className="text-secondary font-bold">Numer zamówienia:</span> {order.id}
@@ -533,7 +533,7 @@ const Orders = () => {
 					</TabsTrigger>
 					<TabsTrigger value="in-progress" className='flex flex-col md:flex-row md:gap-2 text-xl md:text-2xl lg:text-4xl text-text-foreground h-fit data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-4 border-primary rounded-none transition-all'>
 						<p>W trakcie</p>
-						<p>{filteredOrders.filter((order) => ['ACCEPTED', 'IN_PROGRESS', 'READY'].includes(order.status)).length}</p>
+						<p>{filteredOrders.filter((order) => ['ACCEPTED', 'IN_PROGRESS', 'READY', 'DELIVERING'].includes(order.status)).length}</p>
 					</TabsTrigger>
 					<TabsTrigger value="completed" className='flex flex-col md:flex-row md:gap-2 text-xl md:text-2xl lg:text-4xl text-text-foreground h-fit data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-4 border-primary rounded-none transition-all'>
 						<p>Zakończone</p>
@@ -541,8 +541,8 @@ const Orders = () => {
 					</TabsTrigger>
 				</TabsList>
 				<TabsContent value="new">{renderOrders(filteredOrders.filter((order) => order.status === 'PENDING'))}</TabsContent>
-				<TabsContent value="in-progress">{renderOrders(filteredOrders.filter((order) => ['ACCEPTED', 'IN_PROGRESS', 'READY'].includes(order.status)))}</TabsContent>
-				<TabsContent value="completed">{renderOrders(filteredOrders.filter((order) => order.status === 'COMPLETED'))}</TabsContent>
+				<TabsContent value="in-progress">{renderOrders(filteredOrders.filter((order) => ['ACCEPTED', 'IN_PROGRESS', 'READY', 'DELIVERING'].includes(order.status)))}</TabsContent>
+				<TabsContent value="completed">{renderOrders(filteredOrders.filter((order) => ['COMPLETED', 'CANCELED', 'DELIVERED'].includes(order.status)))}</TabsContent>
 			</Tabs>
 
 			{/* Діалог видалення */}
