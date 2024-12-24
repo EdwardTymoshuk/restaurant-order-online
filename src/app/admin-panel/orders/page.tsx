@@ -228,7 +228,7 @@ const Orders = () => {
 			<>
 				{/* Заголовки */}
 				<div className="flex flex-1 justify-between items-center gap-4 w-full">
-					<div className=" w-full flex justify-between items-center px-4 py-2 font-bold text-secondary text-sm md:text-lg text-center">
+					<div className=" w-full flex justify-between items-center px-4 py-2 text-secondary text-sm md:text-lg text-center">
 						<p className="w-1/12 hidden md:block">#</p>
 						<p
 							className="w-2/12 hidden md:flex items-center justify-center gap-2 "
@@ -367,7 +367,7 @@ const Orders = () => {
 									</p>
 									<p className="text-base flex ">
 										<span className="text-secondary font-bold ">Metoda płatności: </span>
-										{order.paymentMethod}
+										{order.paymentMethod === 'cash_offline' ? 'GOTÓWKA PRZY ODBIORZE' : 'KARTA PRZY ODBIORZE'}
 									</p>
 									<p className="text-base">
 										<span className="text-secondary font-bold">Numer zamówienia:</span> {order.id}
@@ -418,21 +418,21 @@ const Orders = () => {
 											<p className="text-base">
 												<span className="text-secondary font-bold">Adres dostawy:</span>
 											</p>
-											<ul className="pl-8 ml-4 text-lg font-extrabold">
+											<ul className="pl-8 ml-4 text-lg">
 												<li>
-													<span className="font-bold">Miasto:</span> {order.city || 'Brak danych'}
+													<span>Miasto:</span> {order.city || 'Brak danych'}
 												</li>
 												<li>
-													<span className="font-bold">Kod pocztowy:</span> {order.postalCode || 'Brak danych'}
+													<span>Kod pocztowy:</span> {order.postalCode || 'Brak danych'}
 												</li>
 												<li>
-													<span className="font-bold">Ulica:</span> {order.street || 'Brak danych'}
+													<span>Ulica:</span> {order.street || 'Brak danych'}
 												</li>
 												<li>
-													<span className="font-bold">Numer budynku:</span> {order.buildingNumber || 'Brak danych'}
+													<span>Numer budynku:</span> {order.buildingNumber || 'Brak danych'}
 												</li>
 												<li>
-													<span className="font-bold">Numer mieszkania:</span> {order.apartment || 'Brak danych'}
+													<span>Numer mieszkania:</span> {order.apartment || 'Brak danych'}
 												</li>
 											</ul>
 										</div>
@@ -441,7 +441,7 @@ const Orders = () => {
 									<p className="text-base">
 										<span className="text-secondary font-bold">Zamówienie:</span>
 									</p>
-									<ul className="list-decimal pl-8 ml-4 text-lg font-extrabold">
+									<ul className="list-decimal pl-8 ml-4 text-lg">
 										{order.items?.map((item) => (
 											<li key={item.id}>
 												<span>{item.quantity}x</span> {item.menuItem?.name || 'Unknown item'}
