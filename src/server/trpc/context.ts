@@ -12,6 +12,7 @@ export async function createContext({ req }: { req: Request }) {
 	let token: CustomJwtPayload | null = null
 
 	const authHeader = req.headers.get('authorization')
+
 	if (authHeader && authHeader.startsWith('Bearer ')) {
 		const tokenString = authHeader.substring(7)
 		try {

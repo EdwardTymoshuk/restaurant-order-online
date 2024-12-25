@@ -93,7 +93,6 @@ export const menuRouter = router({
 			}
 
 			if (!item) {
-				console.log(`Item with ID ${id} not found`)
 				throw new Error('Item not found')
 			}
 

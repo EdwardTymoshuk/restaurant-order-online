@@ -43,7 +43,6 @@ const AddUserDialog = ({ onSuccess }: AddUserDialogProps) => {
 	})
 
 	const onSubmit = (data: UserFormData) => {
-		console.log(data)
 		mutate(data)
 	}
 

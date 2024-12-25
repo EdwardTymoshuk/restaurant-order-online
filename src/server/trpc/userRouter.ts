@@ -42,7 +42,6 @@ export const userRouter = router({
 		.mutation(async ({ input }) => {
 			// Перевірка, чи `identifier` є email чи username
 			const isEmail = input.identifier.includes('@')
-			console.log('is email: ', isEmail)
 
 			// Використовуємо різний пошук залежно від ролі
 			const user = await prisma.user.findFirst({
@@ -52,7 +51,7 @@ export const userRouter = router({
 			})
 
 			// Перевірка пароля
-			console.log(input.password, user?.password)
+
 			if (!user || !(await bcrypt.compare(input.password, user.password))) {
 				throw new TRPCError({ code: "UNAUTHORIZED", message: "Невірний логін або пароль" })
 			}
@@ -85,7 +84,6 @@ export const userRouter = router({
 	getAllUsers: publicProcedure.query(async () => {
 		try {
 			const users = await prisma.user.findMany()
-			console.log(users)
 			return users
 		} catch (error) {
 			throw new Error('Failed to fetch users')

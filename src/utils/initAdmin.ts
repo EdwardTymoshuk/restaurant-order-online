@@ -13,7 +13,6 @@ async function createInitialAdmin() {
 	})
 
 	if (existingAdmin) {
-		console.log('Адміністратор вже існує!')
 		return
 	}
 
@@ -27,8 +26,6 @@ async function createInitialAdmin() {
 			role: 'admin',
 		},
 	})
-
-	console.log('Адміністратор створений успішно!')
 }
 
 createInitialAdmin()

@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/app/comp
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/app/components/ui/form'
 import { Input } from '@/app/components/ui/input'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { signIn } from 'next-auth/react'
+import { getSession, signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -43,9 +43,12 @@ const LoginPage = () => {
 			setError('Nieprawidłowa nazwa użytkownika lub hasło')
 			setIsLoading(false)
 		} else {
+			// Оновлюємо сесію
+			const session = await getSession()
 			router.push('/admin-panel')
 		}
 	}
+
 
 	return (
 		<div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
