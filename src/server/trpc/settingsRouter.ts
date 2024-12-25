@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { protectedProcedure, publicProcedure, router } from './trpc'
+import { publicProcedure, router } from './trpc'
 
 export const settingsRouter = router({
 	getSettings: publicProcedure.query(async () => {
@@ -12,7 +12,7 @@ export const settingsRouter = router({
 
 		return settings
 	}),
-	updateSettings: protectedProcedure
+	updateSettings: publicProcedure
 		.input(
 			z.object({
 				isOrderingOpen: z.boolean().optional(),

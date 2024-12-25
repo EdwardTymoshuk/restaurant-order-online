@@ -6,8 +6,6 @@ export async function POST() {
 	const session = await getServerSession(authOptions)
 
 	if (session) {
-		console.log(`Logging out user with id: ${session.user?.id}`)
-
 		// Видалення сесії
 		return NextResponse.json(
 			{ message: 'Session ended successfully' },

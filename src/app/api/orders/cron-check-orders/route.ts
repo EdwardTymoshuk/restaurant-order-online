@@ -49,7 +49,6 @@ export async function GET(request: Request) {
 		// For each delayed order, send an email notification.
 		// The email content is in Polish, as requested.
 		for (const order of delayedOrders) {
-			console.log(`Wysyłanie e-maila o opóźnionym zamówieniu #${order.id}`)
 
 			await transporter.sendMail({
 				from: `Spoko Sopot <${process.env.EMAIL_USER}>`,
@@ -65,13 +64,6 @@ export async function GET(request: Request) {
 			where: { id: { in: delayedOrders.map((o) => o.id) } },
 			data: { notifiedAt: now },
 		})
-
-		// Log the processed orders' IDs to the console.
-		console.log(
-			`Opóźnione zamówienia zostały przetworzone: ${delayedOrders
-				.map((o) => o.id)
-				.join(', ')}`
-		)
 
 		// Respond with a JSON object indicating success and how many orders were processed.
 		return NextResponse.json({

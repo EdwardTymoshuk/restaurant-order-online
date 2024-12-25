@@ -34,7 +34,6 @@ const EditMenuItemPage = ({ params }: { params: { id: string } }) => {
 	}) => {
 		try {
 			await updateMenuItem({ id: params.id, ...values })
-			console.log('Menu item updated successfully')
 		} catch (error) {
 			console.error("Failed to update menu item:", error)
 		}

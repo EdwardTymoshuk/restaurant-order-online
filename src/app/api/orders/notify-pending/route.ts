@@ -20,8 +20,6 @@ export async function POST(req: Request) {
 			},
 		})
 
-		console.log(`Sending email for order #${orderId} to ${process.env.RECIPIENT_EMAIL}`)
-
 		await transporter.sendMail({
 			from: `Spoko Sopot <${process.env.EMAIL_USER}>`,
 			to: process.env.RECIPIENT_EMAIL,
@@ -29,7 +27,6 @@ export async function POST(req: Request) {
 			text: `Zamówienie #${orderId} nie zostało podjęte już od ponad 10 minut.\n\Informacja:\n- Imie: ${name}\n- Telefon: ${phone}\n- Wartość zamówienia: ${finalAmount} PLN`,
 		})
 
-		console.log(`Notification sent for order #${orderId}`)
 		return NextResponse.json({ success: true })
 	} catch (error) {
 		console.error('Error sending notification:', error)
