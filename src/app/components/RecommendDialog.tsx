@@ -19,13 +19,13 @@ interface RecommendDialogProps {
 const RecommendDialog: React.FC<RecommendDialogProps> = ({ isOpen, onOpenChange, onContinue, isLoading, isBreakfastOnly, totalAmount, amountNeeded }) => {
 	return (
 		<Dialog open={isOpen} onOpenChange={onOpenChange}>
-			<DialogContent className='h-fit w-[95%] md:w-full mx-auto p-2 md:p-4 rounded-md'>
+			<DialogContent className="h-fit max-h-[90vh] w-[95%] md:w-full mx-auto px-2 py-4 md:p-4 rounded-md">
 				<DialogDescription hidden>Polecane produkty</DialogDescription>
 				<DialogTitle hidden>Polecane produkty</DialogTitle>
 				<DialogHeader>
 					<h3 className="text-xl font-semibold text-text-secondary mb-4">Polecamy również:</h3>
 				</DialogHeader>
-				<div className="overflow-auto">
+				<div className="max-h-[60vh] overflow-auto"> {/* Обмеження висоти лише для контенту */}
 					<RecommendedProducts isBreakfastOnly={isBreakfastOnly} />
 				</div>
 				{totalAmount < MIN_ORDER_AMOUNT && (
@@ -40,6 +40,7 @@ const RecommendDialog: React.FC<RecommendDialogProps> = ({ isOpen, onOpenChange,
 				</div>
 			</DialogContent>
 		</Dialog>
+
 	)
 }
 

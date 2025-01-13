@@ -7,8 +7,9 @@ import { Input } from '@/app/components/ui/input'
 import { Textarea } from '@/app/components/ui/textarea'
 import { useCart } from '@/app/context/CartContext'
 import { useCheckout } from '@/app/context/CheckoutContext'
-import { MIN_ORDER_AMOUNT } from '@/config/constants'
-import { getCoordinates, isAddressInDeliveryArea } from '@/utils/deliveryUtils'
+import { DeliveryZone } from '@/app/types/types'
+import { DEFAULT_DELIVERY_ZONES, MIN_ORDER_AMOUNT } from '@/config/constants'
+import { getCoordinates, getDeliveryCost, isAddressInDeliveryArea } from '@/utils/deliveryUtils'
 import { trpc } from '@/utils/trpc'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CheckedState } from '@radix-ui/react-checkbox'
@@ -22,6 +23,7 @@ import { FaRegCreditCard } from 'react-icons/fa6'
 import { MdKeyboardArrowLeft, MdOutlineDeliveryDining, MdOutlineRestaurantMenu } from 'react-icons/md'
 import { RxCross2 } from "react-icons/rx"
 import { toast } from 'sonner'
+import { useDebounce } from 'use-debounce'
 import { z } from 'zod'
 import LoadingButton from '../../components/LoadingButton'
 import PageSubHeader from '../../components/PageSubHeader'
@@ -103,6 +105,10 @@ const Checkout = () => {
 	const markPromoCodeAsUsed = trpc.promoCode.markPromoCodeAsUsed.useMutation()
 
 	const { data: settingsData, isLoading: isSettingsLoading } = trpc.settings.getSettings.useQuery()
+	const deliveryZones: DeliveryZone[] = Array.isArray(settingsData?.deliveryZones)
+		? (settingsData?.deliveryZones as unknown as DeliveryZone[])
+		: DEFAULT_DELIVERY_ZONES
+
 
 	const trpcContext = trpc.useUtils()
 	const { isRestaurantClosed } = useCheckout()
@@ -110,6 +116,10 @@ const Checkout = () => {
 	const amountNeeded = Math.max(0, MIN_ORDER_AMOUNT - state.totalAmount)
 	const now = new Date()
 	const isBreakfast = now.getHours() < 12
+
+	const [fullAddress, setFullAddress] = useState('')
+	const [deliveryCost, setDeliveryCost] = useState<number | null>(null)
+	const [debouncedAddress] = useDebounce(fullAddress, 500)
 
 
 	const { register: registerDelivery, handleSubmit: handleSubmitDelivery, formState: formStateDelivery, setValue: setValueDelivery, getValues: getValuesDelivery, reset: resetDelivery } = useForm<DeliveryFormData>({
@@ -154,9 +164,23 @@ const Checkout = () => {
 
 	useEffect(() => {
 		if (settingsData) {
-			dispatch({ type: 'SET_DELIVERY_COST', payload: settingsData.deliveryCost || 0 })
+			const formData = getValuesDelivery() // Викликаємо функцію для отримання адреси
+			const { city, postalCode, street, buildingNumber } = formData
+			const fullAddress = `${street} ${buildingNumber}, ${postalCode} ${city}`
+
+			const calculateDeliveryCost = async () => {
+				try {
+					const cost = await getDeliveryCost(fullAddress, deliveryZones)
+					dispatch({ type: 'SET_DELIVERY_COST', payload: cost })
+				} catch (error) {
+					console.error('Error calculating delivery cost:', error)
+					dispatch({ type: 'SET_DELIVERY_COST', payload: 0 })
+				}
+			}
+			calculateDeliveryCost()
 		}
 	}, [settingsData, dispatch])
+
 
 	// Встановлюємо метод доставки при зміні активної форми
 	useEffect(() => {
@@ -183,6 +207,36 @@ const Checkout = () => {
 		}
 	}, [isNipRequired, setValueDelivery, setValueTakeOut])
 
+	useEffect(() => {
+		if (!debouncedAddress) {
+			setDeliveryCost(null)
+			return
+		}
+
+		const calculateCost = async () => {
+			try {
+				const cost = await getDeliveryCost(debouncedAddress, deliveryZones)
+				setDeliveryCost(cost)
+				dispatch({ type: 'SET_DELIVERY_COST', payload: cost })
+			} catch (error) {
+				console.error('Error calculating delivery cost:', error)
+				setDeliveryCost(null)
+				dispatch({ type: 'SET_DELIVERY_COST', payload: 0 })
+			}
+		}
+
+		calculateCost()
+	}, [debouncedAddress, deliveryZones, dispatch])
+
+	const handleAddressChange = () => {
+		const { city, postalCode, street, buildingNumber } = getValuesDelivery()
+		if (city && postalCode && street && buildingNumber) {
+			setFullAddress(`${street} ${buildingNumber}, ${postalCode} ${city}`)
+		} else {
+			setFullAddress('')
+		}
+	}
+
 	// Обробка перевірки адреси
 	const handleCheckAddress = async () => {
 		let isValid = true
@@ -199,20 +253,21 @@ const Checkout = () => {
 				return
 			}
 
-			const inDeliveryArea = await isAddressInDeliveryArea(fullAddress)
+			const inDeliveryArea = await isAddressInDeliveryArea(fullAddress, deliveryZones)
 			if (!inDeliveryArea) {
 				toast.warning("Twój adres jest poza obszarem dostawy.")
 				isValid = false
 				return
 			}
-			return isValid = true
 
+			return (isValid = true)
 		} catch (error) {
 			toast.error("Wystąpił błąd sprawdzenia adresu.")
 		} finally {
 			return isValid
 		}
 	}
+
 
 	const handleTimeChange = (timeOption: 'asap' | Date) => {
 		if (deliveryMethod === 'TAKE_OUT') {
@@ -288,6 +343,16 @@ const Checkout = () => {
 		} finally {
 			setIsLoadingPromoCode(false) // Вимкнути індикатор завантаження
 		}
+	}
+
+	const DeliveryCostDisplay = ({ deliveryCost }: { deliveryCost: number | null }) => {
+		return (
+			<div className="mt-4 text-lg font-semibold text-primary">
+				{deliveryCost === null
+					? "Wprowadź adres, aby obliczyć koszt dostawy."
+					: `Koszt dostawy: ${deliveryCost} zł`}
+			</div>
+		)
 	}
 
 	const onDeliverySubmit = async (data: DeliveryFormData) => {
@@ -495,7 +560,7 @@ const Checkout = () => {
 												<Input
 													id="city"
 													placeholder="Miasto"
-													{...registerDelivery('city')}
+													{...registerDelivery('city', { onChange: handleAddressChange })}
 													className={`mt-1 ${formStateDelivery.errors.city ? 'border-danger' : ''}`}
 												/>
 												{formStateDelivery.errors.city && (
@@ -507,7 +572,7 @@ const Checkout = () => {
 												<Input
 													id="postalCode"
 													placeholder="00-000"
-													{...registerDelivery('postalCode')}
+													{...registerDelivery('postalCode', { onChange: handleAddressChange })}
 													className={`mt-1 ${formStateDelivery.errors.postalCode ? 'border-danger' : ''}`}
 												/>
 												{formStateDelivery.errors.postalCode && (
@@ -520,7 +585,7 @@ const Checkout = () => {
 											<Input
 												id="street"
 												placeholder="Ulica"
-												{...registerDelivery('street')}
+												{...registerDelivery('street', { onChange: handleAddressChange })}
 												className={`mt-1 w-full ${formStateDelivery.errors.street ? 'border-danger' : ''}`}
 											/>
 											{formStateDelivery.errors.street && (
@@ -538,7 +603,7 @@ const Checkout = () => {
 													id="buildingNumber"
 													placeholder="Nr budynku"
 													type="string"
-													{...registerDelivery('buildingNumber')}
+													{...registerDelivery('buildingNumber', { onChange: handleAddressChange })}
 													className={`mt-1 ${formStateDelivery.errors.buildingNumber ? 'border-danger' : ''}`}
 												/>
 												{formStateDelivery.errors.buildingNumber && (
@@ -555,7 +620,7 @@ const Checkout = () => {
 													id="apartment"
 													placeholder="Nr mieszkania"
 													type="number"
-													{...registerDelivery('apartment', { valueAsNumber: true })}
+													{...registerDelivery('apartment', { valueAsNumber: true, onChange: handleAddressChange })}
 													className="mt-1 w-full"
 												/>
 												{formStateDelivery.errors.apartment && (
@@ -965,8 +1030,7 @@ const Checkout = () => {
 									</div>
 									{deliveryMethod === 'DELIVERY' &&
 										<div className="flex font-sans justify-between text-lg text-text-secondary">
-											<span>Koszt dostawy</span>
-											<span>{state.deliveryCost?.toFixed(2)} zł</span>
+											<DeliveryCostDisplay deliveryCost={deliveryCost} />
 										</div>
 									}
 

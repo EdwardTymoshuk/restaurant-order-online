@@ -94,7 +94,7 @@ const Settings = () => {
 	// Стан для налаштувань
 	const [isOrderingOpen, setIsOrderingOpen] = useState<boolean>(false)
 	const [orderWaitTime, setOrderWaitTime] = useState<number>(30)
-	const [deliveryCost, setDeliveryCost] = useState<number>(15)
+	const [deliveryCost, setDeliveryCost] = useState<number>(5)
 	const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([])
 
 	// Отримуємо промокоди
@@ -160,7 +160,8 @@ const Settings = () => {
 
 	useEffect(() => {
 		if (settingsData?.deliveryZones) {
-			setDeliveryZones(settingsData.deliveryZones as unknown as DeliveryZone[])
+			const zones = settingsData.deliveryZones as unknown as DeliveryZone[]
+			setDeliveryZones(zones)
 		}
 	}, [settingsData])
 

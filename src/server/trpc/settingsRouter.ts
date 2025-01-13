@@ -98,13 +98,14 @@ export const settingsRouter = router({
 					const a = input[i]
 					const b = input[j]
 					if (
-						(a.minRadius <= b.maxRadius && a.maxRadius >= b.minRadius) || // Перекриваються
-						(b.minRadius <= a.maxRadius && b.maxRadius >= a.minRadius)
+						(a.minRadius < b.maxRadius && a.maxRadius > b.minRadius) || // Перекриття
+						(b.minRadius < a.maxRadius && b.maxRadius > a.minRadius)    // Перекриття
 					) {
-						throw new Error("Overlapping delivery zones detected")
+						throw new Error(`Overlapping delivery zones detected between zones ${i + 1} and ${j + 1}`)
 					}
 				}
 			}
+
 
 			// Save the delivery zones in settings
 			return await prisma.settings.update({

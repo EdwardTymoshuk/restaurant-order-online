@@ -2,7 +2,7 @@
 
 import { Button } from '@/app/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/app/components/ui/table'
-import { useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { DeliveryZone } from '../types/types'
 import { Input } from './ui/input'
@@ -15,9 +15,14 @@ const DeliveryZonesSettings = ({
 	deliveryZones: DeliveryZone[]
 	onUpdateZones: (updatedZones: DeliveryZone[]) => void
 }) => {
-	const [zones, setZones] = useState<DeliveryZone[]>(deliveryZones)
+	const [zones, setZones] = useState<DeliveryZone[]>(() => deliveryZones)
 	const [isAdding, setIsAdding] = useState(false)
 	const [newZone, setNewZone] = useState<DeliveryZone | null>(null)
+
+	const memoizedDeliveryZones = useMemo(() => deliveryZones, [deliveryZones])
+	const memoizedOnUpdateZones = useCallback(onUpdateZones, [onUpdateZones])
+
+	console.log('State zoens: ', zones, 'Zones props: ', deliveryZones)
 
 	const handleAddZone = () => {
 		if (isAdding) return
@@ -27,25 +32,37 @@ const DeliveryZonesSettings = ({
 		setIsAdding(true)
 	}
 
+	const isZoneValid = (newZone: DeliveryZone, existingZones: DeliveryZone[]) => {
+		return !existingZones.some(zone =>
+			(newZone.minRadius < zone.maxRadius && newZone.maxRadius > zone.minRadius)
+		)
+	}
+	
 	const handleConfirmNewZone = () => {
 		if (!newZone) return
-
+	
 		if (newZone.maxRadius <= newZone.minRadius) {
 			toast.error('Maksymalny zasięg musi być większy od minimalnego.')
 			return
 		}
-
+	
 		if (newZone.price <= 0) {
 			toast.error('Cena musi być większa od 0.')
 			return
 		}
-
+	
+		if (!isZoneValid(newZone, zones)) {
+			toast.error('Nowa strefa nakłada się na istniejącą.')
+			return
+		}
+	
 		setZones([...zones, newZone])
 		setNewZone(null)
 		setIsAdding(false)
-		onUpdateZones([...zones, newZone]) // Save to parent
+		memoizedOnUpdateZones([...zones, newZone]) // Save to parent
 		toast.success('Nowa strefa została dodana.')
 	}
+	
 
 	const handleCancelNewZone = () => {
 		setNewZone(null)
@@ -60,9 +77,13 @@ const DeliveryZonesSettings = ({
 
 		const updatedZones = zones.filter((_, i) => i !== index)
 		setZones(updatedZones)
-		onUpdateZones(updatedZones)
+		memoizedOnUpdateZones(updatedZones)
 		toast.info('Strefa została usunięta.')
 	}
+
+	useEffect(() => {
+		setZones(memoizedDeliveryZones)
+	}, [memoizedDeliveryZones])
 
 	return (
 		<div className="p-4">
