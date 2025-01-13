@@ -171,6 +171,12 @@ export const takeOutSchema = z.object({
 		})
 })
 
+export interface DeliveryZone {
+	minRadius: number,
+	maxRadius: number,
+	price: number
+}
+
 export type DeliveryFormData = z.infer<typeof deliverySchema>
 export type TakeOutFormData = z.infer<typeof takeOutSchema>
 
