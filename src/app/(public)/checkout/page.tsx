@@ -268,6 +268,34 @@ const Checkout = () => {
 		}
 	}
 
+	const handleCheckDeliveryAdress = async () => {
+		try {
+			const formData = getValuesDelivery()
+
+			const { city, postalCode, street, buildingNumber } = formData
+			const fullAddress = `${street} ${buildingNumber}, ${postalCode} ${city}`
+
+			const coordinates = await getCoordinates(fullAddress)
+			if (!coordinates) {
+				toast.error("Podany adres nie istnieje.")
+				return
+			}
+
+			const inDeliveryArea = await isAddressInDeliveryArea(fullAddress, deliveryZones)
+			if (!inDeliveryArea) {
+				toast.warning("Twój adres jest poza obszarem dostawy.")
+				return
+			}
+			if (inDeliveryArea) {
+				toast.success('Hura! Twój adres jest w zasięgu naszej dostawy.')
+				return
+			}
+
+		} catch (error) {
+			toast.error("Wystąpił błąd sprawdzenia adresu.")
+		}
+	}
+
 
 	const handleTimeChange = (timeOption: 'asap' | Date) => {
 		if (deliveryMethod === 'TAKE_OUT') {
@@ -344,16 +372,21 @@ const Checkout = () => {
 			setIsLoadingPromoCode(false) // Вимкнути індикатор завантаження
 		}
 	}
-
 	const DeliveryCostDisplay = ({ deliveryCost }: { deliveryCost: number | null }) => {
 		return (
-			<div className="mt-4 text-lg font-semibold text-primary">
-				{deliveryCost === null
-					? "Wprowadź adres, aby obliczyć koszt dostawy."
-					: `Koszt dostawy: ${deliveryCost} zł`}
+			<div className="flex font-sans justify-between text-lg text-text-secondary">
+				{deliveryCost === null || deliveryCost === 0 ? (
+					<span className='text-primary'>{`Wprowadź ${deliveryCost === 0 ? 'poprawny' : ''} adres, aby obliczyć koszt dostawy.`}</span>
+				) : (
+					<>
+						<span>Koszt dostawy:</span>
+						<span>{deliveryCost} zł</span>
+					</>
+				)}
 			</div>
 		)
 	}
+
 
 	const onDeliverySubmit = async (data: DeliveryFormData) => {
 		try {
@@ -628,7 +661,9 @@ const Checkout = () => {
 												)}
 											</div>
 										</div>
-
+										<div className='w-full flex flex-col'>
+											<Button variant='secondary' onClick={() => handleCheckDeliveryAdress()}>Sprawdź adres</Button>
+										</div>
 									</div>
 								</div>
 
@@ -1029,9 +1064,7 @@ const Checkout = () => {
 										<span>{state.totalAmount.toFixed(2)} zł</span>
 									</div>
 									{deliveryMethod === 'DELIVERY' &&
-										<div className="flex font-sans justify-between text-lg text-text-secondary">
-											<DeliveryCostDisplay deliveryCost={deliveryCost} />
-										</div>
+										<DeliveryCostDisplay deliveryCost={deliveryCost} />
 									}
 
 
