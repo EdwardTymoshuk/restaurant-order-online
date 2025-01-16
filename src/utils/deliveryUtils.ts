@@ -23,6 +23,10 @@ export function haversineDistance(coords1: Coordinates, coords2: Coordinates): n
 }
 
 export async function getCoordinates(address: string): Promise<Coordinates | null> {
+	if (!address || address.trim() === "") {
+		console.error("Address is empty or invalid.")
+		return null
+	}
 	try {
 		const response = await fetch(
 			`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
@@ -62,7 +66,7 @@ export async function isAddressInDeliveryArea(
 	return false
 }
 
-export function getDeliveryCost(
+export async function getDeliveryCost(
 	address: string,
 	deliveryZones: { minRadius: number; maxRadius: number; price: number }[]
 ): Promise<number> {

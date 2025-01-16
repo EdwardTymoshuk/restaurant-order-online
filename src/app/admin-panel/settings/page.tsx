@@ -354,7 +354,7 @@ const Settings = () => {
 											<div className="flex items-center space-x-2">
 												<Input
 													placeholder="Kod"
-													value={newPromoCode.code}
+													value={newPromoCode.code || ''}
 													onChange={(e) =>
 														setNewPromoCode((prev) => ({
 															...prev,
@@ -395,7 +395,7 @@ const Settings = () => {
 											<Input
 												type="number"
 												placeholder="Wartość"
-												value={newPromoCode.discountValue}
+												value={newPromoCode.discountValue || ''}
 												onChange={(e) => {
 													let value = e.target.value
 

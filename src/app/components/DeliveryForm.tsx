@@ -8,15 +8,17 @@ import {
 	FormMessage,
 } from "@/app/components/ui/form"
 import { Input } from "@/app/components/ui/input"
-import { DELIVERY_RADIUS_METERS, RESTAURANT_COORDINATES } from '@/config/constants'
+import { RESTAURANT_COORDINATES } from '@/config/constants'
 import { Coordinates, getCoordinates, hasStreetNumber, haversineDistance } from "@/utils/deliveryUtils"
+import { trpc } from '@/utils/trpc'
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Autocomplete } from "@react-google-maps/api"
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react' // Додаємо useTransition
+import { useMemo, useState, useTransition } from 'react' // Додаємо useTransition
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
+import { DeliveryZone } from '../types/types'
 import LoadingButton from "./LoadingButton"
 
 const formSchema = z.object({
@@ -30,6 +32,7 @@ interface DeliveryFormProps {
 	onFormDataChange: (data: FormData) => void
 	addressVerified: boolean
 	setAddressVerified: (verified: boolean) => void
+	setAddressCoordinates: (coordinates: Coordinates | null) => void // Додаємо пропс
 }
 
 export default function DeliveryForm({
@@ -37,6 +40,7 @@ export default function DeliveryForm({
 	onFormDataChange,
 	addressVerified,
 	setAddressVerified,
+	setAddressCoordinates
 }: DeliveryFormProps) {
 	const [deliveryAddressCoordinates, setDeliveryAddressCoordinates] =
 		useState<Coordinates | null>(null)
@@ -53,14 +57,22 @@ export default function DeliveryForm({
 		defaultValues: formData,
 	})
 
+	const { data: settingsData, isLoading: isSettingsLoading } = trpc.settings.getSettings.useQuery()
+	// Parse delivery zones with type safety
+	const deliveryZones: DeliveryZone[] = useMemo(() => {
+		try {
+			return Array.isArray(settingsData?.deliveryZones)
+				? (settingsData?.deliveryZones as unknown as DeliveryZone[])
+				: []
+		} catch {
+			console.error('Failed to parse delivery zones from settings.')
+			return []
+		}
+	}, [settingsData])
+
 	const onSubmit = async (values: FormData) => {
 		setLoading(true)
 		setAddressVerified(false)
-		if (!addressValid) {
-			setLoading(false)
-			toast.error("Wprowadź numer budynku.")
-			return
-		}
 
 		const address = values.address
 		const deliveryCoordinates = await getCoordinates(address)
@@ -71,20 +83,25 @@ export default function DeliveryForm({
 			return
 		}
 
-		setDeliveryAddressCoordinates(deliveryCoordinates)
+		// Обчислюємо, чи адреса в зоні доставки
+		const inDeliveryArea = deliveryZones.some((zone) => {
+			const distance = haversineDistance(RESTAURANT_COORDINATES, deliveryCoordinates) / 1000
+			return distance >= zone.minRadius && distance <= zone.maxRadius
+		})
 
-		const distance = haversineDistance(RESTAURANT_COORDINATES, deliveryCoordinates)
+		setAddressCoordinates(deliveryCoordinates)
 
-		if (distance <= DELIVERY_RADIUS_METERS) {
-			setLoading(false)
+		if (inDeliveryArea) {
 			setAddressVerified(true)
-			localStorage.setItem('deliveryAddress', address)
-			toast.success("Świetna wiadomość, Twój adres znajduje się w zasięgu naszej dostawy. Możesz przejść do zamówienia.")
+			toast.success("Świetna wiadomość, Twój adres znajduje się w zasięgu naszej dostawy.")
 		} else {
-			setLoading(false)
 			toast.warning("Niestety, Twój adres znajduje się poza зasięgiem naszej dostawy.")
 		}
+
+		setLoading(false)
 	}
+
+
 
 	// Обробляємо перенаправлення при натисканні на кнопку після валідації
 	const handleOrderClick = () => {
