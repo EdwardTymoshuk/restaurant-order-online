@@ -1,6 +1,6 @@
 // src/lib/deliveryUtils.ts
 
-import { DELIVERY_RADIUS_METERS, RESTAURANT_COORDINATES } from '@/config/constants'
+import { RESTAURANT_COORDINATES } from '@/config/constants'
 
 export type Coordinates = {
 	lat: number
@@ -23,6 +23,10 @@ export function haversineDistance(coords1: Coordinates, coords2: Coordinates): n
 }
 
 export async function getCoordinates(address: string): Promise<Coordinates | null> {
+	if (!address || address.trim() === "") {
+		console.error("Address is empty or invalid.")
+		return null
+	}
 	try {
 		const response = await fetch(
 			`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
@@ -48,18 +52,35 @@ export async function getCoordinates(address: string): Promise<Coordinates | nul
 	}
 }
 
-export const isAddressInDeliveryArea = async (address: string): Promise<boolean> => {
+export async function isAddressInDeliveryArea(
+	address: string,
+	deliveryZones: { minRadius: number, maxRadius: number, price: number }[]
+): Promise<boolean> {
 	const coordinates = await getCoordinates(address)
 	if (coordinates) {
-		const distance = haversineDistance(
-			RESTAURANT_COORDINATES,
-			coordinates
+		const distance = haversineDistance(RESTAURANT_COORDINATES, coordinates) / 1000 // Convert to km
+		return deliveryZones.some(
+			(zone) => distance >= zone.minRadius && distance <= zone.maxRadius
 		)
-		return distance <= DELIVERY_RADIUS_METERS
 	}
 	return false
 }
 
+export async function getDeliveryCost(
+	address: string,
+	deliveryZones: { minRadius: number; maxRadius: number; price: number }[]
+): Promise<number> {
+	return getCoordinates(address).then((coordinates) => {
+		if (!coordinates) {
+			return 0
+		}
+		const distance = haversineDistance(RESTAURANT_COORDINATES, coordinates) / 1000
+		const zone = deliveryZones.find(
+			(zone) => distance >= zone.minRadius && distance <= zone.maxRadius
+		)
+		return zone ? zone.price : 0 // Return price or 0 if not in a zone
+	})
+}
 export function hasStreetNumber(addressComponents: google.maps.GeocoderAddressComponent[] | undefined): boolean {
 	if (!addressComponents) return false
 	return addressComponents.some((component) =>

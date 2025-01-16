@@ -31,6 +31,7 @@ import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import UserList from '../components/UserList'
 
+import DeliveryZonesSettings from '@/app/components/DeliveryZonesSettings'
 import LoadingButton from '@/app/components/LoadingButton'
 import {
 	Accordion,
@@ -38,6 +39,7 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 } from '@/app/components/ui/accordion'
+import { DeliveryZone } from '@/app/types/types'
 import Image from 'next/image'
 import { toast } from 'sonner'
 import BannerUploader from '../components/BannerUploader'
@@ -67,16 +69,33 @@ const Settings = () => {
 
 	// Отримуємо налаштування
 	const { data: settingsData, refetch: refetchSettings } = trpc.settings.getSettings.useQuery()
-	const updateSettings = trpc.settings.updateSettings.useMutation({
+	const updateOrderingState = trpc.settings.updateOrderingState.useMutation({
+		onSuccess: () => {
+			refetchSettings()
+		},
+	})
+	const updateDeliveryCost = trpc.settings.updateDeliveryCost.useMutation({
+		onSuccess: () => {
+			refetchSettings()
+		},
+	})
+	const updateOrderWaitTime = trpc.settings.updateOrderWaitTime.useMutation({
+		onSuccess: () => {
+			refetchSettings()
+		},
+	})
+	const updateDeliveryZonePrices = trpc.settings.updateDeliveryZonePrices.useMutation({
 		onSuccess: () => {
 			refetchSettings()
 		},
 	})
 
+
 	// Стан для налаштувань
 	const [isOrderingOpen, setIsOrderingOpen] = useState<boolean>(false)
 	const [orderWaitTime, setOrderWaitTime] = useState<number>(30)
-	const [deliveryCost, setDeliveryCost] = useState<number>(15)
+	const [deliveryCost, setDeliveryCost] = useState<number>(5)
+	const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([])
 
 	// Отримуємо промокоди
 	const { data: promoCodesData, refetch: refetchPromoCodes } = trpc.promoCode.getAllPromoCodes.useQuery()
@@ -138,6 +157,17 @@ const Settings = () => {
 			setBanners(bannersData)
 		}
 	}, [bannersData])
+
+	useEffect(() => {
+		if (settingsData?.deliveryZones) {
+			const zones = settingsData.deliveryZones as unknown as DeliveryZone[]
+			setDeliveryZones(zones)
+		}
+	}, [settingsData])
+
+	const handleUpdateZones = (updatedZones: DeliveryZone[]) => {
+		updateDeliveryZonePrices.mutate(updatedZones)
+	}
 
 	// Стан для нового промокоду
 	const [newPromoCode, setNewPromoCode] = useState<{
@@ -218,10 +248,8 @@ const Settings = () => {
 							checked={isOrderingOpen}
 							onCheckedChange={(checked) => {
 								setIsOrderingOpen(checked)
-								updateSettings.mutate({
-									isOrderingOpen: checked,
-									orderWaitTime,
-									deliveryCost,
+								updateOrderingState.mutate({
+									isOrderingOpen: checked
 								})
 							}}
 						/>
@@ -229,37 +257,10 @@ const Settings = () => {
 					</div>
 				</section>
 
-				<section>
-					<h2 className="text-xl font-semibold">Koszt dostawy</h2>
-					<Select
-						value={deliveryCost?.toString()}
-						onValueChange={(value) => {
-							const newCost = Number(value)
-							setDeliveryCost(newCost)
-							updateSettings.mutate({
-								isOrderingOpen,
-								orderWaitTime,
-								deliveryCost: newCost,
-							})
-						}}
-					>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Wybierz koszt dostawy" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="0">0 zl</SelectItem>
-							<SelectItem value="5">5 zł</SelectItem>
-							<SelectItem value="10">10 zł</SelectItem>
-							<SelectItem value="15">15 zł</SelectItem>
-							<SelectItem value="20">20 zł</SelectItem>
-							<SelectItem value="25">25 zł</SelectItem>
-							<SelectItem value="30">30 zł</SelectItem>
-							<SelectItem value="35">35 zł</SelectItem>
-							<SelectItem value="40">40 zł</SelectItem>
-							<SelectItem value="50">50 zł</SelectItem>
-						</SelectContent>
-					</Select>
-				</section>
+				<DeliveryZonesSettings
+					deliveryZones={deliveryZones}
+					onUpdateZones={handleUpdateZones}
+				/>
 
 				<section>
 					<h2 className="text-xl font-semibold">Czas oczekiwania</h2>
@@ -268,10 +269,8 @@ const Settings = () => {
 						onValueChange={(value) => {
 							const newTime = Number(value)
 							setOrderWaitTime(newTime)
-							updateSettings.mutate({
-								isOrderingOpen, // Залишаємо поточний стан замовлень
+							updateOrderWaitTime.mutate({
 								orderWaitTime: newTime,
-								deliveryCost,
 							})
 						}}
 					>
@@ -355,7 +354,7 @@ const Settings = () => {
 											<div className="flex items-center space-x-2">
 												<Input
 													placeholder="Kod"
-													value={newPromoCode.code}
+													value={newPromoCode.code || ''}
 													onChange={(e) =>
 														setNewPromoCode((prev) => ({
 															...prev,
@@ -396,7 +395,7 @@ const Settings = () => {
 											<Input
 												type="number"
 												placeholder="Wartość"
-												value={newPromoCode.discountValue}
+												value={newPromoCode.discountValue || ''}
 												onChange={(e) => {
 													let value = e.target.value
 
