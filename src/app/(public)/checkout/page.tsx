@@ -1,18 +1,21 @@
 'use client'
 
 import ImageWithFallback from '@/app/components/ImageWithFallback'
+import RestaurantMap from '@/app/components/RestaurantMap'
 import { Button } from '@/app/components/ui/button'
 import { Checkbox } from '@/app/components/ui/checkbox'
 import { Input } from '@/app/components/ui/input'
+import { Skeleton } from '@/app/components/ui/skeleton'
 import { Textarea } from '@/app/components/ui/textarea'
 import { useCart } from '@/app/context/CartContext'
 import { useCheckout } from '@/app/context/CheckoutContext'
 import { DeliveryZone } from '@/app/types/types'
-import { DEFAULT_DELIVERY_ZONES, MIN_ORDER_AMOUNT } from '@/config/constants'
-import { getCoordinates, getDeliveryCost, isAddressInDeliveryArea } from '@/utils/deliveryUtils'
+import { DEFAULT_DELIVERY_ZONES, MIN_ORDER_AMOUNT, RESTAURANT_COORDINATES } from '@/config/constants'
+import { Coordinates, getCoordinates, getDeliveryCost, isAddressInDeliveryArea } from '@/utils/deliveryUtils'
 import { trpc } from '@/utils/trpc'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CheckedState } from '@radix-ui/react-checkbox'
+import { LoadScriptNext } from "@react-google-maps/api"
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useTransition } from 'react'
@@ -121,6 +124,9 @@ const Checkout = () => {
 	const [deliveryCost, setDeliveryCost] = useState<number | null>(null)
 	const [debouncedAddress] = useDebounce(fullAddress, 500)
 
+	const [deliveryCoordinates, setDeliveryCoordinates] = useState<Coordinates | null>(null)
+	const libraries: ("places")[] = ["places"]
+
 
 	const { register: registerDelivery, handleSubmit: handleSubmitDelivery, formState: formStateDelivery, setValue: setValueDelivery, getValues: getValuesDelivery, reset: resetDelivery } = useForm<DeliveryFormData>({
 		resolver: zodResolver(deliverySchema),
@@ -208,7 +214,7 @@ const Checkout = () => {
 	}, [isNipRequired, setValueDelivery, setValueTakeOut])
 
 	useEffect(() => {
-		if (!debouncedAddress) {
+		if (!debouncedAddress || !deliveryZones.length) {
 			setDeliveryCost(null)
 			return
 		}
@@ -228,53 +234,66 @@ const Checkout = () => {
 		calculateCost()
 	}, [debouncedAddress, deliveryZones, dispatch])
 
-	const handleAddressChange = () => {
+
+	const handleAddressChange = async () => {
 		const { city, postalCode, street, buildingNumber } = getValuesDelivery()
+
 		if (city && postalCode && street && buildingNumber) {
-			setFullAddress(`${street} ${buildingNumber}, ${postalCode} ${city}`)
+			const fullAddress = `${street} ${buildingNumber}, ${postalCode} ${city}`
+			setFullAddress(fullAddress)
+
+			try {
+				const deliveryCoordinates = await getCoordinates(fullAddress)
+				setDeliveryCoordinates(deliveryCoordinates)
+			} catch (error) {
+				console.error('Error fetching coordinates:', error)
+				setDeliveryCoordinates(null)
+			}
 		} else {
 			setFullAddress('')
+			setDeliveryCoordinates(null)
 		}
 	}
+
+
 
 	// Обробка перевірки адреси
 	const handleCheckAddress = async () => {
 		let isValid = true
 		try {
 			const formData = getValuesDelivery()
-
 			const { city, postalCode, street, buildingNumber } = formData
 			const fullAddress = `${street} ${buildingNumber}, ${postalCode} ${city}`
-
 			const coordinates = await getCoordinates(fullAddress)
+
 			if (!coordinates) {
 				toast.error("Podany adres nie istnieje.")
 				isValid = false
-				return
 			}
 
 			const inDeliveryArea = await isAddressInDeliveryArea(fullAddress, deliveryZones)
 			if (!inDeliveryArea) {
 				toast.warning("Twój adres jest poza obszarem dostawy.")
 				isValid = false
-				return
 			}
-
-			return (isValid = true)
 		} catch (error) {
 			toast.error("Wystąpił błąd sprawdzenia adresu.")
-		} finally {
-			return isValid
+			isValid = false
 		}
+		return isValid
 	}
 
 	const handleCheckDeliveryAdress = async () => {
+		const { city, postalCode, street, buildingNumber } = getValuesDelivery()
+
+		if (!city || !postalCode || !street || !buildingNumber) {
+			toast.error("Wprowadź pełny adres.")
+			return
+		}
+
+		const fullAddress = `${street} ${buildingNumber}, ${postalCode} ${city}`
+
 		try {
-			const formData = getValuesDelivery()
-
-			const { city, postalCode, street, buildingNumber } = formData
-			const fullAddress = `${street} ${buildingNumber}, ${postalCode} ${city}`
-
 			const coordinates = await getCoordinates(fullAddress)
 			if (!coordinates) {
 				toast.error("Podany adres nie istnieje.")
@@ -286,15 +305,14 @@ const Checkout = () => {
 				toast.warning("Twój adres jest poza obszarem dostawy.")
 				return
 			}
-			if (inDeliveryArea) {
-				toast.success('Hura! Twój adres jest w zasięgu naszej dostawy.')
-				return
-			}
 
+			toast.success('Hura! Twój adres jest w zasięgu naszej dostawy.')
 		} catch (error) {
 			toast.error("Wystąpił błąd sprawdzenia adresu.")
+			console.error(error)
 		}
 	}
+
 
 
 	const handleTimeChange = (timeOption: 'asap' | Date) => {
@@ -661,8 +679,46 @@ const Checkout = () => {
 												)}
 											</div>
 										</div>
+										<div className='w-full h-96'>
+											<LoadScriptNext
+												googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""}
+												libraries={libraries}
+												loadingElement={
+													<div className='flex gap-2'>
+														<div className="space-y-4">
+															<Skeleton className="w-full h-64" />
+														</div>
+														<div className="space-y-4">
+															<Skeleton className="w-full h-64" />
+															<Skeleton className="w-full h-10" />
+															<Skeleton className="w-full h-10" />
+														</div>
+													</div>
+												}
+											>
+												<RestaurantMap
+													center={RESTAURANT_COORDINATES}
+													zoom={11}
+													markers={[RESTAURANT_COORDINATES].filter(Boolean) as Coordinates[]}
+													deliveryZones={deliveryZones} // Pass delivery zones to the map
+													addressMarker={deliveryCoordinates}
+													className='w-full h-full'
+												/>
+											</LoadScriptNext>
+										</div>
 										<div className='w-full flex flex-col'>
-											<Button variant='secondary' onClick={() => handleCheckDeliveryAdress()}>Sprawdź adres</Button>
+											<Button
+												variant='secondary'
+												onClick={handleCheckDeliveryAdress}
+												disabled={
+													!getValuesDelivery('city') ||
+													!getValuesDelivery('postalCode') ||
+													!getValuesDelivery('street') ||
+													!getValuesDelivery('buildingNumber')
+												}
+											>
+												Sprawdź adres
+											</Button>
 										</div>
 									</div>
 								</div>

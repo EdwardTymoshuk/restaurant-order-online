@@ -1,13 +1,16 @@
 'use client'
 
 import { Input } from '@/app/components/ui/input'
+import { DEFAULT_DELIVERY_ZONES } from '@/config/constants'
 import { validateDeliveryForm } from '@/lib/validators'
 import { getCoordinates, isAddressInDeliveryArea } from '@/utils/deliveryUtils'
+import { trpc } from '@/utils/trpc'
 import { useEffect, useState } from 'react'
 import { MdOutlineDeliveryDining, MdOutlineRestaurantMenu } from 'react-icons/md'
 import { toast } from 'sonner'
 import Switcher from '../components/Switcher'
 import { useCheckout } from '../context/CheckoutContext'
+import { DeliveryZone } from '../types/types'
 import { Button } from './ui/button'
 
 interface DeliveryMethodSwitcherProps {
@@ -38,6 +41,11 @@ const DeliveryMethodSwitcher: React.FC<DeliveryMethodSwitcherProps> = ({ deliver
 	]
 
 	const { setDeliveryData, deliveryData } = useCheckout()
+
+	const { data: settingsData, isLoading: isSettingsLoading } = trpc.settings.getSettings.useQuery()
+	const deliveryZones: DeliveryZone[] = Array.isArray(settingsData?.deliveryZones)
+		? (settingsData?.deliveryZones as unknown as DeliveryZone[])
+		: DEFAULT_DELIVERY_ZONES
 
 	useEffect(() => {
 		const deliveryAddress = localStorage.getItem('deliveryAddress')
@@ -89,7 +97,7 @@ const DeliveryMethodSwitcher: React.FC<DeliveryMethodSwitcherProps> = ({ deliver
 				return
 			}
 
-			const available = await isAddressInDeliveryArea(address)
+			const available = await isAddressInDeliveryArea(address, deliveryZones)
 
 			if (available) {
 				toast.success('Gratulacje! Twój adres znajduje się w zasięgu naszej dostawy.')

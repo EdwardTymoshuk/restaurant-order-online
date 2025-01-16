@@ -6,14 +6,16 @@ import PageSubHeader from '@/app/components/PageSubHeader'
 import RestaurantMap from '@/app/components/RestaurantMap'
 import { Skeleton } from '@/app/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
-import { DELIVERY_RADIUS_METERS, RESTAURANT_COORDINATES } from '@/config/constants'
+import { RESTAURANT_COORDINATES } from '@/config/constants'
 import { Coordinates } from '@/utils/deliveryUtils'
+import { trpc } from '@/utils/trpc'
 import { LoadScriptNext } from "@react-google-maps/api"
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from "react"
+import { useMemo, useState, useTransition } from "react"
 import { MdOutlineDeliveryDining, MdOutlineKeyboardArrowRight, MdOutlineRestaurantMenu } from "react-icons/md"
 import MainContainer from '../components/MainContainer'
 import { Separator } from '../components/ui/separator'
+import { DeliveryZone } from '../types/types'
 
 const Home = () => {
   const [isLoading, setIsLoading] = useState(true)
@@ -22,10 +24,24 @@ const Home = () => {
   const [addressVerified, setAddressVerified] = useState(false)
   const [addressCoordinates, setAddressCoordinates] = useState<Coordinates | null>(null)
 
+  // Fetch delivery zones from settings
+  const { data: settingsData, isLoading: isSettingsLoading } = trpc.settings.getSettings.useQuery()
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   const libraries: ("places")[] = ["places"]
+
+  // Parse delivery zones with type safety
+  const deliveryZones: DeliveryZone[] = useMemo(() => {
+    try {
+      return Array.isArray(settingsData?.deliveryZones)
+        ? (settingsData?.deliveryZones as unknown as DeliveryZone[])
+        : []
+    } catch {
+      console.error('Failed to parse delivery zones from settings.')
+      return []
+    }
+  }, [settingsData])
 
   const handleOrderClick = () => {
     startTransition(() => {
@@ -34,7 +50,7 @@ const Home = () => {
   }
 
   return (
-    <div className='my-auto w-full mx-auto min-h-screen py-8 px-8 pt-20 flex flex-col justify-center bg-[url("/img/main-page.webp")] bg-no-repeat bg-cover bg-center' >
+    <div className='my-auto w-full mx-auto min-h-screen py-8 px-8 pt-20 flex flex-col justify-center bg-[url("/img/main-page.webp")] bg-no-repeat bg-cover bg-center'>
       <div className='flex flex-col align-center mx-auto mt-8 md:w-full lg:w-3/4 bg-background/90 rounded-md max-w-5xl'>
 
         <Separator className='mx-auto mt-8 w-1/2 bg-primary' />
@@ -63,19 +79,15 @@ const Home = () => {
           >
             <div className="flex flex-col-reverse md:flex-row md:space-x-8 my-8 mx-auto w-full min-h-96 px-8 relative z-0">
               <div className="w-full md:w-1/2 h-96 my-auto">
-                <RestaurantMap
-                  center={RESTAURANT_COORDINATES}
-                  zoom={11.3}
-                  markers={[RESTAURANT_COORDINATES].filter(Boolean) as Coordinates[]}
-                  circleRadius={DELIVERY_RADIUS_METERS}
-                  circleOptions={{
-                    fillColor: "#ABD95A",
-                    fillOpacity: 0.2,
-                    strokeColor: "#ABD95A",
-                    strokeOpacity: 0.2,
-                    strokeWeight: 1,
-                  }}
-                />
+                {!isSettingsLoading && (
+                  <RestaurantMap
+                    center={RESTAURANT_COORDINATES}
+                    zoom={11.3}
+                    markers={[RESTAURANT_COORDINATES].filter(Boolean) as Coordinates[]}
+                    deliveryZones={deliveryZones} // Pass delivery zones to the map
+                    addressMarker={addressCoordinates}
+                  />
+                )}
               </div>
               <div className="w-full md:w-1/2">
                 <Tabs defaultValue="delivery" onValueChange={setActiveTab}>
@@ -111,6 +123,7 @@ const Home = () => {
                         onFormDataChange={setFormData}
                         addressVerified={addressVerified}
                         setAddressVerified={setAddressVerified}
+                        setAddressCoordinates={setAddressCoordinates}
                       />
                       <LoadingButton
                         isLoading={isPending}
