@@ -98,6 +98,7 @@ model Settings {
   isOrderingOpen Boolean  @default(true)
   orderWaitTime  Int      @default(30)
   deliveryCost   Int      @default(0)
+  deliveryZones  Json     @default("[]")
   updatedAt      DateTime @updatedAt
   createdAt      DateTime @default(now())
 }

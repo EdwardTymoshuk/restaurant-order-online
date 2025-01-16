@@ -17,6 +17,6 @@ export async function middleware(req: NextRequest) {
 
 // Вказуємо, на які маршрути застосовується middleware
 export const config = {
-	matcher: ['/admin-panel/:path*', '/api/trpc/settings.updateSettings'],
+	matcher: ['/admin-panel/:path*', '/api/trpc/settings.updateOrderingState', '/api/trpc/settings.updateDeliveryCost', '/api/trpc/settings.updateOrderWaitTime', '/api/trpc/settings.updateDeliveryZonePrices'],
 };
 

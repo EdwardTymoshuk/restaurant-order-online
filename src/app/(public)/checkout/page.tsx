@@ -1,17 +1,21 @@
 'use client'
 
 import ImageWithFallback from '@/app/components/ImageWithFallback'
+import RestaurantMap from '@/app/components/RestaurantMap'
 import { Button } from '@/app/components/ui/button'
 import { Checkbox } from '@/app/components/ui/checkbox'
 import { Input } from '@/app/components/ui/input'
+import { Skeleton } from '@/app/components/ui/skeleton'
 import { Textarea } from '@/app/components/ui/textarea'
 import { useCart } from '@/app/context/CartContext'
 import { useCheckout } from '@/app/context/CheckoutContext'
-import { MIN_ORDER_AMOUNT } from '@/config/constants'
-import { getCoordinates, isAddressInDeliveryArea } from '@/utils/deliveryUtils'
+import { DeliveryZone } from '@/app/types/types'
+import { DEFAULT_DELIVERY_ZONES, MIN_ORDER_AMOUNT, RESTAURANT_COORDINATES } from '@/config/constants'
+import { Coordinates, getCoordinates, getDeliveryCost, isAddressInDeliveryArea } from '@/utils/deliveryUtils'
 import { trpc } from '@/utils/trpc'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CheckedState } from '@radix-ui/react-checkbox'
+import { LoadScriptNext } from "@react-google-maps/api"
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useTransition } from 'react'
@@ -22,6 +26,7 @@ import { FaRegCreditCard } from 'react-icons/fa6'
 import { MdKeyboardArrowLeft, MdOutlineDeliveryDining, MdOutlineRestaurantMenu } from 'react-icons/md'
 import { RxCross2 } from "react-icons/rx"
 import { toast } from 'sonner'
+import { useDebounce } from 'use-debounce'
 import { z } from 'zod'
 import LoadingButton from '../../components/LoadingButton'
 import PageSubHeader from '../../components/PageSubHeader'
@@ -103,6 +108,10 @@ const Checkout = () => {
 	const markPromoCodeAsUsed = trpc.promoCode.markPromoCodeAsUsed.useMutation()
 
 	const { data: settingsData, isLoading: isSettingsLoading } = trpc.settings.getSettings.useQuery()
+	const deliveryZones: DeliveryZone[] = Array.isArray(settingsData?.deliveryZones)
+		? (settingsData?.deliveryZones as unknown as DeliveryZone[])
+		: DEFAULT_DELIVERY_ZONES
+
 
 	const trpcContext = trpc.useUtils()
 	const { isRestaurantClosed } = useCheckout()
@@ -110,6 +119,13 @@ const Checkout = () => {
 	const amountNeeded = Math.max(0, MIN_ORDER_AMOUNT - state.totalAmount)
 	const now = new Date()
 	const isBreakfast = now.getHours() < 12
+
+	const [fullAddress, setFullAddress] = useState('')
+	const [deliveryCost, setDeliveryCost] = useState<number | null>(null)
+	const [debouncedAddress] = useDebounce(fullAddress, 500)
+
+	const [deliveryCoordinates, setDeliveryCoordinates] = useState<Coordinates | null>(null)
+	const libraries: ("places")[] = ["places"]
 
 
 	const { register: registerDelivery, handleSubmit: handleSubmitDelivery, formState: formStateDelivery, setValue: setValueDelivery, getValues: getValuesDelivery, reset: resetDelivery } = useForm<DeliveryFormData>({
@@ -154,9 +170,23 @@ const Checkout = () => {
 
 	useEffect(() => {
 		if (settingsData) {
-			dispatch({ type: 'SET_DELIVERY_COST', payload: settingsData.deliveryCost || 0 })
+			const formData = getValuesDelivery() // Викликаємо функцію для отримання адреси
+			const { city, postalCode, street, buildingNumber } = formData
+			const fullAddress = `${street} ${buildingNumber}, ${postalCode} ${city}`
+
+			const calculateDeliveryCost = async () => {
+				try {
+					const cost = await getDeliveryCost(fullAddress, deliveryZones)
+					dispatch({ type: 'SET_DELIVERY_COST', payload: cost })
+				} catch (error) {
+					console.error('Error calculating delivery cost:', error)
+					dispatch({ type: 'SET_DELIVERY_COST', payload: 0 })
+				}
+			}
+			calculateDeliveryCost()
 		}
 	}, [settingsData, dispatch])
+
 
 	// Встановлюємо метод доставки при зміні активної форми
 	useEffect(() => {
@@ -183,36 +213,107 @@ const Checkout = () => {
 		}
 	}, [isNipRequired, setValueDelivery, setValueTakeOut])
 
+	useEffect(() => {
+		if (!debouncedAddress || !deliveryZones.length) {
+			setDeliveryCost(null)
+			return
+		}
+
+		const calculateCost = async () => {
+			try {
+				const cost = await getDeliveryCost(debouncedAddress, deliveryZones)
+				setDeliveryCost(cost)
+				dispatch({ type: 'SET_DELIVERY_COST', payload: cost })
+			} catch (error) {
+				console.error('Error calculating delivery cost:', error)
+				setDeliveryCost(null)
+				dispatch({ type: 'SET_DELIVERY_COST', payload: 0 })
+			}
+		}
+
+		calculateCost()
+	}, [debouncedAddress, deliveryZones, dispatch])
+
+
+	const handleAddressChange = async () => {
+		const { city, postalCode, street, buildingNumber } = getValuesDelivery()
+
+		if (city && postalCode && street && buildingNumber) {
+			const fullAddress = `${street} ${buildingNumber}, ${postalCode} ${city}`
+			setFullAddress(fullAddress)
+
+			try {
+				const deliveryCoordinates = await getCoordinates(fullAddress)
+				setDeliveryCoordinates(deliveryCoordinates)
+			} catch (error) {
+				console.error('Error fetching coordinates:', error)
+				setDeliveryCoordinates(null)
+			}
+		} else {
+			setFullAddress('')
+			setDeliveryCoordinates(null)
+		}
+	}
+
+
+
 	// Обробка перевірки адреси
 	const handleCheckAddress = async () => {
 		let isValid = true
 		try {
 			const formData = getValuesDelivery()
-
 			const { city, postalCode, street, buildingNumber } = formData
 			const fullAddress = `${street} ${buildingNumber}, ${postalCode} ${city}`
-
 			const coordinates = await getCoordinates(fullAddress)
+
 			if (!coordinates) {
 				toast.error("Podany adres nie istnieje.")
 				isValid = false
-				return
 			}
 
-			const inDeliveryArea = await isAddressInDeliveryArea(fullAddress)
+			const inDeliveryArea = await isAddressInDeliveryArea(fullAddress, deliveryZones)
 			if (!inDeliveryArea) {
 				toast.warning("Twój adres jest poza obszarem dostawy.")
 				isValid = false
-				return
 			}
-			return isValid = true
-
 		} catch (error) {
 			toast.error("Wystąpił błąd sprawdzenia adresu.")
-		} finally {
-			return isValid
+			isValid = false
+		}
+		return isValid
+	}
+
+	const handleCheckDeliveryAdress = async () => {
+		const { city, postalCode, street, buildingNumber } = getValuesDelivery()
+
+		if (!city || !postalCode || !street || !buildingNumber) {
+			toast.error("Wprowadź pełny adres.")
+			return
+		}
+
+		const fullAddress = `${street} ${buildingNumber}, ${postalCode} ${city}`
+
+		try {
+			const coordinates = await getCoordinates(fullAddress)
+			if (!coordinates) {
+				toast.error("Podany adres nie istnieje.")
+				return
+			}
+
+			const inDeliveryArea = await isAddressInDeliveryArea(fullAddress, deliveryZones)
+			if (!inDeliveryArea) {
+				toast.warning("Twój adres jest poza obszarem dostawy.")
+				return
+			}
+
+			toast.success('Hura! Twój adres jest w zasięgu naszej dostawy.')
+		} catch (error) {
+			toast.error("Wystąpił błąd sprawdzenia adresu.")
+			console.error(error)
 		}
 	}
+
+
 
 	const handleTimeChange = (timeOption: 'asap' | Date) => {
 		if (deliveryMethod === 'TAKE_OUT') {
@@ -289,6 +390,21 @@ const Checkout = () => {
 			setIsLoadingPromoCode(false) // Вимкнути індикатор завантаження
 		}
 	}
+	const DeliveryCostDisplay = ({ deliveryCost }: { deliveryCost: number | null }) => {
+		return (
+			<div className="flex font-sans justify-between text-lg text-text-secondary">
+				{deliveryCost === null || deliveryCost === 0 ? (
+					<span className='text-primary'>{`Wprowadź ${deliveryCost === 0 ? 'poprawny' : ''} adres, aby obliczyć koszt dostawy.`}</span>
+				) : (
+					<>
+						<span>Koszt dostawy:</span>
+						<span>{deliveryCost} zł</span>
+					</>
+				)}
+			</div>
+		)
+	}
+
 
 	const onDeliverySubmit = async (data: DeliveryFormData) => {
 		try {
@@ -495,7 +611,7 @@ const Checkout = () => {
 												<Input
 													id="city"
 													placeholder="Miasto"
-													{...registerDelivery('city')}
+													{...registerDelivery('city', { onChange: handleAddressChange })}
 													className={`mt-1 ${formStateDelivery.errors.city ? 'border-danger' : ''}`}
 												/>
 												{formStateDelivery.errors.city && (
@@ -507,7 +623,7 @@ const Checkout = () => {
 												<Input
 													id="postalCode"
 													placeholder="00-000"
-													{...registerDelivery('postalCode')}
+													{...registerDelivery('postalCode', { onChange: handleAddressChange })}
 													className={`mt-1 ${formStateDelivery.errors.postalCode ? 'border-danger' : ''}`}
 												/>
 												{formStateDelivery.errors.postalCode && (
@@ -520,7 +636,7 @@ const Checkout = () => {
 											<Input
 												id="street"
 												placeholder="Ulica"
-												{...registerDelivery('street')}
+												{...registerDelivery('street', { onChange: handleAddressChange })}
 												className={`mt-1 w-full ${formStateDelivery.errors.street ? 'border-danger' : ''}`}
 											/>
 											{formStateDelivery.errors.street && (
@@ -538,7 +654,7 @@ const Checkout = () => {
 													id="buildingNumber"
 													placeholder="Nr budynku"
 													type="string"
-													{...registerDelivery('buildingNumber')}
+													{...registerDelivery('buildingNumber', { onChange: handleAddressChange })}
 													className={`mt-1 ${formStateDelivery.errors.buildingNumber ? 'border-danger' : ''}`}
 												/>
 												{formStateDelivery.errors.buildingNumber && (
@@ -555,7 +671,7 @@ const Checkout = () => {
 													id="apartment"
 													placeholder="Nr mieszkania"
 													type="number"
-													{...registerDelivery('apartment', { valueAsNumber: true })}
+													{...registerDelivery('apartment', { valueAsNumber: true, onChange: handleAddressChange })}
 													className="mt-1 w-full"
 												/>
 												{formStateDelivery.errors.apartment && (
@@ -563,7 +679,47 @@ const Checkout = () => {
 												)}
 											</div>
 										</div>
-
+										<div className='w-full h-96'>
+											<LoadScriptNext
+												googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""}
+												libraries={libraries}
+												loadingElement={
+													<div className='flex gap-2'>
+														<div className="space-y-4">
+															<Skeleton className="w-full h-64" />
+														</div>
+														<div className="space-y-4">
+															<Skeleton className="w-full h-64" />
+															<Skeleton className="w-full h-10" />
+															<Skeleton className="w-full h-10" />
+														</div>
+													</div>
+												}
+											>
+												<RestaurantMap
+													center={RESTAURANT_COORDINATES}
+													zoom={11}
+													markers={[RESTAURANT_COORDINATES].filter(Boolean) as Coordinates[]}
+													deliveryZones={deliveryZones} // Pass delivery zones to the map
+													addressMarker={deliveryCoordinates}
+													className='w-full h-full'
+												/>
+											</LoadScriptNext>
+										</div>
+										<div className='w-full flex flex-col'>
+											<Button
+												variant='secondary'
+												onClick={handleCheckDeliveryAdress}
+												disabled={
+													!getValuesDelivery('city') ||
+													!getValuesDelivery('postalCode') ||
+													!getValuesDelivery('street') ||
+													!getValuesDelivery('buildingNumber')
+												}
+											>
+												Sprawdź adres
+											</Button>
+										</div>
 									</div>
 								</div>
 
@@ -964,10 +1120,7 @@ const Checkout = () => {
 										<span>{state.totalAmount.toFixed(2)} zł</span>
 									</div>
 									{deliveryMethod === 'DELIVERY' &&
-										<div className="flex font-sans justify-between text-lg text-text-secondary">
-											<span>Koszt dostawy</span>
-											<span>{state.deliveryCost?.toFixed(2)} zł</span>
-										</div>
+										<DeliveryCostDisplay deliveryCost={deliveryCost} />
 									}
 
 

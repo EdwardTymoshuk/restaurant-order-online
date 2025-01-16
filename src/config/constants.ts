@@ -9,3 +9,4 @@ export const CLOSING_HOUR = 19
 export const MINIMUM_WAIT_TIME_MINUTES = 30
 export const DELIVERY_RADIUS_METERS = 7000
 export const MIN_ORDER_AMOUNT = 50
+export const DEFAULT_DELIVERY_ZONES = [{ minRadius: 0, maxRadius: 7, price: 5 }]
