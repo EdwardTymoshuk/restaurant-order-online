@@ -9,17 +9,19 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/app/components/ui/select"
+} from '@/app/components/ui/select'
 import { Skeleton } from '@/app/components/ui/skeleton'
 import { MenuItemCategory, MenuItemType } from '@/app/types/types'
 import { CLOSING_HOUR, OPENING_HOUR } from '@/config/constants'
 import { trpc } from '@/utils/trpc'
-import Autoplay from "embla-carousel-autoplay"
+import Autoplay from 'embla-carousel-autoplay'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
+import { LuCircleSlash2 } from "react-icons/lu"
 import PageSubHeader from '../../components/PageSubHeader'
 
 const Order = () => {
+	// States for managing UI and data
 	const [sortedItems, setSortedItems] = useState<MenuItemType[]>([])
 	const [sortOption, setSortOption] = useState<string | undefined>(undefined)
 	const [categoryFilter, setCategoryFilter] = useState<string | undefined>('all')
@@ -27,10 +29,12 @@ const Order = () => {
 	const [isBreakfastOnly, setIsBreakfastOnly] = useState<boolean>(false)
 	const [isOpen, setIsOpen] = useState(true)
 
+	// Fetch menu items, banners, and settings from the server
 	const { data: menuItems = [], isLoading } = trpc.menu.getMenuItems.useQuery()
 	const { data: carouselImages = [], isLoading: isLoadingCarouselImages } = trpc.banner.getAllBanners.useQuery()
 	const { data: settings, isLoading: isLoadingSettings } = trpc.settings.getSettings.useQuery()
 
+	// Utility function to check if the restaurant is open
 	const isRestaurantOpen = () => {
 		const now = new Date()
 		const openingTime = new Date()
@@ -45,8 +49,7 @@ const Order = () => {
 		setIsOpen(isRestaurantOpen())
 	}, [])
 
-
-	// Перевірка часу для обмеження доступу до меню
+	// Logic for restricting menu items based on time (e.g., breakfast only)
 	useEffect(() => {
 		const now = new Date()
 		const currentHour = now.getHours()
@@ -58,6 +61,7 @@ const Order = () => {
 		}
 	}, [])
 
+	// Sorting and filtering logic for menu items
 	useEffect(() => {
 		if (!menuItems || menuItems.length === 0) return
 
@@ -68,7 +72,6 @@ const Order = () => {
 			}))
 			.filter(item => item.isActive)
 
-		// Обмеження відображення тільки сніданків, якщо активний режим сніданку
 		if (isBreakfastOnly && categoryFilter !== 'Śniadania') {
 			itemsFiltered = []
 		} else if (categoryFilter && categoryFilter !== 'all') {
@@ -95,54 +98,58 @@ const Order = () => {
 		setSortedItems(itemsFiltered)
 	}, [menuItems, sortOption, categoryFilter, isBreakfastOnly])
 
+	// Generate unique category list from menu items
 	const categories = Array.from(new Set(menuItems.map(item => item.category)))
 
 	return (
 		<div className="container mx-auto px-4 py-4 space-y-4">
+			{/* Carousel for banners */}
 			<Carousel
-				className='w-full h-96'
+				className="w-full h-96"
 				plugins={[
 					Autoplay({
 						delay: 5000,
 					}),
 				]}
 			>
-				<CarouselContent className='h-full'>
-					{isLoadingCarouselImages && <Skeleton className='w-[1056px] h-[384px]' />}
+				<CarouselContent className="h-full">
+					{isLoadingCarouselImages && <Skeleton className="w-[1056px] h-[384px]" />}
 					{carouselImages.map((item, index) => (
-						<CarouselItem key={index} className='relative'>
-							<div className='relative h-96 rounded-md'>
+						<CarouselItem key={index} className="relative">
+							<div className="relative h-96 rounded-md">
 								<Image
 									src={item.imageUrl}
-									alt='Carousel image'
+									alt="Carousel image"
 									width={1056}
 									height={384}
-									className='object-cover w-full h-96 rounded-md'
+									className="object-cover w-full h-96 rounded-md"
 								/>
 							</div>
 						</CarouselItem>
 					))}
 				</CarouselContent>
-				<CarouselPrevious className='left-0 text-primary hover:text-primary opacity-80 hover:opacity-100 h-8 w-8 bg-transparent hover:bg-transparent' />
-				<CarouselNext className='right-0 text-primary hover:text-primary opacity-80 hover:opacity-100 h-8 w-8 bg-transparent hover:bg-transparent' />
+				<CarouselPrevious className="left-0 text-primary hover:text-primary opacity-80 hover:opacity-100 h-8 w-8 bg-transparent hover:bg-transparent" />
+				<CarouselNext className="right-0 text-primary hover:text-primary opacity-80 hover:opacity-100 h-8 w-8 bg-transparent hover:bg-transparent" />
 			</Carousel>
 
-			<PageSubHeader title='Wybierz na co masz dziś ochotę' />
+			{/* Page subheader */}
+			<PageSubHeader title="Wybierz na co masz dziś ochotę" />
 
-			{isLoadingSettings ? <Skeleton className='w-full h-8' /> : (!settings?.isOrderingOpen &&
-				<div className="flex justify-self-center w-fit p-2 bg-red-100 text-danger text-center rounded-md">
+			{/* Display ordering status */}
+			{isLoadingSettings ? <Skeleton className="w-full h-8" /> : (!settings?.isOrderingOpen &&
+				<div className="flex justify-self-center w-fit p-4 bg-yellow-100 text-warning text-center rounded-md">
 					Zamawianie online jest chwilowo niedostępne. <br />W celu zamówienia zadzwoń do nas lub odwiedź nas osobiście.
 				</div>
 			)}
 
-
+			{/* Sorting and category filtering controls */}
 			<div className="flex gap-4 mb-4 w-1/2">
 				<Select
 					value={sortOption}
 					onValueChange={setSortOption}
 				>
 					<SelectTrigger aria-label="Sortowanie">
-						<SelectValue placeholder='Sortuj' />
+						<SelectValue placeholder="Sortuj" />
 					</SelectTrigger>
 					<SelectContent>
 						<SelectItem value="Nazwa rosnąco">Nazwa rosnąco</SelectItem>
@@ -157,10 +164,10 @@ const Order = () => {
 						setCategoryFilter(value)
 						setActiveAccordion(value === 'all' ? null : value)
 					}}
-					disabled={isBreakfastOnly} // Заборона зміни категорій під час сніданку
+					disabled={isBreakfastOnly} // Restrict category changes during breakfast hours
 				>
 					<SelectTrigger aria-label="Kategorie">
-						<SelectValue placeholder='Filtruj' />
+						<SelectValue placeholder="Filtruj" />
 					</SelectTrigger>
 					<SelectContent>
 						<SelectItem value="all">Wszystkie</SelectItem>
@@ -171,14 +178,14 @@ const Order = () => {
 				</Select>
 			</div>
 
-			{/* Відображення меню з розбиттям по категоріях */}
+			{/* Display breakfast-only notice */}
 			{isBreakfastOnly && (
 				<div className="text-center text-lg text-secondary mt-8">
 					W godzinach 8:00 - 12:00 dostępne są tylko śniadania.
 				</div>
 			)}
 
-
+			{/* Display restaurant closed notice */}
 			{!isOpen && (
 				<div className="mt-4 p-2 bg-red-100 text-danger text-center rounded-md">
 					Restauracja jest zamknięta. Zamówienia są realizowane od godziny{' '}
@@ -187,10 +194,11 @@ const Order = () => {
 				</div>
 			)}
 
+			{/* Menu items displayed by category */}
 			<Accordion
 				type="single"
 				collapsible
-				className='space-y-4'
+				className="space-y-4"
 				value={activeAccordion || undefined}
 				onValueChange={setActiveAccordion}
 			>
@@ -204,14 +212,26 @@ const Order = () => {
 					categories
 						.filter(category => categoryFilter === 'all' || categoryFilter === category)
 						.map((category, index) => (
-							<AccordionItem key={category} value={category} className='border-0'>
-								<AccordionTrigger className='text-text-foreground hover:text-text-secondary data-[state=open]:text-text-secondary text-4xl md:text-5xl hover:no-underline'>
-									{!isBreakfastOnly && category === 'Śniadania' ? (
-										<span className='space-x-4 flex items-center'>
+							<AccordionItem key={category} value={category} className="border-0">
+								<AccordionTrigger className="text-text-foreground hover:text-text-secondary data-[state=open]:text-text-secondary text-4xl md:text-5xl hover:no-underline text-start">
+									{/* Add a condition for the breakfast category */}
+									{category === 'Śniadania' ? (
+										<span className="space-x-0 flex flex-col items-start">
 											<span>{category}</span>
-											<span className='text-secondary text-sm'>(Śniadania dostępne wyłącznie w godzinach 8-12)</span>
+											<span className="text-secondary text-sm">
+												(Dostępne wyłącznie w godzinach 8:00 - 12:00)
+											</span>
 										</span>
-									) : category}
+									) : category === 'Pizza' ? (
+										<span className="space-x-0 flex flex-col items-start">
+											<span className='flex items-end gap-2'>{category} <i className='text-4xl flex items-bottom gap-2'>(32 cm <LuCircleSlash2 />)</i></span>
+											<span className="text-secondary text-sm">
+												(Dostępne w wybrane dni i godziny)
+											</span>
+										</span>
+									) : (
+										category
+									)}
 								</AccordionTrigger>
 								<AccordionContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-items-center">
 									{sortedItems
@@ -225,13 +245,14 @@ const Order = () => {
 												description={item.description || ''}
 												image={item.image || ''}
 												category={item.category}
-												orientation='horizontal'
+												orientation="horizontal"
 												isBreakfastOnly={isBreakfastOnly}
 												isOrderingActive={settings?.isOrderingOpen && isOpen}
 											/>
 										))}
 								</AccordionContent>
 							</AccordionItem>
+
 						))
 				)}
 			</Accordion>

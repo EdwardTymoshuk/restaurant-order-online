@@ -4,9 +4,9 @@ import { Button } from '@/app/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/app/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { DeliveryZone } from '../types/types'
-import { Input } from './ui/input'
-import { Separator } from './ui/separator'
+import { Input } from '../../components/ui/input'
+import { Separator } from '../../components/ui/separator'
+import { DeliveryZone } from '../../types/types'
 
 const DeliveryZonesSettings = ({
 	deliveryZones,
@@ -84,7 +84,7 @@ const DeliveryZonesSettings = ({
 	}, [memoizedDeliveryZones])
 
 	return (
-		<div className="p-4">
+		<div className="">
 			<h2 className="text-xl font-semibold mb-4">Strefy dostawy</h2>
 			<Table>
 				<TableHeader>
