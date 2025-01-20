@@ -113,5 +113,30 @@ export const settingsRouter = router({
 				data: { deliveryZones: input }, // Зберігаємо як масив зон
 			})
 		}),
+	updatePizzaAvailability: publicProcedure
+		.input(
+			z.object({
+				enabled: z.boolean(), // Увімкнення/вимкнення категорії
+				availability: z.array(
+					z.object({
+						day: z.number().min(0).max(6), // Дні (0 - неділя, 6 - субота)
+						startHour: z.number().min(0).max(23), // Початкова година
+						endHour: z.number().min(0).max(23),   // Кінцева година
+					})
+				),
+			})
+		)
+		.mutation(async ({ input }) => {
+			const settings = await prisma.settings.findFirst()
+			if (!settings) throw new Error("Settings not found")
+
+			return await prisma.settings.update({
+				where: { id: settings.id },
+				data: {
+					pizzaCategoryEnabled: input.enabled,
+					pizzaAvailability: input.availability,
+				},
+			})
+		}),
 
 })

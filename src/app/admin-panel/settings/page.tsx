@@ -31,7 +31,7 @@ import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import UserList from '../components/UserList'
 
-import DeliveryZonesSettings from '@/app/components/DeliveryZonesSettings'
+import DeliveryZonesSettings from '@/app/admin-panel/components/DeliveryZonesSettings'
 import LoadingButton from '@/app/components/LoadingButton'
 import {
 	Accordion,
@@ -43,6 +43,7 @@ import { DeliveryZone } from '@/app/types/types'
 import Image from 'next/image'
 import { toast } from 'sonner'
 import BannerUploader from '../components/BannerUploader'
+import PizzaSettings from '../components/PizzaSettings'
 
 interface PromoCode {
 	id: string
@@ -62,9 +63,19 @@ interface Banner {
 	position: number | null
 }
 
+interface settingsDataProps {
+	pizzaCategoryEnabled: boolean
+	pizzaAvailability: { day: number; startHour: number; endHour: number }[]
+}
+
 
 const Settings = () => {
 	const isAdmin = useIsAdmin()
+
+	const defaultPizzaSettings = {
+		pizzaCategoryEnabled: false,
+		pizzaAvailability: [],
+	}
 
 
 	// Отримуємо налаштування
@@ -257,10 +268,32 @@ const Settings = () => {
 					</div>
 				</section>
 
-				<DeliveryZonesSettings
-					deliveryZones={deliveryZones}
-					onUpdateZones={handleUpdateZones}
-				/>
+				<section>
+					<DeliveryZonesSettings
+						deliveryZones={deliveryZones}
+						onUpdateZones={handleUpdateZones}
+					/>
+				</section>
+				<section>
+					<PizzaSettings
+						settingsData={
+							settingsData
+								? {
+									pizzaCategoryEnabled: settingsData.pizzaCategoryEnabled,
+									pizzaAvailability: Array.isArray(settingsData.pizzaAvailability)
+										? (settingsData.pizzaAvailability as { day: number; startHour: number; endHour: number }[])
+										: [],
+								}
+								: {
+									pizzaCategoryEnabled: false,
+									pizzaAvailability: [],
+								}
+						}
+						refetchSettings={refetchSettings}
+					/>
+
+				</section>
+
 
 				<section>
 					<h2 className="text-xl font-semibold">Czas oczekiwania</h2>
