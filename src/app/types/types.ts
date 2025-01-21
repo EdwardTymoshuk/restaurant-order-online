@@ -71,6 +71,7 @@ export interface MenuItemType {
 	isActive?: boolean,
 	isRecommended?: boolean,
 	isOnMainPage?: boolean,
+	isOrderable?: boolean,
 	createdAt: Date,
 	updatedAt: Date,
 }
