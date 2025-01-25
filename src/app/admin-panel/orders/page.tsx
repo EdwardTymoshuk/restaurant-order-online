@@ -19,6 +19,7 @@ import { GoSortAsc, GoSortDesc } from 'react-icons/go'
 import { IoCheckmark } from 'react-icons/io5'
 import { RiArrowDropRightLine, RiPencilLine } from 'react-icons/ri'
 import { toast } from 'sonner'
+import DeliveryTimeManager from '../components/DeliveryTimeManager'
 import EmptyOrders from '../components/EmptyOrders'
 
 type OrderWithItems = Prisma.OrderGetPayload<{
@@ -288,22 +289,22 @@ const Orders = () => {
 												{order.deliveryMethod === 'DELIVERY' ? 'Dostawa' : 'Odbiór'}
 											</span>
 										</p>
-										<p className="w-4/12 md:w-2/12">
+										<div className="w-4/12 md:w-2/12">
 											{relativeTime ? (
 												relativeTime
 											) : (
-												<div className="flex flex-col">
+												<p className="flex flex-col">
 													<span>{fullDate}</span>
 													<span>{fullTime}</span>
-												</div>
+												</p>
 											)}
-										</p>
-										<p className="w-2/12 hidden md:block">
-											<div className="flex flex-col">
+										</div>
+										<div className="w-2/12 hidden md:block">
+											<p className="flex flex-col">
 												<span>{new Date(order.deliveryTime).toLocaleDateString()}</span>
 												<span>{new Date(order.deliveryTime).toLocaleTimeString()}</span>
-											</div>
-										</p>
+											</p>
+										</div>
 										<p
 											className={`w-4/12 md:w-2/12 flex gap-2 items-center justify-center ${statusColorMap[order.status]}`}
 										>
@@ -358,14 +359,14 @@ const Orders = () => {
 									</div>
 								</AccordionTrigger>
 								<AccordionContent className="p-4">
-									<p className="text-base flex md:hidden">
+									<p className="text-base md:hidden">
 										<span className="text-secondary font-bold">Metoda dostawy: </span> {order.deliveryMethod === 'DELIVERY' ? 'DOSTAWA' : 'ODBIÓR'}
 									</p>
-									<p className="text-base flex md:hidden">
+									<p className="text-base md:hidden">
 										<span className="text-secondary font-bold ">Czas dostawy/odbioru: </span>
 										{`${new Date(order.deliveryTime).toLocaleDateString()}  ${new Date(order.deliveryTime).toLocaleTimeString()}`}
 									</p>
-									<p className="text-base flex ">
+									<p className="text-base">
 										<span className="text-secondary font-bold ">Metoda płatności: </span>
 										{order.paymentMethod === 'cash_offline' ? 'GOTÓWKA PRZY ODBIORZE' : 'KARTA PRZY ODBIORZE'}
 									</p>
@@ -382,7 +383,7 @@ const Orders = () => {
 										<span className="text-secondary font-bold">Komentarz:</span> {order.comment || 'Brak komentarza'}
 									</p>
 									{order.promoCode?.code && (
-										<p className="text-base">
+										<div className="text-base">
 											<span className="text-secondary font-bold">Promocja:</span>
 											<ul className="text-sm">
 												<li className="pl-8 text-secondary">
@@ -402,7 +403,7 @@ const Orders = () => {
 													- Kwota przed rabatem: <span className="text-text-secondary">{order.totalAmount} zł</span>
 												</li>
 											</ul>
-										</p>
+										</div>
 									)}
 									<p className="text-base">
 										<span className="text-secondary font-bold">Kwota ostateczna:</span> {order.finalAmount} zł
@@ -414,7 +415,7 @@ const Orders = () => {
 									)}
 
 									{order.deliveryMethod === 'DELIVERY' && (
-										<div className="mt-4">
+										<div className="">
 											<p className="text-base">
 												<span className="text-secondary font-bold">Adres dostawy:</span>
 											</p>
@@ -448,6 +449,12 @@ const Orders = () => {
 											</li>
 										))}
 									</ul>
+
+									<DeliveryTimeManager
+										orderId={order.id}
+										currentDeliveryTime={order.deliveryTime}
+									/>
+
 									<Button
 										variant="destructive"
 										size="sm"
