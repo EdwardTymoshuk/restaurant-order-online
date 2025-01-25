@@ -131,7 +131,6 @@ export const orderRouter = router({
 			}
 		}),
 
-
 	updateStatus: publicProcedure
 		.input(z.object({
 			orderId: z.string(),
@@ -164,6 +163,7 @@ export const orderRouter = router({
 
 			return order
 		}),
+
 	markNotified: publicProcedure
 		.input(z.object({
 			orderIds: z.array(z.string()),
@@ -178,4 +178,37 @@ export const orderRouter = router({
 
 			return { success: true }
 		}),
+
+	updateDeliveryTime: publicProcedure
+		.input(
+			z.object({
+				orderId: z.string(),
+				additionalTime: z.number(), // Час у хвилинах
+			})
+		)
+		.mutation(async ({ input }) => {
+			const { orderId, additionalTime } = input
+
+			// Отримати поточний час доставки
+			const order = await prisma.order.findUnique({
+				where: { id: orderId },
+				select: { deliveryTime: true },
+			})
+
+			if (!order || !order.deliveryTime) {
+				throw new Error('Nie znaleziono zamówienia lub brakuje czasu dostawy.')
+			}
+
+			// Обчислити новий час доставки
+			const newDeliveryTime = new Date(order.deliveryTime.getTime() + additionalTime * 60 * 1000)
+
+			// Оновити час доставки
+			const updatedOrder = await prisma.order.update({
+				where: { id: orderId },
+				data: { deliveryTime: newDeliveryTime },
+			})
+
+			return updatedOrder
+		}),
+
 })
