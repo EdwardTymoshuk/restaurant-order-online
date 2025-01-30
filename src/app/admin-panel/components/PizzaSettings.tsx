@@ -10,46 +10,46 @@ import { trpc } from '@/utils/trpc'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
-interface PizzaAvailability {
+interface pizzaAvailability {
 	day: number
 	startHour: number
 	endHour: number
 }
 
-interface PizzaSettingsProps {
+interface SettingsProps {
 	settingsData: {
 		pizzaCategoryEnabled: boolean
-		pizzaAvailability: PizzaAvailability[]
+		pizzaAvailability: pizzaAvailability[]
 	}
 	refetchSettings: () => void
 }
 
-const PizzaSettings: React.FC<PizzaSettingsProps> = ({ settingsData, refetchSettings }) => {
-	// TRPC mutation to update pizza settings in the database
-	const updatePizzaAvailability = trpc.settings.updatePizzaAvailability.useMutation({
+const Settings: React.FC<SettingsProps> = ({ settingsData, refetchSettings }) => {
+	// TRPC mutation to update  settings in the database
+	const updateAvailability = trpc.settings.updatePizzaAvailability.useMutation({
 		onSuccess: refetchSettings,
 	})
 
-	// Local state to manage pizza category toggle
-	const [isPizzaEnabled, setIsPizzaEnabled] = useState(settingsData.pizzaCategoryEnabled)
+	// Local state to manage  category toggle
+	const [isEnabled, setIsEnabled] = useState(settingsData.pizzaCategoryEnabled)
 	// Local state to manage time-based availability
-	const [availability, setAvailability] = useState<PizzaAvailability[]>(settingsData.pizzaAvailability)
+	const [availability, setAvailability] = useState<pizzaAvailability[]>(settingsData.pizzaAvailability || [])
 	const [isAdding, setIsAdding] = useState(false)
-	const [newEntry, setNewEntry] = useState<PizzaAvailability | null>(null)
+	const [newEntry, setNewEntry] = useState<pizzaAvailability | null>(null)
 
 	const memoizedSettings = useMemo(() => settingsData, [settingsData])
 
 	useEffect(() => {
-		setIsPizzaEnabled(memoizedSettings.pizzaCategoryEnabled)
-		setAvailability(memoizedSettings.pizzaAvailability)
+		setIsEnabled(memoizedSettings.pizzaCategoryEnabled)
+		setAvailability(memoizedSettings.pizzaAvailability || [])
 	}, [memoizedSettings])
 
 	/**
 	 * Handles updating the server whenever changes are made
 	 */
-	const saveChanges = (updatedAvailability: PizzaAvailability[]) => {
-		updatePizzaAvailability.mutate({
-			enabled: isPizzaEnabled,
+	const saveChanges = (updatedAvailability: pizzaAvailability[]) => {
+		updateAvailability.mutate({
+			enabled: isEnabled,
 			availability: updatedAvailability,
 		})
 	}
@@ -65,13 +65,14 @@ const PizzaSettings: React.FC<PizzaSettingsProps> = ({ settingsData, refetchSett
 			return
 		}
 
-		const updatedAvailability = [...availability, newEntry]
+		const updatedAvailability = [...(availability || []), newEntry]
 		setAvailability(updatedAvailability)
-		saveChanges(updatedAvailability) // Save changes to server
+		saveChanges(updatedAvailability)
 		setNewEntry(null)
 		setIsAdding(false)
 		toast.success('Nowa dostępność została dodana.')
 	}
+
 
 	/**
 	 * Cancels the addition of a new availability entry
@@ -102,11 +103,11 @@ const PizzaSettings: React.FC<PizzaSettingsProps> = ({ settingsData, refetchSett
 	}
 
 	/**
-	 * Toggles the pizza category enabled/disabled status
+	 * Toggles the  category enabled/disabled status
 	 */
 	const handleToggleEnabled = (enabled: boolean) => {
-		setIsPizzaEnabled(enabled)
-		updatePizzaAvailability.mutate({
+		setIsEnabled(enabled)
+		updateAvailability.mutate({
 			enabled,
 			availability,
 		})
@@ -117,13 +118,13 @@ const PizzaSettings: React.FC<PizzaSettingsProps> = ({ settingsData, refetchSett
 		<div>
 			<h2 className="text-xl font-semibold mb-4">Dostępność kategorii pizzy</h2>
 
-			{/* Switch for enabling/disabling pizza category */}
+			{/* Switch for enabling/disabling  category */}
 			<div className="flex items-center space-x-4 mb-4">
-				<Switch checked={isPizzaEnabled} onCheckedChange={handleToggleEnabled} />
-				<span>{isPizzaEnabled ? 'Włączone' : 'Wyłączone'}</span>
+				<Switch checked={isEnabled} onCheckedChange={handleToggleEnabled} />
+				<span>{isEnabled ? 'Włączone' : 'Wyłączone'}</span>
 			</div>
 
-			{isPizzaEnabled && (
+			{isEnabled && (
 				<>
 					<Table>
 						<TableHeader>
@@ -135,7 +136,7 @@ const PizzaSettings: React.FC<PizzaSettingsProps> = ({ settingsData, refetchSett
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{availability.map((entry, index) => (
+							{availability?.map((entry, index) => (
 								<TableRow key={index}>
 									<TableCell>
 										{['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'][entry.day]}
@@ -213,4 +214,4 @@ const PizzaSettings: React.FC<PizzaSettingsProps> = ({ settingsData, refetchSett
 	)
 }
 
-export default PizzaSettings
+export default Settings

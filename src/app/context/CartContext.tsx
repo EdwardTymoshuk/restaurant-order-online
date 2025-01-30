@@ -22,7 +22,7 @@ export interface CartState {
 	finalAmount: number
 	deliveryDiscount?: DiscountInfo | null // Знижка для доставки
 	takeOutDiscount?: DiscountInfo | null // Знижка для самовивозу
-	deliveryCost: number // Додаємо вартість доставки
+	deliveryCost: number | null // Додаємо вартість доставки
 	deliveryMethod: 'DELIVERY' | 'TAKE_OUT' // Додаємо метод доставки
 }
 
@@ -37,7 +37,7 @@ type CartAction =
 	| { type: 'SET_TAKEOUT_DISCOUNT'; payload: DiscountInfo | null }
 	| { type: 'REMOVE_DELIVERY_DISCOUNT' }
 	| { type: 'REMOVE_TAKEOUT_DISCOUNT' }
-	| { type: 'SET_DELIVERY_COST'; payload: number }
+	| { type: 'SET_DELIVERY_COST'; payload: number | null }
 	| { type: 'SET_DELIVERY_METHOD'; payload: 'DELIVERY' | 'TAKE_OUT' }
 
 
@@ -47,7 +47,7 @@ const initialState: CartState = {
 	finalAmount: 0,
 	deliveryDiscount: null,
 	takeOutDiscount: null,
-	deliveryCost: 0,
+	deliveryCost: null,
 	deliveryMethod: 'TAKE_OUT', // Значення за замовчуванням
 }
 
@@ -89,7 +89,7 @@ const calculateFinalAmount = (state: CartState): number => {
 	let finalAmount = totalAmount - discount
 
 	if (deliveryMethod === 'DELIVERY') {
-		finalAmount += deliveryCost // Додаємо вартість доставки
+		deliveryCost === null ? finalAmount : finalAmount += deliveryCost // Додаємо вартість доставки
 	}
 
 	return finalAmount > 0 ? finalAmount : 0
