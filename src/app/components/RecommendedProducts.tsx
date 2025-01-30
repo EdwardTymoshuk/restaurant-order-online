@@ -38,6 +38,7 @@ const RecommendedProducts = ({ isBreakfastOnly }: { isBreakfastOnly: boolean }) 
 					orientation="horizontal"
 					className="px-4"
 					isOrderingActive={true}
+					isPizzaAvailable
 				/>
 			))}
 		</div>
