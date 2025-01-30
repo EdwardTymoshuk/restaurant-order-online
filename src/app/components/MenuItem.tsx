@@ -26,9 +26,10 @@ type MenuItemProps = Partial<MenuItemType> & {
 	className?: string,
 	isBreakfastOnly?: boolean,
 	isOrderingActive: boolean | undefined,
+	isPizzaAvailable: boolean | undefined,
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image, orientation = 'vertical', className, isBreakfastOnly, category, isOrderingActive }) => {
+const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image, orientation = 'vertical', className, isBreakfastOnly, category, isOrderingActive, isPizzaAvailable }) => {
 	const [addedToCart, setAddedToCart] = useState(false) // Animation for added item
 	const [isImageLoaded, setIsImageLoaded] = useState(false) // To manage Skeleton Loader
 	const isVertical = orientation === 'vertical'
@@ -38,6 +39,11 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 	// Check if the item already exists in the cart and get its quantity
 	const existingItem = state.items.find(item => item.id === id)
 	const itemQuantity = existingItem ? existingItem.quantity : 0
+
+	const isDisabled =
+		!isOrderingActive ||
+		(!isBreakfastOnly && category === 'Śniadania') ||
+		(category === 'Pizza' && !isPizzaAvailable)
 
 	const addToCart = () => {
 		if (name && price) {
@@ -132,7 +138,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 								'opacity-50 cursor-not-allowed': itemQuantity <= 1 || !isOrderingActive || (!isBreakfastOnly && category === 'Śniadania'),
 							})}
 							onClick={decrementQuantity}
-							disabled={itemQuantity <= 1 || !isOrderingActive || (!isBreakfastOnly && category === 'Śniadania')}
+							disabled={isDisabled}
 						>
 							<FaMinus />
 						</Button>
@@ -145,7 +151,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 								'opacity-50 cursor-not-allowed': !isOrderingActive || (!isBreakfastOnly && category === 'Śniadania'),
 							})}
 							onClick={incrementQuantity}
-							disabled={!isOrderingActive || (!isBreakfastOnly && category === 'Śniadania')}
+							disabled={isDisabled}
 						>
 							<FaPlus />
 						</Button>
@@ -158,7 +164,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 							'text-success scale-105': addedToCart,
 						})}
 						onClick={addToCart}
-						disabled={!isOrderingActive || (!isBreakfastOnly && category === 'Śniadania')}
+						disabled={isDisabled}
 					>
 						{addedToCart ? <FaCheck /> : <CiShoppingBasket />}
 					</Button>

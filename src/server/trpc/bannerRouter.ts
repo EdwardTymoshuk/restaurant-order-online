@@ -1,9 +1,9 @@
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { protectedProcedure, publicProcedure, router } from './trpc'
+import { publicProcedure, router } from './trpc'
 
 export const bannerRouter = router({
-	createBanner: protectedProcedure
+	createBanner: publicProcedure
 		.input(
 			z.object({
 				imageUrl: z.string(),
@@ -22,7 +22,7 @@ export const bannerRouter = router({
 		return await prisma.banner.findMany()
 	}),
 
-	updateBanner: protectedProcedure
+	updateBanner: publicProcedure
 		.input(
 			z.object({
 				id: z.string(),
@@ -40,7 +40,7 @@ export const bannerRouter = router({
 			return banner
 		}),
 
-	deleteBanner: protectedProcedure
+	deleteBanner: publicProcedure
 		.input(z.object({ id: z.string() }))
 		.mutation(async ({ input }) => {
 			await prisma.banner.delete({

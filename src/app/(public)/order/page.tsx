@@ -248,6 +248,7 @@ const Order = () => {
 												orientation="horizontal"
 												isBreakfastOnly={isBreakfastOnly}
 												isOrderingActive={settings?.isOrderingOpen && isOpen}
+												isPizzaAvailable={settings?.pizzaCategoryEnabled}
 											/>
 										))}
 								</AccordionContent>
