@@ -15,11 +15,13 @@ const TimeDeliverySwitcher = ({
 	isDelivery,
 	orderWaitTime,
 	isBreakfast,
+	cartItems
 }: {
 	onTimeChange: (time: 'asap' | Date) => void
 	isDelivery: boolean
 	orderWaitTime: number
 	isBreakfast: boolean
+	cartItems: { category: string }[]
 }) => {
 	const [selectedOption, setSelectedOption] = useState<'asap' | 'choose-time'>('asap')
 	const [selectedTime, setSelectedTime] = useState<Date | null>(null)
@@ -30,6 +32,16 @@ const TimeDeliverySwitcher = ({
 	const BREAKFAST_END_HOUR = 12
 	const deliveryTime = isDelivery ? 15 : 0
 	const waitTimeWithBuffer = orderWaitTime + deliveryTime
+
+	const isValentinesItemInCart = cartItems?.some(item => item.category === 'Oferta Walentynkowa')
+
+	const isDateAllowed = (date: Date) => {
+		if (!isValentinesItemInCart) return true // Якщо немає промо-страв, всі дати доступні
+		const allowedDates = ["2025-02-14", "2025-02-15", "2025-02-16"]
+		const selectedDateStr = date.toISOString().split("T")[0] // YYYY-MM-DD
+		return allowedDates.includes(selectedDateStr)
+	}
+
 
 	// Returns the last possible order time of a given day (15 minutes before closing)
 	const getLastPossibleOrderTime = useCallback((day: Date) => {
@@ -48,6 +60,10 @@ const TimeDeliverySwitcher = ({
 			now.getMonth(),
 			now.getDate() + (now.getHours() >= CLOSING_HOUR || now < new Date(now.getFullYear(), now.getMonth(), now.getDate(), OPENING_HOUR, OPENING_MINUTES_DELAY) ? 1 : 1),
 		)
+
+		while (isValentinesItemInCart && !isDateAllowed(nextDay)) {
+			nextDay.setDate(nextDay.getDate() + 1)
+		}
 
 		let earliest: Date
 		let latest: Date
@@ -203,6 +219,8 @@ const TimeDeliverySwitcher = ({
 
 	// Filters available time slots for selection
 	const filterTime = (time: Date) => {
+		const isAllowed = isDateAllowed(time)
+		if (!isAllowed) return false
 		const now = new Date()
 		const isNextDay = time.getFullYear() > now.getFullYear() ||
 			time.getMonth() > now.getMonth() ||
@@ -258,9 +276,15 @@ const TimeDeliverySwitcher = ({
 	}
 
 	const options = [
-		{ value: 'asap', label: 'Jak najszybciej', icon: <BsLightning /> },
+		{ value: 'asap', label: 'Jak najszybciej', icon: <BsLightning />, disabled: isValentinesItemInCart },
 		{ value: 'choose-time', label: 'Wybierz godzinę', icon: <BsClockHistory /> },
 	]
+
+	useEffect(() => {
+		if (isValentinesItemInCart) {
+			setSelectedOption('choose-time')
+		}
+	}, [isValentinesItemInCart])
 
 	return (
 		<div className="container mx-auto">
@@ -268,7 +292,10 @@ const TimeDeliverySwitcher = ({
 			<Switcher
 				options={options}
 				activeValue={selectedOption}
-				onChange={(val) => setSelectedOption(val as 'asap' | 'choose-time')}
+				onChange={(val) => {
+					if (isValentinesItemInCart && val === 'asap') return
+					setSelectedOption(val as 'asap' | 'choose-time')}
+				}
 			/>
 			<div className="w-full text-center py-2">
 				{/* Displaying the estimated waiting time including delivery time if applicable */}
@@ -307,7 +334,7 @@ const TimeDeliverySwitcher = ({
 						const now = new Date()
 						return getNearestAvailableTime(now)
 					}}
-					filterTime={filterTime}
+					filterTime={(time) => isDateAllowed(time)}
 				/>
 			)}
 		</div>

@@ -2,9 +2,6 @@
 
 /**
  * Checkout Page
- * Splits the code into:
- * - DeliveryForm (all delivery logic)
- * - TakeOutForm (all take-out logic)
  * This page shows:
  *  - top navigation (back to menu)
  *  - method switcher (Dostawa / Odbiór)
@@ -79,6 +76,9 @@ export default function CheckoutPage() {
 		null
 	)
 
+	const isValentinesItemInCart = state.items.some(item => item.category === 'Oferta Walentynkowa')
+
+
 	// For Google Maps
 	const libraries: ("places")[] = ["places"]
 
@@ -121,18 +121,20 @@ export default function CheckoutPage() {
 						<h3 className="text-xl text-secondary font-semibold">Metoda dostawy</h3>
 						{/* Switcher for 'DELIVERY' / 'TAKE_OUT' */}
 						<Switcher
-							options={[
-								{ value: "DELIVERY", label: "Dostawa", icon: <MdOutlineDeliveryDining /> },
-								{ value: "TAKE_OUT", label: "Odbiór", icon: <MdOutlineRestaurantMenu /> },
-							]}
+	options={[
+		{ value: "DELIVERY", label: "Dostawa", icon: <MdOutlineDeliveryDining /> },
+		{ value: "TAKE_OUT", label: "Odbiór", icon: <MdOutlineRestaurantMenu />, disabled: isValentinesItemInCart }
+	]}
+	activeValue={deliveryMethod}
+	onChange={(val) => {
+		if (!isValentinesItemInCart || val === "DELIVERY") {
+			setDeliveryMethod(val as "DELIVERY" | "TAKE_OUT")
+			dispatch({ type: "SET_DELIVERY_METHOD", payload: val as "DELIVERY" | "TAKE_OUT" })
+			localStorage.setItem("deliveryMethod", val)
+		}
+	}}
+/>
 
-							activeValue={deliveryMethod}
-							onChange={(val) => {
-								setDeliveryMethod(val as "DELIVERY" | "TAKE_OUT")
-								dispatch({ type: "SET_DELIVERY_METHOD", payload: val as "DELIVERY" | "TAKE_OUT" })
-								localStorage.setItem("deliveryMethod", val)
-							}}
-						/>
 					</div>
 
 					{/* Render DeliveryForm or TakeOutForm depending on method */}

@@ -58,6 +58,8 @@ export type MenuItemCategory =
 	'Napoje alkoholowe' |
 	'Napoje bezalkoholowe' |
 	'Napoje łekkoprocentowe' |
+	'Oferta Specjalna' |
+	'Oferta Walentynkowa' |
 	'Inne'
 
 // Тип для позицій меню

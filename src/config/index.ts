@@ -76,5 +76,7 @@ export const menuItemCategories: MenuItemCategory[] = [
 	'Napoje alkoholowe',
 	'Napoje bezalkoholowe',
 	'Napoje łekkoprocentowe',
+	'Oferta Specjalna',
+	'Oferta Walentynkowa',
 	'Inne'
 ]
