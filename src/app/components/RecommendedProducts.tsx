@@ -33,6 +33,7 @@ const RecommendedProducts = ({ isBreakfastOnly }: { isBreakfastOnly: boolean }) 
 					key={item.id}
 					id={item.id}
 					name={item.name}
+					category={item.category}
 					price={item.price}
 					image={item.image!}
 					orientation="horizontal"

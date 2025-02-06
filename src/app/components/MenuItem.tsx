@@ -7,7 +7,7 @@ import {
 	CardHeader
 } from "@/app/components/ui/card"
 import { useCart } from '@/app/context/CartContext'
-import { MenuItemType } from '@/app/types/types'
+import { MenuItemCategory, MenuItemType } from '@/app/types/types'
 import { cn } from '@/utils/utils'
 import React, { useState } from 'react'
 import { CiShoppingBasket } from 'react-icons/ci'
@@ -20,6 +20,7 @@ type MenuItemProps = Partial<MenuItemType> & {
 	id: string,
 	name: string,
 	price: number,
+	category: MenuItemCategory,
 	description?: string,
 	image: string,
 	orientation?: 'vertical' | 'horizontal',
@@ -52,6 +53,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 				payload: {
 					id,
 					name,
+					category,
 					price,
 					quantity: 1,
 					image
