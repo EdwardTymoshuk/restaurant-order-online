@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { BsClockHistory, BsLightning } from 'react-icons/bs'
 import Switcher from '../components/Switcher'
 import { TimeSelector } from '../components/TimeSelector'
+import { MenuItemCategory } from '../types/types'
 
 const TimeDeliverySwitcher = ({
 	onTimeChange,
@@ -21,7 +22,7 @@ const TimeDeliverySwitcher = ({
 	isDelivery: boolean
 	orderWaitTime: number
 	isBreakfast: boolean
-	cartItems: { category: string }[]
+	cartItems: { category: MenuItemCategory }[]
 }) => {
 	const [selectedOption, setSelectedOption] = useState<'asap' | 'choose-time'>('asap')
 	const [selectedTime, setSelectedTime] = useState<Date | null>(null)

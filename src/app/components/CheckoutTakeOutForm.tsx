@@ -270,6 +270,7 @@ export default function CheckoutTakeOutForm({
 					onTimeChange={handleTimeChange}
 					isDelivery={false}
 					orderWaitTime={30}
+					cartItems={state.items}
 				/>
 			</div>
 

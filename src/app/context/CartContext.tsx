@@ -1,11 +1,12 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useReducer } from 'react'
+import { MenuItemCategory } from '../types/types'
 
 interface CartItem {
 	id: string
 	name: string
-	category: string
+	category: MenuItemCategory
 	price: number
 	quantity: number
 	image: string
