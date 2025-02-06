@@ -438,6 +438,7 @@ export default function CheckoutDeliveryForm({
 					onTimeChange={handleTimeChange}
 					isDelivery
 					orderWaitTime={settingsData?.orderWaitTime || 30}
+					cartItems={state.items}
 				/>
 			</div>
 

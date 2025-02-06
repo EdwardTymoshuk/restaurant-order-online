@@ -5,6 +5,7 @@ import React, { createContext, useContext, useEffect, useReducer } from 'react'
 interface CartItem {
 	id: string
 	name: string
+	category: string
 	price: number
 	quantity: number
 	image: string
@@ -48,7 +49,7 @@ const initialState: CartState = {
 	deliveryDiscount: null,
 	takeOutDiscount: null,
 	deliveryCost: null,
-	deliveryMethod: 'TAKE_OUT', // Значення за замовчуванням
+	deliveryMethod: 'TAKE_OUT',
 }
 
 const initCartState = (): CartState => {

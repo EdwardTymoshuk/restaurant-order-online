@@ -20,6 +20,11 @@ import { useEffect, useState } from 'react'
 import { LuCircleSlash2 } from "react-icons/lu"
 import PageSubHeader from '../../components/PageSubHeader'
 
+const categoryOrder: Record<string, number> = {
+	'Oferta Walentynkowa': 0,
+	'Oferta Specjalna': 1,
+}
+
 const Order = () => {
 	// States for managing UI and data
 	const [sortedItems, setSortedItems] = useState<MenuItemType[]>([])
@@ -101,6 +106,14 @@ const Order = () => {
 	// Generate unique category list from menu items
 	const categories = Array.from(new Set(menuItems.map(item => item.category)))
 
+	// Sorting categories
+	const sortedCategories = [...new Set([...categories])].sort((a, b) => {
+		const orderA = categoryOrder[a] ?? Infinity
+		const orderB = categoryOrder[b] ?? Infinity
+		return orderA - orderB
+	  })
+	  
+
 	return (
 		<div className="container mx-auto px-4 py-4 space-y-4">
 			{/* Carousel for banners */}
@@ -171,7 +184,7 @@ const Order = () => {
 					</SelectTrigger>
 					<SelectContent>
 						<SelectItem value="all">Wszystkie</SelectItem>
-						{categories.map(category => (
+						{sortedCategories.map(category => (
 							<SelectItem key={category} value={category}>{category}</SelectItem>
 						))}
 					</SelectContent>
@@ -209,7 +222,7 @@ const Order = () => {
 						))}
 					</div>
 				) : (
-					categories
+					sortedCategories
 						.filter(category => categoryFilter === 'all' || categoryFilter === category)
 						.map((category, index) => (
 							<AccordionItem key={category} value={category} className="border-0">
@@ -227,6 +240,14 @@ const Order = () => {
 											<span className='flex items-end gap-2'>{category} <i className='text-4xl flex items-bottom gap-2'>(32 cm <LuCircleSlash2 />)</i></span>
 											<span className="text-secondary text-sm">
 												(Dostępne w wybrane dni i godziny)
+											</span>
+										</span>
+									) : 
+									category === 'Oferta Walentynkowa' ? (
+										<span className="space-x-0 flex flex-col items-start">
+											<span>{category}</span>
+											<span className="text-danger text-lg bg-red-100 rounded-lg px-2">
+												(Dostępne w dniach 14.02-16.02. Zamówienia należy złożyć z wyprzedzeniem.)
 											</span>
 										</span>
 									) : (
