@@ -36,9 +36,10 @@ const TimeDeliverySwitcher = ({
 
 	const isValentinesItemInCart = cartItems?.some(item => item.category === 'Oferta Walentynkowa')
 
+	const allowedDates = ["2025-02-14", "2025-02-15", "2025-02-16"]
+
 	const isDateAllowed = (date: Date) => {
 		if (!isValentinesItemInCart) return true // Якщо немає промо-страв, всі дати доступні
-		const allowedDates = ["2025-02-14", "2025-02-15", "2025-02-16"]
 		const selectedDateStr = date.toISOString().split("T")[0] // YYYY-MM-DD
 		return allowedDates.includes(selectedDateStr)
 	}
@@ -145,6 +146,7 @@ const TimeDeliverySwitcher = ({
 
 
 	useEffect(() => {
+		if (selectedOption === 'choose-time') return
 		const now = new Date()
 		const openingTimeToday = new Date(
 			now.getFullYear(),
@@ -212,11 +214,26 @@ const TimeDeliverySwitcher = ({
 	}
 
 	const handleTimeChange = (date: Date | null) => {
-		if (date) {
-			setSelectedTime(date)
-			onTimeChange(date)
+		if (!date) return;
+		if (!isDateAllowed(date)) {
+		  const allowedDatesData = allowedDates.map(s => new Date(s));
+		  let nearest = allowedDatesData[0];
+		  let minDiff = Math.abs(date.getTime() - nearest.getTime());
+		  
+		  for (let i = 1; i < allowedDatesData.length; i++) {
+			const diff = Math.abs(date.getTime() - allowedDatesData[i].getTime());
+			if (diff < minDiff) {
+			  minDiff = diff;
+			  nearest = allowedDatesData[i];
+			}
+		  }
+		  date = nearest;
 		}
-	}
+		
+		setSelectedTime(date);
+		onTimeChange(date);
+	  };
+	  
 
 	// Filters available time slots for selection
 	const filterTime = (time: Date) => {
@@ -286,6 +303,7 @@ const TimeDeliverySwitcher = ({
 			setSelectedOption('choose-time')
 		}
 	}, [isValentinesItemInCart])
+	
 
 	return (
 		<div className="container mx-auto">
@@ -335,7 +353,7 @@ const TimeDeliverySwitcher = ({
 						const now = new Date()
 						return getNearestAvailableTime(now)
 					}}
-					filterTime={(time) => isDateAllowed(time)}
+					filterTime={filterTime}
 				/>
 			)}
 		</div>

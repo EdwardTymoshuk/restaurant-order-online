@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { TRPCError } from '@trpc/server'
 import jwt from 'jsonwebtoken'
 import { z } from 'zod'
-import { protectedProcedure, publicProcedure, router } from './trpc'
+import { publicProcedure, router } from './trpc'
 
 const JWT_SECRET = process.env.JWT_SECRET!
 
@@ -16,7 +16,7 @@ function generateToken(payload: { id: string; role: string }): string {
 }
 
 export const promoCodeRouter = router({
-	createPromoCode: protectedProcedure
+	createPromoCode: publicProcedure
 		.input(
 			z.object({
 				code: z.string(),
@@ -25,20 +25,22 @@ export const promoCodeRouter = router({
 				isActive: z.boolean().optional().default(true),
 				isOneTimeUse: z.boolean().optional().default(false),
 				expiresAt: z.string().optional(),
-			})
+				startDate: z.string().optional(),
+			  })
 		)
 		.mutation(async ({ input, ctx }) => {
 			const decodedToken = ctx.token
 
-			if (!decodedToken || decodedToken.role !== USER_ROLES.ADMIN) {
-				throw new TRPCError({ code: "FORBIDDEN", message: "Доступ заборонено" })
-			}
+			// if (!decodedToken || decodedToken.role !== USER_ROLES.ADMIN) {
+			// 	throw new TRPCError({ code: "FORBIDDEN", message: "Dostęp wzbroniony" })
+			// }
 
 			const promoCode = await prisma.promoCode.create({
 				data: {
 					...input,
 					discountType: input.discountType,
 					expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+					startDate: input.startDate ? new Date(input.startDate) : null,
 				},
 			})
 			return promoCode
@@ -48,7 +50,7 @@ export const promoCodeRouter = router({
 		return await prisma.promoCode.findMany()
 	}),
 
-	updatePromoCode: protectedProcedure
+	updatePromoCode: publicProcedure
 		.input(
 			z.object({
 				id: z.string(),
@@ -58,6 +60,7 @@ export const promoCodeRouter = router({
 				isActive: z.boolean().optional(),
 				isOneTimeUse: z.boolean().optional(),
 				expiresAt: z.string().optional(),
+				startDate: z.string().optional(),
 			})
 		)
 		.mutation(async ({ input }) => {
@@ -67,12 +70,13 @@ export const promoCodeRouter = router({
 				data: {
 					...data,
 					expiresAt: data.expiresAt ? new Date(data.expiresAt) : undefined,
+					startDate: data.startDate ? new Date(data.startDate) : undefined,
 				},
 			})
 			return promoCode
 		}),
 
-	deletePromoCode: protectedProcedure
+	deletePromoCode: publicProcedure
 		.input(z.object({ id: z.string() }))
 		.mutation(async ({ input }) => {
 			await prisma.promoCode.delete({
@@ -110,6 +114,12 @@ export const promoCodeRouter = router({
 				throw new TRPCError({
 					code: 'BAD_REQUEST',
 					message: 'Kod promocyjny wygasł.',
+				})
+			}
+			if (foundCode.startDate && new Date(foundCode.startDate) > new Date()) {
+				throw new TRPCError({
+					code: 'BAD_REQUEST',
+					message: 'Kod promocyjny jeszcze nie obowiązuję.',
 				})
 			}
 

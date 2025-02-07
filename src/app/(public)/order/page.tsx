@@ -129,7 +129,7 @@ const Order = () => {
 					{isLoadingCarouselImages && <Skeleton className="w-[1056px] h-[384px]" />}
 					{carouselImages.map((item, index) => (
 						<CarouselItem key={index} className="relative">
-							<div className="relative h-96 rounded-md">
+							<div className="relative h-96 w-auto rounded-md">
 								<Image
 									src={item.imageUrl}
 									alt="Carousel image"
@@ -242,19 +242,21 @@ const Order = () => {
 												(Dostępne w wybrane dni i godziny)
 											</span>
 										</span>
-									) : 
-									category === 'Oferta Walentynkowa' ? (
-										<span className="space-x-0 flex flex-col items-start">
-											<span>{category}</span>
-											<span className="text-danger text-lg bg-red-100 rounded-lg px-2">
-												(Dostępne w dniach 14.02-16.02. Zamówienia należy złożyć z wyprzedzeniem.)
-											</span>
-										</span>
-									) : (
+									)  : (
 										category
 									)}
 								</AccordionTrigger>
-								<AccordionContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-items-center">
+								<AccordionContent>
+								{category === 'Oferta Walentynkowa' && (
+                    <div className="w-full bg-red-50 text-danger p-4 rounded-lg mb-4 text-base flex flex-col">
+                        <p><strong>Specjalna oferta Walentynkowa</strong> dostępna tylko w dniach <strong>14-16 lutego</strong>.</p>
+                        <p>Menu walentynkowe jest przygotowane z myślą o wyjątkowych chwilach i dostępne <strong>wyłącznie na dostawę</strong>.</p>
+                        <p>Zalecamy składanie zamówień z wyprzedzeniem, aby zagwarantować sobie romantyczny wieczór bez stresu.</p>
+                        <p>W razie pytań prosimy o kontakt telefoniczny.</p>
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-items-center">
 									{sortedItems
 										.filter(item => item.category === category)
 										.map(item => (
@@ -272,6 +274,7 @@ const Order = () => {
 												isPizzaAvailable={settings?.pizzaCategoryEnabled}
 											/>
 										))}
+										</div>
 								</AccordionContent>
 							</AccordionItem>
 
