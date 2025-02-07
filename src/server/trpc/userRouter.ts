@@ -1,6 +1,6 @@
 // server/trpc/routers/user.ts
 import { prisma } from "@/lib/prisma"
-import { protectedProcedure, publicProcedure, router } from "@/server/trpc/trpc"
+import { publicProcedure, router } from "@/server/trpc/trpc"
 import { TRPCError } from "@trpc/server"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
@@ -62,7 +62,7 @@ export const userRouter = router({
 			return { token, role: user.role }
 		}),
 
-	createUser: protectedProcedure
+	createUser: publicProcedure
 		.input(z.object({ username: z.string(), password: z.string(), name: z.string().optional(), role: z.enum(["user", "admin"]) }))
 		.mutation(async ({ input, ctx }) => {
 			const decodedToken = ctx.token
@@ -89,7 +89,7 @@ export const userRouter = router({
 			throw new Error('Failed to fetch users')
 		}
 	}),
-	deleteUser: protectedProcedure
+	deleteUser: publicProcedure
 		.input(z.object({ userId: z.string() }))
 		.mutation(async ({ input, ctx }) => {
 			const decodedToken = ctx.token
