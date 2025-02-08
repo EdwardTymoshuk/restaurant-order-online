@@ -88,10 +88,11 @@ export const promoCodeRouter = router({
 		.input(
 			z.object({
 				promoCode: z.string(),
+				deliveryDate: z.string().optional()
 			})
 		)
 		.query(async ({ input }) => {
-			const { promoCode } = input
+			const { promoCode, deliveryDate } = input
 
 			const foundCode = await prisma.promoCode.findUnique({
 				where: { code: promoCode },
@@ -110,25 +111,44 @@ export const promoCodeRouter = router({
 				})
 			}
 
-			if (foundCode.expiresAt && new Date(foundCode.expiresAt) < new Date()) {
-				throw new TRPCError({
-					code: 'BAD_REQUEST',
-					message: 'Kod promocyjny wygasł.',
-				})
-			}
-			if (foundCode.startDate && new Date(foundCode.startDate) > new Date()) {
-				throw new TRPCError({
-					code: 'BAD_REQUEST',
-					message: 'Kod promocyjny jeszcze nie obowiązuję.',
-				})
-			}
-
 			if (foundCode.isOneTimeUse && foundCode.isUsed) {
 				throw new TRPCError({
 					code: 'BAD_REQUEST',
 					message: 'Kod promocyjny został już wykorzystany.',
 				})
 			}
+
+			if (deliveryDate) {
+				const delivery = new Date(deliveryDate);
+				
+				if (foundCode.startDate && delivery < foundCode.startDate) {
+				  throw new TRPCError({
+					code: 'BAD_REQUEST',
+					message: 'Kod promocyjny jeszcze nie obowiązuje dla tej daty.',
+				  });
+				}
+		  
+				if (foundCode.expiresAt && delivery > foundCode.expiresAt) {
+				  throw new TRPCError({
+					code: 'BAD_REQUEST',
+					message: 'Kod promocyjny nie obowiązuje w wybranym terminie.',
+				  });
+				}
+			  } else {
+				const now = new Date()
+				if (foundCode.startDate && foundCode.startDate > now) {
+				  throw new TRPCError({ 
+					code: 'BAD_REQUEST', 
+					message: 'Kod promocyjny jeszcze nie obowiązuje.' 
+				  });
+				}
+				if (foundCode.expiresAt && foundCode.expiresAt < now) {
+				  throw new TRPCError({
+					code: 'BAD_REQUEST',
+					message: 'Kod promocyjny już wygasł.',
+				  });
+				}
+			  }
 
 			return foundCode
 		}),
