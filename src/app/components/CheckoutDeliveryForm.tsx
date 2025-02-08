@@ -326,8 +326,13 @@ export default function CheckoutDeliveryForm({
 			return
 		}
 		try {
+
+			const dt = getValues("deliveryTime")
+    		const deliveryDate = dt === "asap" ? undefined : (dt as Date).toISOString()
+
 			const foundCode = await trpcContext.client.promoCode.validatePromoCode.query({
 				promoCode: code,
+				deliveryDate,
 			})
 			if (foundCode) {
 				dispatch({ type: "SET_DELIVERY_METHOD", payload: "DELIVERY" })

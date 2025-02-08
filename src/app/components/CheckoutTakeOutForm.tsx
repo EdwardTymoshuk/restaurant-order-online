@@ -215,8 +215,13 @@ export default function CheckoutTakeOutForm({
 			return
 		}
 		try {
+
+			const dt = getValues("deliveryTime")
+    		const deliveryDate = dt === "asap" ? undefined : (dt as Date).toISOString()
+
 			const foundCode = await trpcContext.client.promoCode.validatePromoCode.query({
 				promoCode: code,
+				deliveryDate,
 			})
 			if (foundCode) {
 				dispatch({
