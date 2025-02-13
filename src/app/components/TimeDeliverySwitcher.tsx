@@ -7,6 +7,7 @@ import {
 } from '@/config/constants'
 import { useCallback, useEffect, useState } from 'react'
 import { BsClockHistory, BsLightning } from 'react-icons/bs'
+import { toast } from 'sonner'
 import Switcher from '../components/Switcher'
 import { TimeSelector } from '../components/TimeSelector'
 import { MenuItemCategory } from '../types/types'
@@ -91,105 +92,74 @@ const TimeDeliverySwitcher = ({
 
 
 	const getNearestAvailableTime = useCallback((now: Date): Date => {
-		const openingTime = new Date(
-			now.getFullYear(),
-			now.getMonth(),
-			now.getDate(),
-			OPENING_HOUR,
-			OPENING_MINUTES_DELAY
-		)
-		const closingTime = new Date(
-			now.getFullYear(),
-			now.getMonth(),
-			now.getDate(),
-			CLOSING_HOUR
-		)
-		const lastOrderTime = getLastPossibleOrderTime(now)
-
+		const openingTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), OPENING_HOUR, OPENING_MINUTES_DELAY);
+		const closingTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), CLOSING_HOUR);
+		const lastOrderTime = getLastPossibleOrderTime(now);
+		
+		const isOnlyBreakfast = cartItems.every(item => item.category === 'Śniadania' || item.category === 'Napoje bezalkoholowe');
+		const isNonBreakfastItem = cartItems.some(item => item.category !== 'Śniadania' && item.category !== 'Napoje bezalkoholowe');
+	
 		if (now < openingTime || now >= closingTime) {
-			return getNextDayAvailableTime(now)
+			return getNextDayAvailableTime(now);
 		}
-
-		const startTime = new Date(now.getTime() + waitTimeWithBuffer * 60 * 1000)
-		let adjusted = roundToQuarterHour(startTime)
-
-		const breakfastCutoff = new Date(
-			adjusted.getFullYear(),
-			adjusted.getMonth(),
-			adjusted.getDate(),
-			BREAKFAST_END_HOUR
-		)
-
-		if (isBreakfast) {
-			if (adjusted > breakfastCutoff) {
-				adjusted = breakfastCutoff
-			}
-		} else {
-			const lunchStartTime = new Date(
-				adjusted.getFullYear(),
-				adjusted.getMonth(),
-				adjusted.getDate(),
-				BREAKFAST_END_HOUR
-			)
-			if (adjusted < lunchStartTime) {
-				const lunchEarliest = new Date(lunchStartTime.getTime() + waitTimeWithBuffer * 60000)
-				adjusted = roundToQuarterHour(lunchEarliest)
-			}
+	
+		let adjusted = roundToQuarterHour(new Date(now.getTime() + waitTimeWithBuffer * 60 * 1000));
+	
+		const breakfastEndTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), BREAKFAST_END_HOUR);
+	
+		if (isOnlyBreakfast && adjusted >= breakfastEndTime) {
+			return getNextDayAvailableTime(now);
 		}
-
-		if (adjusted > lastOrderTime) {
-			adjusted = lastOrderTime
+	
+		if (isNonBreakfastItem && now.getHours() < BREAKFAST_END_HOUR) {
+			adjusted = new Date(now.getFullYear(), now.getMonth(), now.getDate(), BREAKFAST_END_HOUR);
 		}
-
-		return adjusted
-	}, [getLastPossibleOrderTime, getNextDayAvailableTime, isBreakfast, waitTimeWithBuffer])
-
+	
+		return adjusted > lastOrderTime ? lastOrderTime : adjusted;
+	}, [getLastPossibleOrderTime, getNextDayAvailableTime, waitTimeWithBuffer, cartItems]);
+	
 
 	useEffect(() => {
-		if (selectedOption === 'choose-time') return
-		const now = new Date()
-		const openingTimeToday = new Date(
-			now.getFullYear(),
-			now.getMonth(),
-			now.getDate(),
-			OPENING_HOUR,
-			OPENING_MINUTES_DELAY
-		)
-		const closingTimeToday = new Date(
-			now.getFullYear(),
-			now.getMonth(),
-			now.getDate(),
-			CLOSING_HOUR
-		)
-		const lastOrderTimeToday = getLastPossibleOrderTime(now)
-
+		if (selectedOption === 'choose-time') return;
+	
+		const now = new Date();
+		const openingTimeToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), OPENING_HOUR, OPENING_MINUTES_DELAY);
+		const closingTimeToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), CLOSING_HOUR);
+		const lastOrderTimeToday = getLastPossibleOrderTime(now);
+	
 		if (now >= closingTimeToday || now < openingTimeToday) {
-			setIsRestaurantClosed(true)
-			setIsClosingSoon(false)
-			setTimeLeftToOrder('')
-			const nextDayNearestTime = getNextDayAvailableTime(now)
-			setSelectedTime(nextDayNearestTime)
-			onTimeChange(nextDayNearestTime)
-			return
+			setIsRestaurantClosed(true);
+			setIsClosingSoon(false);
+			setTimeLeftToOrder('');
+			const nextDayNearestTime = getNextDayAvailableTime(now);
+			setSelectedTime(nextDayNearestTime);
+			onTimeChange(nextDayNearestTime);
+			return;
 		}
-
-		setIsRestaurantClosed(false)
-
+	
+		setIsRestaurantClosed(false);
+	
 		if (now >= lastOrderTimeToday) {
-			setIsClosingSoon(true)
-			updateTimeLeft(lastOrderTimeToday)
-			const interval = setInterval(() => updateTimeLeft(lastOrderTimeToday), 1000)
-			return () => clearInterval(interval)
+			setIsClosingSoon(true);
+			updateTimeLeft(lastOrderTimeToday);
+			const interval = setInterval(() => updateTimeLeft(lastOrderTimeToday), 1000);
+			return () => clearInterval(interval);
 		} else {
-			setIsClosingSoon(false)
-			setTimeLeftToOrder('')
+			setIsClosingSoon(false);
+			setTimeLeftToOrder('');
 		}
-
-		const nearestTime = getNearestAvailableTime(now)
-		setSelectedTime(nearestTime)
-		onTimeChange(nearestTime)
-	}, [isDelivery, orderWaitTime, getNearestAvailableTime, getNextDayAvailableTime, onTimeChange, getLastPossibleOrderTime])
-
+	
+		const nearestTime = getNearestAvailableTime(now);
+		const isOnlyBreakfast = cartItems.every(item => item.category === 'Śniadania' || item.category === 'Napoje bezalkoholowe');
+	
+		if (isOnlyBreakfast && now.getHours() >= BREAKFAST_END_HOUR) {
+			setSelectedOption('choose-time');
+		}
+	
+		setSelectedTime(nearestTime);
+		onTimeChange(nearestTime);
+	}, [isDelivery, orderWaitTime, getNearestAvailableTime, getNextDayAvailableTime, onTimeChange, getLastPossibleOrderTime, cartItems]);
+	
 	// Updates the countdown until no more orders can be placed today
 	const updateTimeLeft = (cutOffTime: Date) => {
 		const now = new Date()
@@ -215,88 +185,60 @@ const TimeDeliverySwitcher = ({
 
 	const handleTimeChange = (date: Date | null) => {
 		if (!date) return;
-		if (!isDateAllowed(date)) {
-		  const allowedDatesData = allowedDates.map(s => new Date(s));
-		  let nearest = allowedDatesData[0];
-		  let minDiff = Math.abs(date.getTime() - nearest.getTime());
-		  
-		  for (let i = 1; i < allowedDatesData.length; i++) {
-			const diff = Math.abs(date.getTime() - allowedDatesData[i].getTime());
-			if (diff < minDiff) {
-			  minDiff = diff;
-			  nearest = allowedDatesData[i];
-			}
-		  }
-		  date = nearest;
+	
+		const isOnlyBreakfast = cartItems.every(item => item.category === 'Śniadania' || item.category === 'Napoje bezalkoholowe');
+		const isNonBreakfastItem = cartItems.some(item => item.category !== 'Śniadania' && item.category !== 'Napoje bezalkoholowe');
+	
+		const selectedHour = date.getHours();
+	
+		if (isOnlyBreakfast && (selectedHour < 8 || selectedHour >= BREAKFAST_END_HOUR)) {
+			toast.warning('Śniadania można zamawiać tylko w godzinach 8:00 - 12:00.');
+			return;
 		}
-		
+	
+		if (isNonBreakfastItem && selectedHour < BREAKFAST_END_HOUR) {
+			toast.warning('Dania główne można zamawiać tylko po 12:00.');
+			return;
+		}
+	
 		setSelectedTime(date);
 		onTimeChange(date);
-	  };
-	  
+	};
+	
 
 	// Filters available time slots for selection
 	const filterTime = (time: Date) => {
-		const isAllowed = isDateAllowed(time)
-		if (!isAllowed) return false
-		const now = new Date()
-		const isNextDay = time.getFullYear() > now.getFullYear() ||
-			time.getMonth() > now.getMonth() ||
-			time.getDate() > now.getDate()
-
+		const isAllowed = isDateAllowed(time);
+		if (!isAllowed) return false;
+	
+		const isNextDay = time.getDate() !== new Date().getDate();
+		const isOnlyBreakfast = cartItems.every(item => item.category === 'Śniadania' || item.category === 'Napoje bezalkoholowe');
+		const isNonBreakfastItem = cartItems.some(item => item.category !== 'Śniadania' && item.category !== 'Napoje bezalkoholowe');
+	
+		let earliest, latest;
+	
 		if (isNextDay) {
-			let earliest: Date
-			let latest: Date
-
-			if (isBreakfast) {
-				earliest = new Date(time.getFullYear(), time.getMonth(), time.getDate(), 8)
-				earliest = new Date(earliest.getTime() + waitTimeWithBuffer * 60000)
-				latest = new Date(time.getFullYear(), time.getMonth(), time.getDate(), 12)
-				latest = new Date(latest.getTime() + waitTimeWithBuffer * 60000)
-			} else {
-				earliest = new Date(time.getFullYear(), time.getMonth(), time.getDate(), 12)
-				earliest = new Date(earliest.getTime() + waitTimeWithBuffer * 60000)
-				const closingTimeNextDay = new Date(time.getFullYear(), time.getMonth(), time.getDate(), CLOSING_HOUR)
-				latest = new Date(closingTimeNextDay.getTime() - 15 * 60000)
-			}
-
-			return time >= earliest && time <= latest
+			earliest = isOnlyBreakfast
+				? new Date(time.getFullYear(), time.getMonth(), time.getDate(), 8)
+				: new Date(time.getFullYear(), time.getMonth(), time.getDate(), 12);
+	
+			latest = isOnlyBreakfast
+				? new Date(time.getFullYear(), time.getMonth(), time.getDate(), BREAKFAST_END_HOUR)
+				: new Date(time.getFullYear(), time.getMonth(), time.getDate(), CLOSING_HOUR - 1, 45);
 		} else {
-			const openingTime = new Date(
-				time.getFullYear(),
-				time.getMonth(),
-				time.getDate(),
-				OPENING_HOUR,
-				OPENING_MINUTES_DELAY
-			)
-			const closingTime = new Date(
-				time.getFullYear(),
-				time.getMonth(),
-				time.getDate(),
-				CLOSING_HOUR
-			)
-			const lastOrderTime = getLastPossibleOrderTime(time)
-			const earliestOrderTime = new Date(
-				now.getTime() + waitTimeWithBuffer * 60 * 1000
-			)
-
-			const isBreakfastTime = isBreakfast
-				? time.getHours() < BREAKFAST_END_HOUR
-				: time.getHours() >= BREAKFAST_END_HOUR
-
-			return (
-				time >= openingTime &&
-				time <= lastOrderTime &&
-				time >= earliestOrderTime &&
-				isBreakfastTime
-			)
+			earliest = new Date(new Date().getTime() + waitTimeWithBuffer * 60 * 1000);
+			latest = getLastPossibleOrderTime(time);
 		}
-	}
+	
+		return time >= earliest && time <= latest && ((isOnlyBreakfast && time.getHours() < BREAKFAST_END_HOUR) || (isNonBreakfastItem && time.getHours() >= BREAKFAST_END_HOUR));
+	};
+	
 
 	const options = [
-		{ value: 'asap', label: 'Jak najszybciej', icon: <BsLightning />, disabled: isValentinesItemInCart },
+		{ value: 'asap', label: 'Jak najszybciej', icon: <BsLightning />, disabled: isValentinesItemInCart || (cartItems.every(item => item.category === 'Śniadania' || item.category === 'Napoje bezalkoholowe') && new Date().getHours() >= BREAKFAST_END_HOUR) },
 		{ value: 'choose-time', label: 'Wybierz godzinę', icon: <BsClockHistory /> },
-	]
+	];
+	
 
 	useEffect(() => {
 		if (isValentinesItemInCart) {
