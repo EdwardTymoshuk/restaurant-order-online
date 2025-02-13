@@ -54,17 +54,17 @@ const Order = () => {
 		setIsOpen(isRestaurantOpen())
 	}, [])
 
-	// Logic for restricting menu items based on time (e.g., breakfast only)
-	useEffect(() => {
-		const now = new Date()
-		const currentHour = now.getHours()
-		const isBreakfastTime = currentHour >= 8 && currentHour < 12
-		setIsBreakfastOnly(isBreakfastTime)
-		if (isBreakfastTime) {
-			setCategoryFilter('Śniadania')
-			setActiveAccordion('Śniadania')
-		}
-	}, [])
+	// // Logic for restricting menu items based on time (e.g., breakfast only)
+	// useEffect(() => {
+	// 	const now = new Date()
+	// 	const currentHour = now.getHours()
+	// 	const isBreakfastTime = currentHour >= 8 && currentHour < 12
+	// 	setIsBreakfastOnly(isBreakfastTime)
+	// 	if (isBreakfastTime) {
+	// 		setCategoryFilter('Śniadania')
+	// 		setActiveAccordion('Śniadania')
+	// 	}
+	// }, [])
 
 	// Sorting and filtering logic for menu items
 	useEffect(() => {
@@ -192,11 +192,11 @@ const Order = () => {
 			</div>
 
 			{/* Display breakfast-only notice */}
-			{isBreakfastOnly && (
+			{/* {isBreakfastOnly && (
 				<div className="text-center text-lg text-secondary mt-8">
 					W godzinach 8:00 - 12:00 dostępne są tylko śniadania.
 				</div>
-			)}
+			)} */}
 
 			{/* Display restaurant closed notice */}
 			{!isOpen && (
@@ -269,8 +269,7 @@ const Order = () => {
 												image={item.image || ''}
 												category={item.category}
 												orientation="horizontal"
-												isBreakfastOnly={isBreakfastOnly}
-												isOrderingActive={settings?.isOrderingOpen && isOpen}
+												isOrderingActive={settings?.isOrderingOpen}
 												isPizzaAvailable={settings?.pizzaCategoryEnabled}
 											/>
 										))}

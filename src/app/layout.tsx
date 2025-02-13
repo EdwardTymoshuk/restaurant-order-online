@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/react'
 import { Metadata } from 'next'
 import { Roboto } from 'next/font/google'
 import ClientRoutingHandler from './components/ClientRoutingHandler'
@@ -38,6 +39,7 @@ function RootLayout({ children }: { children: React.ReactNode }) {
             <ClientRoutingHandler>{children}</ClientRoutingHandler>
           </PageLoader>
         </Providers>
+        <Analytics />
       </body>
     </html>
   )

@@ -12,6 +12,7 @@ import { cn } from '@/utils/utils'
 import React, { useState } from 'react'
 import { CiShoppingBasket } from 'react-icons/ci'
 import { FaCheck, FaMinus, FaPlus } from 'react-icons/fa'
+import { toast } from 'sonner'
 import ImageWithFallback from './ImageWithFallback'
 import { Button } from './ui/button'
 import { Skeleton } from './ui/skeleton'
@@ -25,14 +26,13 @@ type MenuItemProps = Partial<MenuItemType> & {
 	image: string,
 	orientation?: 'vertical' | 'horizontal',
 	className?: string,
-	isBreakfastOnly?: boolean,
 	isOrderingActive: boolean | undefined,
 	isPizzaAvailable: boolean | undefined,
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image, orientation = 'vertical', className, isBreakfastOnly, category, isOrderingActive, isPizzaAvailable }) => {
-	const [addedToCart, setAddedToCart] = useState(false) // Animation for added item
-	const [isImageLoaded, setIsImageLoaded] = useState(false) // To manage Skeleton Loader
+const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image, orientation = 'vertical', className, category, isOrderingActive, isPizzaAvailable }) => {
+	const [addedToCart, setAddedToCart] = useState(false)
+	const [isImageLoaded, setIsImageLoaded] = useState(false)
 	const isVertical = orientation === 'vertical'
 
 	const { state, dispatch } = useCart()
@@ -43,11 +43,26 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 
 	const isDisabled =
 		!isOrderingActive ||
-		(!isBreakfastOnly && category === 'Śniadania') ||
 		(category === 'Pizza' && !isPizzaAvailable)
+
+	// Function to check conflict between breakfast and other items
+	const checkCategoryConflict = () => {
+		const hasBreakfast = state.items.some(cartItem => cartItem.category === 'Śniadania')
+		const hasRegular = state.items.some(cartItem => cartItem.category !== 'Śniadania' && cartItem.category !== 'Napoje bezalkoholowe')
+	
+		if ((hasBreakfast && category !== 'Śniadania' && category !== 'Napoje bezalkoholowe') || 
+			(hasRegular && category === 'Śniadania')) {
+			toast.warning('Nie można łączyć śniadań z innymi posiłkami w jednym zamówieniu.')
+			return false
+		}
+		return true
+	}
+	
 
 	const addToCart = () => {
 		if (name && price) {
+			if (!checkCategoryConflict()) return // Block adding if there's a conflict
+
 			dispatch({
 				type: 'ADD_ITEM',
 				payload: {
@@ -69,7 +84,9 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 
 	// Functions to manage quantity
 	const incrementQuantity = () => {
-		dispatch({ type: 'INCREASE_QUANTITY', payload: id })
+		if (checkCategoryConflict()) {
+			dispatch({ type: 'INCREASE_QUANTITY', payload: id })
+		}
 	}
 
 	const decrementQuantity = () => {
@@ -111,7 +128,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 							'w-full h-48': isVertical,
 							'w-24 h-24': !isVertical,
 						})}
-						onLoad={() => setIsImageLoaded(true)} // Update state when the image is loaded
+						onLoad={() => setIsImageLoaded(true)}
 					/>
 				</div>
 			</CardHeader>
@@ -133,24 +150,21 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 				{/* Якщо товар у кошику, показати кількість */}
 				{itemQuantity > 0 && !addedToCart ? (
 					<div className='flex items-center space-x-2'>
-						{/* Кнопка для зменшення кількості */}
 						<Button
 							variant='secondary'
 							className={cn('h-6 w-6 flex items-center justify-center px-2', {
-								'opacity-50 cursor-not-allowed': itemQuantity <= 1 || !isOrderingActive || (!isBreakfastOnly && category === 'Śniadania'),
+								'opacity-50 cursor-not-allowed': itemQuantity <= 1 || isDisabled,
 							})}
 							onClick={decrementQuantity}
 							disabled={isDisabled}
 						>
 							<FaMinus />
 						</Button>
-						{/* Відображення кількості товару */}
 						<span className="text-sm">{itemQuantity}</span>
-						{/* Кнопка для збільшення кількості */}
 						<Button
 							variant='secondary'
 							className={cn('h-6 w-6 flex items-center justify-center px-2', {
-								'opacity-50 cursor-not-allowed': !isOrderingActive || (!isBreakfastOnly && category === 'Śniadania'),
+								'opacity-50 cursor-not-allowed': isDisabled,
 							})}
 							onClick={incrementQuantity}
 							disabled={isDisabled}
@@ -162,7 +176,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 					<Button
 						variant='secondary'
 						className={cn('h-6 transition-colors duration-300', {
-							'opacity-50 cursor-not-allowed': !isOrderingActive || (!isBreakfastOnly && category === 'Śniadania'),
+							'opacity-50 cursor-not-allowed': isDisabled,
 							'text-success scale-105': addedToCart,
 						})}
 						onClick={addToCart}
@@ -172,8 +186,6 @@ const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image
 					</Button>
 				)}
 			</CardFooter>
-
-
 		</Card>
 	)
 }
