@@ -10,8 +10,8 @@ export async function GET() {
     { key: 'oneYear', from: '365d' },
   ]
 
-  // For local development, return mock data to avoid issues with Vercel Web Analytics.
-  if (process.env.NODE_ENV !== 'production') {
+  // For non-production environments, return mock data.
+  if (process.env.VERCEL_ENV !== 'production') {
     const mockData = {
       oneDay: {
         totalVisits: 50,
@@ -56,7 +56,10 @@ export async function GET() {
         deploymentUrl: 'localhost:3000',
       },
     }
-    return NextResponse.json(mockData)
+    const res = NextResponse.json(mockData)
+    // Disable analytics tracking for this endpoint.
+    res.headers.set('x-vercel-disable-analytics', '1')
+    return res
   }
 
   try {
@@ -91,20 +94,25 @@ export async function GET() {
       })
     )
 
-    // Use a Record type for the accumulator to avoid TypeScript errors.
+    // Construct a result object with keys for each interval.
     const analyticsData = results.reduce((acc: Record<string, any>, curr) => {
       acc[curr.key] = curr.data
       return acc
     }, {})
 
-    return NextResponse.json(analyticsData)
+    const res = NextResponse.json(analyticsData)
+    // Disable analytics tracking for this endpoint.
+    res.headers.set('x-vercel-disable-analytics', '1')
+    return res
   } catch (error: any) {
-    return NextResponse.json(
+    const res = NextResponse.json(
       {
         error: 'An error occurred while fetching data.',
         details: error.message,
       },
       { status: 500 }
     )
+    res.headers.set('x-vercel-disable-analytics', '1')
+    return res
   }
 }
