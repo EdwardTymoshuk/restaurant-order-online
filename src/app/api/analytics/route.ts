@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     }
 
     // Użyj numerycznego identyfikatora property, np.:
-    const propertyId = 'properties/10301861134' // zamień na swój właściwy numer
+    const propertyId = 'properties/479301212'
 
     // Raport dla spokosopot.pl
     const [responseSpokosopot] = await analyticsDataClient.runReport({
