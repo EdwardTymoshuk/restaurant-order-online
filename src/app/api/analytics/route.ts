@@ -1,118 +1,80 @@
+export const dynamic = 'force-dynamic'
+
+import { BetaAnalyticsDataClient } from '@google-analytics/data'
 import { NextResponse } from 'next/server'
+import path from 'path'
 
-// GET endpoint to fetch analytics data for multiple intervals.
-export async function GET() {
-  // Define intervals with corresponding 'from' parameters.
-  const intervals = [
-    { key: 'oneDay', from: '1d' },
-    { key: 'sevenDays', from: '7d' },
-    { key: 'thirtyDays', from: '30d' },
-    { key: 'oneYear', from: '365d' },
-  ]
+const keyFilePath = path.join(process.cwd(), 'spoko-sopot-95753f611c8b.json')
 
-  // For non-production environments, return mock data.
-  if (process.env.VERCEL_ENV !== 'production') {
-    const mockData = {
-      oneDay: {
-        totalVisits: 50,
-        visitors: 45,
-        pageViews: 75,
-        rate: 30,
-        speedInsightsAvailable: true,
-        deploymentUrl: 'localhost:3000',
-      },
-      sevenDays: {
-        totalVisits: 350,
-        visitors: 300,
-        pageViews: 500,
-        rate: 32,
-        // Daily breakdown for the week (key: day name, value: number of visits).
-        dailyBreakdown: {
-          Poniedziałek: 50,
-          Wtorek: 60,
-          Środa: 70,
-          Czwartek: 80,
-          Piątek: 40,
-          Sobota: 30,
-          Niedziela: 20,
-        },
-        speedInsightsAvailable: true,
-        deploymentUrl: 'localhost:3000',
-      },
-      thirtyDays: {
-        totalVisits: 1500,
-        visitors: 1200,
-        pageViews: 2500,
-        rate: 35,
-        speedInsightsAvailable: true,
-        deploymentUrl: 'localhost:3000',
-      },
-      oneYear: {
-        totalVisits: 18000,
-        visitors: 15000,
-        pageViews: 30000,
-        rate: 37,
-        speedInsightsAvailable: true,
-        deploymentUrl: 'localhost:3000',
-      },
-    }
-    const res = NextResponse.json(mockData)
-    // Disable analytics tracking for this endpoint.
-    res.headers.set('x-vercel-disable-analytics', '1')
-    return res
-  }
+const analyticsDataClient = new BetaAnalyticsDataClient({
+  keyFilename: keyFilePath,
+})
 
+export async function GET(request: Request) {
   try {
-    // Replace with your actual Vercel Web Analytics ID.
-    const webAnalyticsId = '4CVFFzxPrEDO0YYelKfHxnaMD'
-    const headers = {
-      Authorization: `Bearer ${process.env.VERCEL_API_TOKEN}`,
-      'User-Agent': 'restaurant-order-online-analytics-fetcher',
+    // Pobierz parametr "range" z URL (day, week, month)
+    const { searchParams } = new URL(request.url)
+    const range = searchParams.get('range') || 'week'
+
+    let dateRange
+    if (range === 'day') {
+      dateRange = { startDate: '1daysAgo', endDate: 'today' }
+    } else if (range === 'month') {
+      dateRange = { startDate: '30daysAgo', endDate: 'today' }
+    } else {
+      // domyślnie: tydzień
+      dateRange = { startDate: '7daysAgo', endDate: 'today' }
     }
 
-    // Fetch data for all intervals in parallel.
-    const results = await Promise.all(
-      intervals.map(async (interval) => {
-        const response = await fetch(
-          `https://api.vercel.com/v6/web-analytics/reports/${webAnalyticsId}?from=${interval.from}`,
-          { headers }
-        )
-        // Retrieve raw response as text (useful for debugging).
-        const rawData = await response.text()
-        try {
-          const data = JSON.parse(rawData)
-          return { key: interval.key, data }
-        } catch (jsonError) {
-          return {
-            key: interval.key,
-            data: {
-              error: 'Invalid JSON format from Vercel API.',
-              details: rawData,
-            },
-          }
-        }
-      })
-    )
+    // Podaj numeryczny identyfikator property w formacie "properties/ID"
+    const propertyId = 'properties/479301212'
 
-    // Construct a result object with keys for each interval.
-    const analyticsData = results.reduce((acc: Record<string, any>, curr) => {
-      acc[curr.key] = curr.data
-      return acc
-    }, {})
+    // Raport dla spokosopot.pl
+    const [responseSpokosopot] = await analyticsDataClient.runReport({
+      property: propertyId,
+      dateRanges: [dateRange],
+      dimensions: [{ name: 'hostname' }, { name: 'date' }],
+      metrics: [{ name: 'activeUsers' }],
+      dimensionFilter: {
+        filter: {
+          fieldName: 'hostname',
+          stringFilter: {
+            matchType: 'EXACT',
+            value: 'spokosopot.pl',
+          },
+        },
+      },
+    })
 
-    const res = NextResponse.json(analyticsData)
-    // Disable analytics tracking for this endpoint.
-    res.headers.set('x-vercel-disable-analytics', '1')
-    return res
+    // Raport dla order.spokosopot.pl
+    const [responseOrder] = await analyticsDataClient.runReport({
+      property: propertyId,
+      dateRanges: [dateRange],
+      dimensions: [{ name: 'hostname' }, { name: 'date' }],
+      metrics: [{ name: 'activeUsers' }],
+      dimensionFilter: {
+        filter: {
+          fieldName: 'hostname',
+          stringFilter: {
+            matchType: 'EXACT',
+            value: 'order.spokosopot.pl',
+          },
+        },
+      },
+    })
+
+    return NextResponse.json({
+      spokosopot: responseSpokosopot,
+      order: responseOrder,
+    })
   } catch (error: any) {
-    const res = NextResponse.json(
+    console.error('Błąd pobierania danych z GA:', error)
+    return NextResponse.json(
       {
-        error: 'An error occurred while fetching data.',
+        error: 'Błąd pobierania danych z Google Analytics',
         details: error.message,
       },
       { status: 500 }
     )
-    res.headers.set('x-vercel-disable-analytics', '1')
-    return res
   }
 }
