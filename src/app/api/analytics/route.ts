@@ -1,18 +1,15 @@
-export const dynamic = 'force-dynamic'
-
 import { BetaAnalyticsDataClient } from '@google-analytics/data'
 import { NextResponse } from 'next/server'
-import path from 'path'
 
-const keyFilePath = path.join(process.cwd(), 'spoko-sopot-95753f611c8b.json')
+export const dynamic = 'force-dynamic'
 
 const analyticsDataClient = new BetaAnalyticsDataClient({
-  keyFilename: keyFilePath,
+  // Odczytujemy zmienną środowiskową i parsujemy jej zawartość
+  credentials: JSON.parse(process.env.GA_SERVICE_ACCOUNT_KEY || '{}'),
 })
 
 export async function GET(request: Request) {
   try {
-    // Pobierz parametr "range" z URL (day, week, month)
     const { searchParams } = new URL(request.url)
     const range = searchParams.get('range') || 'week'
 
@@ -22,12 +19,11 @@ export async function GET(request: Request) {
     } else if (range === 'month') {
       dateRange = { startDate: '30daysAgo', endDate: 'today' }
     } else {
-      // domyślnie: tydzień
       dateRange = { startDate: '7daysAgo', endDate: 'today' }
     }
 
-    // Podaj numeryczny identyfikator property w formacie "properties/ID"
-    const propertyId = 'properties/479301212'
+    // Użyj numerycznego identyfikatora property, np.:
+    const propertyId = 'properties/10301861134' // zamień na swój właściwy numer
 
     // Raport dla spokosopot.pl
     const [responseSpokosopot] = await analyticsDataClient.runReport({
