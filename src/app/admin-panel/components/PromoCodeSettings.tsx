@@ -48,7 +48,6 @@ interface PromoCode {
 }
 
 const PromoCodeSettings: React.FC = () => {
-  console.log('Test log')
   // State for list of promo codes
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([])
   // State for controlling the dialog for adding a new promo code

@@ -85,6 +85,16 @@ model PromoCode {
   orders        Order[]
 }
 
+model MainBanner {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt       DateTime @default(now())
+  desktopImageUrl String
+  mobileImageUrl  String?
+  linkUrl         String?
+  position        Int
+}
+
+
 
 model Banner {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId

@@ -1,6 +1,7 @@
 // src/server/trpc/appRouter.ts
 import { bannerRouter } from './bannerRouter'
 import { imageRouter } from './imageRouter'
+import { mainPageBannerRouter } from './mainPageBannerRouter'
 import { menuRouter } from './menuRouter'
 import { newsRouter } from './newsRouter'
 import { orderRouter } from './orderRouter'
@@ -18,6 +19,7 @@ export const appRouter = router({
   banner: bannerRouter,
   promoCode: promoCodeRouter,
   news: newsRouter,
+  mainPageBanner: mainPageBannerRouter,
 })
 
 // Експортуємо типи для автозаповнення та перевірки типів

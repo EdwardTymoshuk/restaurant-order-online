@@ -15,6 +15,7 @@ import DeliveryZonesSettings from '@/app/admin-panel/components/DeliveryZonesSet
 import { useIsAdmin } from '@/hooks/useIsAdmin'
 import BannerSettings from '../components/BannerSettings' // Import the new component
 import EventSettings from '../components/EventSettings'
+import MainPageBannerSettings from '../components/MainPageBannerSettings'
 import PizzaSettings from '../components/PizzaSettings'
 import PromoCodeSettings from '../components/PromoCodeSettings'
 import UserList from '../components/UserList'
@@ -127,9 +128,14 @@ const Settings = () => {
           <PromoCodeSettings />
         </section>
 
-        {/* Banner settings (now in a separate component) */}
+        {/* Banner settings at order.spokosopot.pl*/}
         <section>
           <BannerSettings />
+        </section>
+
+        {/* Banner settings at spokosopot.pl*/}
+        <section>
+          <MainPageBannerSettings />
         </section>
 
         {/* Event settings */}
