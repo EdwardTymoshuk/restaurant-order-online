@@ -1,35 +1,35 @@
-'use client';
+'use client'
 
 import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-	AccordionTrigger,
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
 } from '@/app/components/ui/accordion'
 import { Button } from '@/app/components/ui/button'
 import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/app/components/ui/dialog'
 import { Input } from '@/app/components/ui/input'
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/app/components/ui/select'
 import { Switch } from '@/app/components/ui/switch'
 import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/app/components/ui/table'
 import { trpc } from '@/utils/trpc'
 import dayjs from 'dayjs'
@@ -37,48 +37,48 @@ import React, { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 interface PromoCode {
-  id: string;
-  code: string;
-  discountType: 'FIXED' | 'PERCENTAGE';
-  discountValue: number;
-  isActive: boolean;
-  isUsed: boolean;
-  expiresAt: Date | null;
-  isOneTimeUse: boolean;
+  id: string
+  code: string
+  discountType: 'FIXED' | 'PERCENTAGE'
+  discountValue: number
+  isActive: boolean
+  isUsed: boolean
+  expiresAt: Date | null
+  isOneTimeUse: boolean
 }
 
 const PromoCodeSettings: React.FC = () => {
-	console.log('Test log')
+  console.log('Test log')
   // State for list of promo codes
-  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([])
   // State for controlling the dialog for adding a new promo code
-  const [isPromoCodeDialogOpen, setIsPromoCodeDialogOpen] = useState(false);
+  const [isPromoCodeDialogOpen, setIsPromoCodeDialogOpen] = useState(false)
 
   // TRPC hooks for fetching, creating and deleting promo codes
   const { data: promoCodesData, refetch: refetchPromoCodes } =
-    trpc.promoCode.getAllPromoCodes.useQuery();
+    trpc.promoCode.getAllPromoCodes.useQuery()
   const createPromoCode = trpc.promoCode.createPromoCode.useMutation({
     onSuccess: () => {
-      refetchPromoCodes();
+      refetchPromoCodes()
     },
-  });
+  })
   const deletePromoCode = trpc.promoCode.deletePromoCode.useMutation({
     onSuccess: () => {
-      refetchPromoCodes();
+      refetchPromoCodes()
     },
-  });
+  })
 
   // New promo code state including new date range fields
   const [newPromoCode, setNewPromoCode] = useState<{
-    code: string;
-    discountType: 'FIXED' | 'PERCENTAGE';
-    discountValue: string;
-    isActive: boolean;
-    expiresInDays: number | null; // Used when date range is not selected
-    isOneTimeUse: boolean;
-    useDateRange: boolean; // New switch for using explicit date range
-    startDate: string; // Start date in YYYY-MM-DD format
-    endDate: string; // End date in YYYY-MM-DD format
+    code: string
+    discountType: 'FIXED' | 'PERCENTAGE'
+    discountValue: string
+    isActive: boolean
+    expiresInDays: number | null // Used when date range is not selected
+    isOneTimeUse: boolean
+    useDateRange: boolean // New switch for using explicit date range
+    startDate: string // Start date in YYYY-MM-DD format
+    endDate: string // End date in YYYY-MM-DD format
   }>({
     code: '',
     discountType: 'FIXED',
@@ -89,52 +89,52 @@ const PromoCodeSettings: React.FC = () => {
     useDateRange: false,
     startDate: '',
     endDate: '',
-  });
+  })
 
   // Update promo codes list when data is fetched
   useEffect(() => {
     if (promoCodesData) {
-      setPromoCodes(promoCodesData);
+      setPromoCodes(promoCodesData)
     }
-  }, [promoCodesData]);
+  }, [promoCodesData])
 
   // Function to generate a random promo code string
   const generateRandomCode = () => {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
-    const charactersLength = characters.length;
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    let result = ''
+    const charactersLength = characters.length
     for (let i = 0; i < 10; i++) {
-      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+      result += characters.charAt(Math.floor(Math.random() * charactersLength))
     }
-    return result;
-  };
+    return result
+  }
 
   // Handler for adding a new promo code
   const handleAddPromoCode = () => {
-	console.log('handleAddPromoCode запущено')
+    console.log('handleAddPromoCode запущено')
     if (!newPromoCode.code.trim()) {
-      toast.warning('Proszę wpisać kod promocyjny.');
-      return;
+      toast.warning('Proszę wpisać kod promocyjny.')
+      return
     }
 
     if (!newPromoCode.discountValue.trim()) {
-      toast.warning('Proszę wpisać wartość zniżki.');
-      return;
+      toast.warning('Proszę wpisać wartość zniżki.')
+      return
     }
 
-    const discountValue = parseFloat(newPromoCode.discountValue);
+    const discountValue = parseFloat(newPromoCode.discountValue)
     if (isNaN(discountValue) || discountValue <= 0) {
-      toast.warning('Proszę wpisać prawidłową wartość zniżki.');
-      return;
+      toast.warning('Proszę wpisać prawidłową wartość zniżki.')
+      return
     }
 
     // If date range option is enabled, validate start and end dates
     if (newPromoCode.useDateRange) {
       if (!newPromoCode.startDate || !newPromoCode.endDate) {
-        toast.warning('Proszę wybrać daty rozpoczęcia i zakończenia.');
-        return;
+        toast.warning('Proszę wybrać daty rozpoczęcia i zakończenia.')
+        return
       }
-	  console.log('Creating promo code with explicit date range:', newPromoCode);
+      console.log('Creating promo code with explicit date range:', newPromoCode)
       // Call the mutation with explicit date range
       createPromoCode.mutate({
         code: newPromoCode.code,
@@ -145,14 +145,14 @@ const PromoCodeSettings: React.FC = () => {
         // Assuming backend accepts 'startDate' and 'expiresAt' for date range mode
         startDate: newPromoCode.startDate,
         expiresAt: newPromoCode.endDate,
-      });
+      })
     } else {
       // Use relative expiration (in days) if not using date range
       const expiresAt = newPromoCode.expiresInDays
         ? dayjs().add(newPromoCode.expiresInDays, 'day').toISOString()
-        : undefined;
+        : undefined
 
-		console.log('Creating promo code with relative expiration:', newPromoCode);
+      console.log('Creating promo code with relative expiration:', newPromoCode)
 
       createPromoCode.mutate({
         code: newPromoCode.code,
@@ -161,7 +161,7 @@ const PromoCodeSettings: React.FC = () => {
         isActive: newPromoCode.isActive,
         isOneTimeUse: newPromoCode.isOneTimeUse,
         expiresAt: expiresAt,
-      });
+      })
     }
 
     // Reset the new promo code state and close the dialog
@@ -175,9 +175,9 @@ const PromoCodeSettings: React.FC = () => {
       useDateRange: false,
       startDate: '',
       endDate: '',
-    });
-    setIsPromoCodeDialogOpen(false);
-  };
+    })
+    setIsPromoCodeDialogOpen(false)
+  }
 
   return (
     <Accordion type="single" collapsible>
@@ -206,7 +206,8 @@ const PromoCodeSettings: React.FC = () => {
                     {promo.discountType === 'FIXED' ? 'Kwota stała' : 'Procent'}
                   </TableCell>
                   <TableCell>
-                    {promo.discountValue} {promo.discountType === 'FIXED' ? 'zł' : '%'}
+                    {promo.discountValue}{' '}
+                    {promo.discountType === 'FIXED' ? 'zł' : '%'}
                   </TableCell>
                   <TableCell>
                     {promo.expiresAt
@@ -214,13 +215,15 @@ const PromoCodeSettings: React.FC = () => {
                       : 'Bezterminowy'}
                   </TableCell>
                   <TableCell>{promo.isOneTimeUse ? 'Tak' : 'Nie'}</TableCell>
-                  <TableCell>{promo.isUsed ? 'Wykorzystany' : 'Aktywny'}</TableCell>
+                  <TableCell>
+                    {promo.isUsed ? 'Wykorzystany' : 'Aktywny'}
+                  </TableCell>
                   <TableCell>
                     <Button
-                      variant="destructive"
+                      variant="danger"
                       size="sm"
                       onClick={() => {
-                        deletePromoCode.mutate({ id: promo.id });
+                        deletePromoCode.mutate({ id: promo.id })
                       }}
                     >
                       Usuń
@@ -230,12 +233,18 @@ const PromoCodeSettings: React.FC = () => {
               ))}
             </TableBody>
           </Table>
-          <Button onClick={() => setIsPromoCodeDialogOpen(true)} className="mt-4">
+          <Button
+            onClick={() => setIsPromoCodeDialogOpen(true)}
+            className="mt-4"
+          >
             Dodaj
           </Button>
 
           {/* Dialog for adding a new promo code */}
-          <Dialog open={isPromoCodeDialogOpen} onOpenChange={setIsPromoCodeDialogOpen}>
+          <Dialog
+            open={isPromoCodeDialogOpen}
+            onOpenChange={setIsPromoCodeDialogOpen}
+          >
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Dodaj nowy kod promocyjny</DialogTitle>
@@ -291,22 +300,28 @@ const PromoCodeSettings: React.FC = () => {
                   placeholder="Wartość"
                   value={newPromoCode.discountValue}
                   onChange={(e) => {
-                    let value = e.target.value.replace(/[^0-9.]/g, '');
+                    let value = e.target.value.replace(/[^0-9.]/g, '')
                     if (value === '') {
-                      setNewPromoCode((prev) => ({ ...prev, discountValue: '' }));
-                      return;
+                      setNewPromoCode((prev) => ({
+                        ...prev,
+                        discountValue: '',
+                      }))
+                      return
                     }
-                    let numericValue = parseFloat(value);
+                    let numericValue = parseFloat(value)
                     if (numericValue < 0) {
-                      numericValue = 0;
+                      numericValue = 0
                     }
-                    if (newPromoCode.discountType === 'PERCENTAGE' && numericValue > 100) {
-                      numericValue = 100;
+                    if (
+                      newPromoCode.discountType === 'PERCENTAGE' &&
+                      numericValue > 100
+                    ) {
+                      numericValue = 100
                     }
                     setNewPromoCode((prev) => ({
                       ...prev,
                       discountValue: numericValue.toString(),
-                    }));
+                    }))
                   }}
                 />
 
@@ -382,7 +397,9 @@ const PromoCodeSettings: React.FC = () => {
                         }
                       />
                       <span>
-                        {newPromoCode.expiresInDays === null ? 'Bezterminowy' : 'Terminowy'}
+                        {newPromoCode.expiresInDays === null
+                          ? 'Bezterminowy'
+                          : 'Terminowy'}
                       </span>
                     </label>
                     {newPromoCode.expiresInDays !== null && (
@@ -407,14 +424,20 @@ const PromoCodeSettings: React.FC = () => {
                   </div>
                 )}
               </div>
-              <DialogFooter className='gap-2'>
+              <DialogFooter className="gap-2">
                 <Button
                   onClick={handleAddPromoCode}
-                  disabled={!newPromoCode.code.trim() || !newPromoCode.discountValue.trim()}
+                  disabled={
+                    !newPromoCode.code.trim() ||
+                    !newPromoCode.discountValue.trim()
+                  }
                 >
                   Dodaj
                 </Button>
-                <Button variant="secondary" onClick={() => setIsPromoCodeDialogOpen(false)}>
+                <Button
+                  variant="secondary"
+                  onClick={() => setIsPromoCodeDialogOpen(false)}
+                >
                   Anuluj
                 </Button>
               </DialogFooter>
@@ -423,7 +446,7 @@ const PromoCodeSettings: React.FC = () => {
         </AccordionContent>
       </AccordionItem>
     </Accordion>
-  );
-};
+  )
+}
 
-export default PromoCodeSettings;
+export default PromoCodeSettings

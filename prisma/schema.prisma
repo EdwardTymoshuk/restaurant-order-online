@@ -107,6 +107,17 @@ model Settings {
   createdAt            DateTime @default(now())
 }
 
+model News {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  image           String   
+  description     String   
+  fullDescription String   
+  galleryImages   String[] 
+  createdAt       DateTime @default(now())
+}
+
+
 enum OrderStatus {
   PENDING
   ACCEPTED
