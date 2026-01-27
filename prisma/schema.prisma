@@ -3,12 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String   @id @default(uuid())
   username  String   @unique
   email     String?  @unique
   name      String?
@@ -18,7 +18,7 @@ model User {
 }
 
 model MenuItem {
-  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  id            String      @id @default(uuid())
   name          String
   price         Float
   description   String?
@@ -36,7 +36,7 @@ model MenuItem {
 }
 
 model Order {
-  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  id              String         @id @default(uuid())
   name            String
   phone           String
   city            String?
@@ -55,30 +55,34 @@ model Order {
   statusUpdatedAt DateTime       @default(now())
   notifiedAt      DateTime?
   comment         String?
-  promoCode       PromoCode?     @relation(fields: [promoCodeId], references: [id])
-  promoCodeId     String?        @db.ObjectId
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+
+  promoCodeId String?
+  promoCode   PromoCode? @relation(fields: [promoCodeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model OrderItem {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  quantity   Int
-  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
-  menuItemId String   @db.ObjectId
-  order      Order    @relation(fields: [orderId], references: [id])
-  orderId    String   @db.ObjectId
+  id       String @id @default(uuid())
+  quantity Int
+
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model PromoCode {
-  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  id            String       @id @default(uuid())
   code          String       @unique
   discountType  DiscountType
   discountValue Float
   isActive      Boolean      @default(true)
   isOneTimeUse  Boolean      @default(false)
   isUsed        Boolean      @default(false)
-  startDate     DateTime?    // <--- нове поле для початку дії промокоду
+  startDate     DateTime?
   expiresAt     DateTime?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -86,7 +90,7 @@ model PromoCode {
 }
 
 model MainBanner {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  id              String   @id @default(uuid())
   createdAt       DateTime @default(now())
   desktopImageUrl String
   mobileImageUrl  String?
@@ -94,10 +98,8 @@ model MainBanner {
   position        Int
 }
 
-
-
 model Banner {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String   @id @default(uuid())
   imageUrl  String
   linkUrl   String?
   position  Int?
@@ -106,7 +108,7 @@ model Banner {
 }
 
 model Settings {
-  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  id                   String   @id @default(uuid())
   isOrderingOpen       Boolean  @default(true)
   orderWaitTime        Int      @default(30)
   deliveryCost         Int      @default(0)
@@ -118,15 +120,14 @@ model Settings {
 }
 
 model News {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  id              String   @id @default(uuid())
   title           String
-  image           String   
-  description     String   
-  fullDescription String   
-  galleryImages   String[] 
+  image           String
+  description     String
+  fullDescription String
+  galleryImages   String[]
   createdAt       DateTime @default(now())
 }
-
 
 enum OrderStatus {
   PENDING

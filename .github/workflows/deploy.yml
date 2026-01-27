@@ -1,0 +1,43 @@
+name: 🚀 Deploy ORDER to VPS
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Deploy ORDER over SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: 57.128.251.48
+          username: debian
+          port: 39222
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+
+            echo "➡️ Deploying ORDER app"
+
+            cd ~/apps/restaurant-order-online
+
+            git pull https://github.com/EdwardTymoshuk/restaurant-order-online.git main
+
+            rm -rf node_modules .next
+
+            npm ci || npm install
+
+            npx prisma generate
+            npx prisma migrate deploy || true
+
+            npm run build
+
+            pm2 restart spoko-order || pm2 start npm --name "spoko-order" -- start
+            pm2 save
+
+            echo "✅ ORDER deploy finished"
