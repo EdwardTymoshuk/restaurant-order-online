@@ -26,7 +26,10 @@ jobs:
 
             cd ~/apps/restaurant-order-online
 
-            git pull https://github.com/EdwardTymoshuk/restaurant-order-online.git main
+            git fetch origin
+            git reset --hard origin/main
+            git clean -fd
+
 
             rm -rf node_modules .next
 
