@@ -129,6 +129,96 @@ model News {
   createdAt       DateTime @default(now())
 }
 
+//RESERVATION 
+model Reservation {
+  id             String            @id @default(uuid())
+  status         ReservationStatus @default(SENT)
+
+  eventDate      DateTime
+  startTime      String?
+  endTime        String?
+
+  adultsCount    Int
+  childrenCount  Int?
+
+  eventType      EventType
+
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  /// Relations
+  offerSnapshot  ReservationOfferSnapshot?
+  extras         ReservationExtra[]
+  contact        ReservationContact?
+}
+
+model ReservationOfferSnapshot {
+  id              String       @id @default(uuid())
+  reservationId   String       @unique
+
+  packageCode     PackageCode
+  servingType     String
+
+  basePricePerAdult Int
+  durationHours     Int
+
+  subtotal        Int
+  serviceFee      Int
+  total           Int
+
+  createdAt       DateTime     @default(now())
+
+  /// Relations
+  reservation     Reservation  @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+}
+
+model ReservationExtra {
+  id             String               @id @default(uuid())
+  reservationId  String
+
+  type           ReservationExtraType
+  label          String
+
+  quantity       Int
+  unitPrice      Int
+  totalPrice     Int
+
+  metadata       Json?
+
+  /// Relations
+  reservation    Reservation           @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+}
+
+model ReservationContact {
+  id             String      @id @default(uuid())
+  reservationId  String      @unique
+
+  name           String
+  phone          String
+  email          String
+  notes          String?
+
+  createdAt      DateTime    @default(now())
+
+  /// Relations
+  reservation    Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+}
+
+model CalendarAvailability {
+  id            String   @id @default(uuid())
+  date          DateTime @unique
+
+  isBlocked     Boolean  @default(false)
+
+  basePriceFrom Int?
+  notes         String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+//ENUMS
+//delivery enums
 enum OrderStatus {
   PENDING
   ACCEPTED
@@ -148,4 +238,40 @@ enum DeliveryMethod {
 enum DiscountType {
   FIXED
   PERCENTAGE
+}
+
+/// ----------------------------------------
+/// Reservation domain enums
+/// ----------------------------------------
+
+enum ReservationStatus {
+  DRAFT
+  SENT
+  CONFIRMED
+  CANCELLED
+}
+
+enum EventType {
+  BIRTHDAY
+  ANNIVERSARY
+  COMMUNION
+  CHRISTENING
+  COMPANY_EVENT
+  OTHER
+}
+
+enum PackageCode {
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+enum ReservationExtraType {
+  EXTENDED_TIME
+  COLD_PLATE
+  PREMIUM_PLATTER
+  KIDS_MENU
+  DESSERTS
+  CAKE
+  SPECIAL_DIET
 }
