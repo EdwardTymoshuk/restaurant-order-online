@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import { EventType, PackageCode, ReservationExtraType } from './enums'
 
 /**
@@ -9,7 +10,7 @@ export interface ReservationDraftExtra {
   label: string
   quantity: number
   unitPrice: number
-  metadata?: Record<string, unknown>
+  metadata?: Prisma.InputJsonValue
 }
 
 /**

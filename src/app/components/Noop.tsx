@@ -1,30 +1,30 @@
 'use client'
 
-import type { AppRouter } from '@/server/trpc/appRouter'
+import type { AppRouter } from '@/server/routers/appRouter'
 import { httpBatchLink } from '@trpc/client'
 import { withTRPC } from '@trpc/next'
 import React, { ReactNode } from 'react'
 import superjson from 'superjson'
 
 interface NoopProps {
-	children?: ReactNode
+  children?: ReactNode
 }
 
 function Noop({ children }: NoopProps) {
-	return <>{children}</>
+  return <>{children}</>
 }
 const WithTrpc = withTRPC<AppRouter>({
-	config() {
-		return {
-			transformer: superjson,
-			links: [
-				httpBatchLink({
-					url: '/api/trpc',
-				}),
-			],
-		}
-	},
-	ssr: false,
+  config() {
+    return {
+      transformer: superjson,
+      links: [
+        httpBatchLink({
+          url: '/api/trpc',
+        }),
+      ],
+    }
+  },
+  ssr: false,
 })(Noop)
 
 export default WithTrpc as React.FC<NoopProps>
