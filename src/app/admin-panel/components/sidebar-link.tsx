@@ -16,10 +16,10 @@ export const SidebarLink = ({ children, href, isActive, onClick }: SidebarLinkPr
 			<Link
 				href={href}
 				className={cn(
-					'w-full py-3 px-6 flex items-center space-x-3 text-base font-medium gap-2',
+					'flex w-full items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium transition',
 					isActive
-						? 'bg-primary text-text-secondary'
-						: 'text-text-primary hover:bg-slate-400 transition-all'
+						? 'bg-secondary text-white shadow-sm'
+						: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
 				)}
 			>
 				{children}
