@@ -92,6 +92,33 @@ function normalizeDiscountType(value) {
 	return normalized === 'PERCENTAGE' ? 'PERCENTAGE' : 'FIXED'
 }
 
+function normalizeEmail(value) {
+	if (!value) return null
+	const email = String(value).trim().toLowerCase()
+	return email || null
+}
+
+function purgeEntriesOwnedBy(map, ownerId) {
+	for (const [key, value] of map.entries()) {
+		if (value === ownerId) map.delete(key)
+	}
+}
+
+function ensureUniqueUsername(baseUsername, ownerId, mongoId, usernameToId) {
+	const fallback = `user-${mongoId.slice(-6)}`
+	const base = (baseUsername || fallback).trim() || fallback
+	let candidate = base
+	let attempt = 0
+
+	while (true) {
+		const key = candidate.toLowerCase()
+		const currentOwner = usernameToId.get(key)
+		if (!currentOwner || currentOwner === ownerId) return candidate
+		attempt += 1
+		candidate = `${base}-${mongoId.slice(-6)}${attempt > 1 ? `-${attempt}` : ''}`
+	}
+}
+
 async function main() {
 	loadEnvFile('.env')
 	loadEnvFile('.env.local')
@@ -190,65 +217,130 @@ async function main() {
 
 		const db = mongo.db(mongoDbName)
 
+		const existingUsers = await prisma.user.findMany({
+			select: { id: true, email: true, username: true },
+		})
+		const userIdSet = new Set(existingUsers.map((user) => user.id))
+		const emailToId = new Map()
+		const usernameToId = new Map()
+		for (const user of existingUsers) {
+			if (user.email) emailToId.set(String(user.email).toLowerCase(), user.id)
+			if (user.username) usernameToId.set(String(user.username).toLowerCase(), user.id)
+		}
+
 		const users = await db.collection('User').find({}).toArray()
 		for (const doc of users) {
-			const id = toId(doc._id)
-			if (!id) continue
-			await prisma.user.upsert({
-				where: { id },
-				update: {
-					username: doc.username || doc.email || `user-${id.slice(-6)}`,
-					email: doc.email ?? null,
-					name: doc.name ?? null,
-					password: doc.password || '',
-					role: doc.role || 'user',
-					createdAt: toDate(doc.createdAt),
-				},
-				create: {
-					id,
-					username: doc.username || doc.email || `user-${id.slice(-6)}`,
-					email: doc.email ?? null,
-					name: doc.name ?? null,
-					password: doc.password || '',
-					role: doc.role || 'user',
-					createdAt: toDate(doc.createdAt),
-				},
-			})
+			const mongoId = toId(doc._id)
+			if (!mongoId) continue
+
+			const email = normalizeEmail(doc.email)
+			const preferredUsername = String(
+				doc.username || email || `user-${mongoId.slice(-6)}`
+			).trim()
+
+			let targetId = userIdSet.has(mongoId) ? mongoId : null
+			if (!targetId && email) targetId = emailToId.get(email) || null
+			if (!targetId && preferredUsername) {
+				targetId = usernameToId.get(preferredUsername.toLowerCase()) || null
+			}
+			if (!targetId) targetId = mongoId
+
+			purgeEntriesOwnedBy(emailToId, targetId)
+			purgeEntriesOwnedBy(usernameToId, targetId)
+
+			let safeEmail = email
+			if (safeEmail) {
+				const owner = emailToId.get(safeEmail)
+				if (owner && owner !== targetId) safeEmail = null
+			}
+
+			const safeUsername = ensureUniqueUsername(
+				preferredUsername,
+				targetId,
+				mongoId,
+				usernameToId
+			)
+
+			const data = {
+				username: safeUsername,
+				email: safeEmail,
+				name: doc.name ?? null,
+				password: doc.password || '',
+				role: doc.role || 'user',
+				createdAt: toDate(doc.createdAt),
+			}
+
+			if (userIdSet.has(targetId)) {
+				await prisma.user.update({
+					where: { id: targetId },
+					data,
+				})
+			} else {
+				await prisma.user.create({
+					data: { id: targetId, ...data },
+				})
+			}
+
+			userIdSet.add(targetId)
+			usernameToId.set(safeUsername.toLowerCase(), targetId)
+			if (safeEmail) emailToId.set(safeEmail, targetId)
 			stats.User += 1
+		}
+
+		const existingPromoCodes = await prisma.promoCode.findMany({
+			select: { id: true, code: true },
+		})
+		const promoIdSet = new Set(existingPromoCodes.map((promo) => promo.id))
+		const promoCodeToId = new Map()
+		for (const promo of existingPromoCodes) {
+			if (promo.code) promoCodeToId.set(promo.code, promo.id)
 		}
 
 		const promoCodes = await db.collection('PromoCode').find({}).toArray()
 		for (const doc of promoCodes) {
-			const id = toId(doc._id)
-			if (!id) continue
-			await prisma.promoCode.upsert({
-				where: { id },
-				update: {
-					code: doc.code || id,
-					discountType: normalizeDiscountType(doc.discountType),
-					discountValue: toNumber(doc.discountValue, 0),
-					isActive: toBool(doc.isActive, true),
-					isOneTimeUse: toBool(doc.isOneTimeUse, false),
-					isUsed: toBool(doc.isUsed, false),
-					startDate: doc.startDate ? toDate(doc.startDate) : null,
-					expiresAt: doc.expiresAt ? toDate(doc.expiresAt) : null,
-					createdAt: toDate(doc.createdAt),
-					updatedAt: toDate(doc.updatedAt),
-				},
-				create: {
-					id,
-					code: doc.code || id,
-					discountType: normalizeDiscountType(doc.discountType),
-					discountValue: toNumber(doc.discountValue, 0),
-					isActive: toBool(doc.isActive, true),
-					isOneTimeUse: toBool(doc.isOneTimeUse, false),
-					isUsed: toBool(doc.isUsed, false),
-					startDate: doc.startDate ? toDate(doc.startDate) : null,
-					expiresAt: doc.expiresAt ? toDate(doc.expiresAt) : null,
-					createdAt: toDate(doc.createdAt),
-					updatedAt: toDate(doc.updatedAt),
-				},
-			})
+			const mongoId = toId(doc._id)
+			if (!mongoId) continue
+			const code = String(doc.code || mongoId)
+
+			let targetId = promoIdSet.has(mongoId) ? mongoId : null
+			if (!targetId && code) targetId = promoCodeToId.get(code) || null
+			if (!targetId) targetId = mongoId
+
+			purgeEntriesOwnedBy(promoCodeToId, targetId)
+
+			let safeCode = code
+			if (!safeCode) safeCode = mongoId
+			const owner = promoCodeToId.get(safeCode)
+			if (owner && owner !== targetId) {
+				safeCode = `${safeCode}-${mongoId.slice(-6)}`
+			}
+
+			const data = {
+				code: safeCode,
+				discountType: normalizeDiscountType(doc.discountType),
+				discountValue: toNumber(doc.discountValue, 0),
+				isActive: toBool(doc.isActive, true),
+				isOneTimeUse: toBool(doc.isOneTimeUse, false),
+				isUsed: toBool(doc.isUsed, false),
+				startDate: doc.startDate ? toDate(doc.startDate) : null,
+				expiresAt: doc.expiresAt ? toDate(doc.expiresAt) : null,
+				createdAt: toDate(doc.createdAt),
+				updatedAt: toDate(doc.updatedAt),
+			}
+
+			if (promoIdSet.has(targetId)) {
+				await prisma.promoCode.update({
+					where: { id: targetId },
+					data,
+				})
+			} else {
+				await prisma.promoCode.create({
+					data: { id: targetId, ...data },
+				})
+			}
+
+			promoIdSet.add(targetId)
+			promoCodeToId.set(safeCode, targetId)
 			stats.PromoCode += 1
 		}
 
