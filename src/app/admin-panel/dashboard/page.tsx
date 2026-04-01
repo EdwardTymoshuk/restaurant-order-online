@@ -34,15 +34,7 @@ export default function DashboardPage() {
 	const [range, setRange] = useState<'day' | 'week' | 'month'>('week')
 	const { data, error } = useSWR(`/api/analytics?range=${range}`, fetcher)
 
-	if (error) {
-		return (
-			<div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-				Nie udało się pobrać statystyk. Odśwież stronę lub sprawdź połączenie z API.
-			</div>
-		)
-	}
-
-	if (!data) {
+	if (!data && !error) {
 		return (
 			<div className="space-y-4">
 				<Skeleton className="h-24 w-full rounded-2xl" />
@@ -55,7 +47,7 @@ export default function DashboardPage() {
 		)
 	}
 
-	const orderReport = data.order
+	const orderReport = data?.order
 
 	const aggregateActiveUsers = (report: any): number => {
 		if (!report || !report.rows) return 0
@@ -65,7 +57,7 @@ export default function DashboardPage() {
 		)
 	}
 
-	const spokosopotActiveUsers = aggregateActiveUsers(data.spokosopot)
+	const spokosopotActiveUsers = aggregateActiveUsers(data?.spokosopot)
 	const orderActiveUsers = aggregateActiveUsers(orderReport)
 	const totalUsers = spokosopotActiveUsers + orderActiveUsers
 
@@ -133,6 +125,12 @@ export default function DashboardPage() {
 					</Tabs>
 				</div>
 			</div>
+
+			{error && (
+				<div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+					Nie udało się pobrać statystyk. Sekcja działa, ale dane analityczne są tymczasowo niedostępne.
+				</div>
+			)}
 
 			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 				<Card className="border-slate-200 shadow-none">

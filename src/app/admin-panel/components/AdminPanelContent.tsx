@@ -86,13 +86,13 @@ const AdminPanelContent = () => {
 
 	return (
 		<>
-			<div className="min-h-screen bg-slate-100">
-				<header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur lg:hidden">
+			<div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#e2e8f0_0,_#f8fafc_35%,_#f1f5f9_100%)]">
+				<header className="sticky top-0 z-30 border-b border-slate-200/90 bg-white/95 backdrop-blur lg:hidden">
 					<div className="flex h-16 items-center justify-between px-4">
 						<div className="flex items-center gap-3">
 							<button
 								onClick={() => setIsSidebarOpen(true)}
-								className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-700 transition hover:bg-slate-100"
+								className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-100"
 								aria-label="Otwórz menu"
 							>
 								<MdMenu size={23} />
@@ -112,16 +112,16 @@ const AdminPanelContent = () => {
 					</div>
 				</header>
 
-				<div className="mx-auto flex min-h-screen w-full max-w-[1700px]">
+				<div className="mx-auto flex min-h-screen w-full max-w-[1920px] px-0 py-0 sm:px-4 sm:py-4">
 					<div
 						className={`fixed inset-0 z-30 bg-black/40 transition-opacity lg:hidden ${
 							isSidebarOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
 						}`}
 					/>
 					<Sidebar
-						className={`fixed inset-y-0 left-0 z-40 h-full w-[280px] transform transition-transform duration-300 ease-out ${
+						className={`fixed inset-y-0 left-0 z-40 h-full w-[312px] transform transition-transform duration-300 ease-out ${
 							isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-						} lg:sticky lg:top-0 lg:z-20 lg:translate-x-0`}
+						} lg:sticky lg:top-4 lg:z-20 lg:h-[calc(100vh-2rem)] lg:translate-x-0 lg:overflow-hidden lg:rounded-2xl lg:border lg:border-slate-200 lg:shadow-xl lg:shadow-slate-200/70`}
 						onClose={() => setIsSidebarOpen(false)}
 					>
 						{menuItems.map((item) => (
@@ -137,30 +137,30 @@ const AdminPanelContent = () => {
 						))}
 					</Sidebar>
 
-					<main className="min-w-0 flex-1 p-3 sm:p-4 lg:p-8">
-						<div className="hidden items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm lg:flex">
+					<main className="min-w-0 flex-1 p-3 sm:p-4 lg:pl-5 lg:pr-2 lg:pt-0">
+						<div className="hidden items-center justify-between rounded-2xl border border-slate-200 bg-white px-6 py-5 shadow-lg shadow-slate-200/60 lg:flex">
 							<div>
-								<p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">
+								<p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
 									Panel Administracyjny
 								</p>
-								<h1 className="text-xl font-semibold text-slate-900">{currentTabLabel}</h1>
+								<h1 className="mt-1 text-2xl font-semibold text-slate-900">{currentTabLabel}</h1>
 							</div>
 							<div className="flex items-center gap-4">
-								<div className="text-right">
-									<p className="text-sm font-medium text-slate-800">Cześć, {displayName}</p>
-									<p className="text-xs text-slate-500">Miłej pracy w panelu</p>
+								<div className="text-right leading-tight">
+									<p className="text-sm font-semibold text-slate-800">Cześć, {displayName}</p>
+									<p className="text-xs text-slate-500">Panel gotowy do pracy</p>
 								</div>
 								<Button
 									onClick={() => signOut()}
 									variant="outline"
-									className="border-slate-300 text-slate-700 hover:bg-slate-100"
+									className="h-10 rounded-xl border-slate-300 px-4 text-slate-700 hover:bg-slate-100"
 								>
 									Wyloguj się
 								</Button>
 							</div>
 						</div>
 
-						<section className="mt-3 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm sm:p-4 lg:mt-4 lg:p-6">
+						<section className="mt-3 min-h-[calc(100vh-6.2rem)] rounded-2xl border border-slate-200 bg-white p-3 shadow-lg shadow-slate-200/60 sm:p-4 lg:mt-4 lg:min-h-[calc(100vh-8.5rem)] lg:p-7">
 							<Suspense fallback={<LoadingScreen fullScreen />}>
 								{renderTabContent()}
 							</Suspense>
