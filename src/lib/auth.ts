@@ -32,7 +32,7 @@ export const authOptions: AuthOptions = {
 						{ id: user.id, role: user.role },
 						JWT_SECRET
 					)
-					return { id: user.id, name: user.username || user.email, role: user.role, accessToken }
+					return { id: user.id, name: user.username || user.email, email: user.email, role: user.role, accessToken }
 				}
 				return null
 			},
@@ -57,4 +57,15 @@ export const authOptions: AuthOptions = {
 		},
 	},
 	secret: process.env.NEXTAUTH_SECRET,
+	cookies: {
+		sessionToken: {
+			name: 'spoko-admin.session-token',
+			options: {
+				httpOnly: true,
+				sameSite: 'lax',
+				path: '/',
+				secure: process.env.NODE_ENV === 'production',
+			},
+		},
+	},
 }

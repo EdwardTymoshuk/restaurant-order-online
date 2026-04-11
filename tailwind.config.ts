@@ -106,8 +106,8 @@ const config = {
 				'accordion-up': 'accordion-up 0.2s ease-out',
 			},
 			fontFamily: {
-				sans: ['Roboto', 'sans-serif'],
-				serif: ['DM Serif Display"', 'serif'],
+				sans: ['Unbounded', 'sans-serif'],
+				serif: ['Libre Baskerville', 'serif'],
 				special: ['Sacramento', 'cursive']
 			},
 			screens: {
