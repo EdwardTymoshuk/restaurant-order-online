@@ -33,6 +33,7 @@ import {
   Users,
   X,
 } from 'lucide-react'
+import { useSession } from 'next-auth/react'
 import { useState } from 'react'
 import { FilterButton } from '../components/FilterButton'
 import { PageHeader } from '../components/PageHeader'
@@ -97,6 +98,7 @@ const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) 
 )
 
 const Reservations = () => {
+  const { status } = useSession()
   const [activeTab, setActiveTab] = useState('new')
   const [statusFilter, setStatusFilter] = useState<ReservationStatus | 'ALL'>('ALL')
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -106,12 +108,15 @@ const Reservations = () => {
   } | null>(null)
 
   const { data: reservations, isLoading, refetch } =
-    trpc.reservations.getReservationsList.useQuery({})
+    trpc.reservations.getReservationsList.useQuery(
+      {},
+      { enabled: status === 'authenticated' }
+    )
 
   const { data: detail, isFetching: isFetchingDetail } =
     trpc.reservations.getReservationById.useQuery(
       { id: expandedId! },
-      { enabled: !!expandedId }
+      { enabled: !!expandedId && status === 'authenticated' }
     )
 
   const updateStatus = trpc.reservations.updateStatus.useMutation({
