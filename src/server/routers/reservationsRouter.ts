@@ -69,6 +69,19 @@ export const reservationsRouter = router({
 
       return reservation
     }),
+  updateStatus: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        status: z.nativeEnum(ReservationStatus),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.reservation.update({
+        where: { id: input.id },
+        data: { status: input.status, updatedAt: new Date() },
+      })
+    }),
   reservationAvailability: publicProcedure
     .input(
       z.object({

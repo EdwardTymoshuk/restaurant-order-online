@@ -9,7 +9,7 @@ import {
 	DropdownMenuTrigger,
 } from '@/app/components/ui/dropdown-menu'
 import { cn } from '@/utils/utils'
-import { BarChart2, ChefHat, ClipboardList, LayoutDashboard, LogOut, Settings, User } from 'lucide-react'
+import { BarChart2, CalendarDays, ChefHat, ClipboardList, LayoutDashboard, LogOut, Settings, User } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -20,6 +20,7 @@ import { RiCloseLine, RiMenu3Line } from 'react-icons/ri'
 const navItems = [
 	{ label: 'Pulpit', key: 'dashboard', icon: LayoutDashboard },
 	{ label: 'Zamówienia', key: 'orders', icon: ClipboardList },
+	{ label: 'Rezerwacje', key: 'reservations', icon: CalendarDays },
 	{ label: 'Menu', key: 'menu', icon: ChefHat },
 	{ label: 'Statystyki', key: 'statistics', icon: BarChart2 },
 ]
