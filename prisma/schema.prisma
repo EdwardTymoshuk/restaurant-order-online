@@ -150,6 +150,7 @@ model Reservation {
   offerSnapshot  ReservationOfferSnapshot?
   extras         ReservationExtra[]
   contact        ReservationContact?
+  summaryPdf     ReservationSummaryPdf?
 }
 
 model ReservationOfferSnapshot {
@@ -197,6 +198,20 @@ model ReservationContact {
   phone          String
   email          String
   notes          String?
+
+  createdAt      DateTime    @default(now())
+
+  /// Relations
+  reservation    Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+}
+
+model ReservationSummaryPdf {
+  id             String      @id @default(uuid())
+  reservationId  String      @unique
+
+  filename       String
+  mimeType       String      @default("application/pdf")
+  content        Bytes
 
   createdAt      DateTime    @default(now())
 
@@ -257,6 +272,7 @@ enum EventType {
   COMMUNION
   CHRISTENING
   COMPANY_EVENT
+  WEDDING
   OTHER
 }
 

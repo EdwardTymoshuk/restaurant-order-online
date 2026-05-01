@@ -10,18 +10,17 @@ export async function GET(req: NextRequest) {
 		? { createdAt: { gt: new Date(lastUpdatedAtParam) } }
 		: {}
 
-	const newOrders = await prisma.order.findMany({
-		where: whereCondition,
-		orderBy: { createdAt: 'asc' },
-		include: {
-			items: {
-				include: {
-					menuItem: true,
-				},
+	try {
+		const newOrders = await prisma.order.findMany({
+			where: whereCondition,
+			orderBy: { createdAt: 'asc' },
+			include: {
+				items: { include: { menuItem: true } },
+				promoCode: true,
 			},
-			promoCode: true,
-		},
-	})
-
-	return NextResponse.json(newOrders)
+		})
+		return NextResponse.json(newOrders)
+	} catch {
+		return NextResponse.json([], { status: 200 })
+	}
 }

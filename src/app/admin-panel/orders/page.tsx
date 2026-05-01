@@ -16,20 +16,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/app/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/app/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select'
 import { Skeleton } from '@/app/components/ui/skeleton'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/app/components/ui/tabs'
 import { useOrders } from '@/app/context/OrdersContext'
 import { formatTimeAgo } from '@/utils/formatTimeAgo'
 import { getOrderStatuses } from '@/utils/getOrderStatuses'
@@ -37,92 +25,83 @@ import { trpc } from '@/utils/trpc'
 import { cn } from '@/utils/utils'
 import { OrderStatus, Prisma } from '@prisma/client'
 import orderBy from 'lodash/orderBy'
+import { ArrowRight, Bell, Check, ChevronDown, Package, Pencil, Trash2, Truck } from 'lucide-react'
 import { useState } from 'react'
-import { GoSortAsc, GoSortDesc } from 'react-icons/go'
-import { IoCheckmark } from 'react-icons/io5'
-import { RiArrowDropRightLine, RiPencilLine } from 'react-icons/ri'
-import { toast } from 'sonner'
 import DeliveryTimeManager from '../components/DeliveryTimeManager'
-import EmptyOrders from '../components/EmptyOrders'
+import { FilterButton } from '../components/FilterButton'
+import { PageHeader } from '../components/PageHeader'
 
 type OrderWithItems = Prisma.OrderGetPayload<{
   include: {
-    items: {
-      include: {
-        menuItem: true
-      }
-    }
+    items: { include: { menuItem: true } }
     promoCode: true
   }
 }>
 
-const statusColorMap: { [key in OrderStatus]: string } = {
-  PENDING: 'text-warning',
-  ACCEPTED: 'text-info',
-  IN_PROGRESS: 'text-info',
-  READY: 'text-info',
-  DELIVERING: 'text-info',
-  DELIVERED: 'text-info',
-  COMPLETED: 'text-success',
-  CANCELLED: 'text-danger',
+const statusBadgeMap: { [key in OrderStatus]: string } = {
+  PENDING:     'bg-warning-light text-warning-dark',
+  ACCEPTED:    'bg-info-light text-info-dark',
+  IN_PROGRESS: 'bg-info-light text-info-dark',
+  READY:       'bg-info-light text-info-dark',
+  DELIVERING:  'bg-info-light text-info-dark',
+  DELIVERED:   'bg-info-light text-info-dark',
+  COMPLETED:   'bg-success-light text-success-dark',
+  CANCELLED:   'bg-danger/10 text-danger',
 }
 
-const statusButtonMap = (
-  deliveryMethod: 'DELIVERY' | 'TAKE_OUT',
-  status: OrderStatus
-) => {
-  const deliveryStatusMap: {
-    [key in OrderStatus]: { label: string; nextStatus: OrderStatus | null }
-  } = {
-    PENDING: { label: 'Przyjmij', nextStatus: 'ACCEPTED' },
-    ACCEPTED: { label: 'Zrealizuj', nextStatus: 'IN_PROGRESS' },
-    IN_PROGRESS: { label: 'Wydaj', nextStatus: 'READY' },
-    READY:
-      deliveryMethod === 'DELIVERY'
-        ? { label: 'Wyślij', nextStatus: 'DELIVERING' }
-        : { label: 'Odebrane', nextStatus: 'COMPLETED' },
-    DELIVERING: { label: 'Zakończ', nextStatus: 'DELIVERED' },
-    DELIVERED: { label: 'Odebrane', nextStatus: 'COMPLETED' },
-    COMPLETED: { label: 'Zakończone', nextStatus: null },
-    CANCELLED: { label: 'Anulowane', nextStatus: null },
-  }
+const statusLabelMap: { [key in OrderStatus]: string } = {
+  PENDING:     'Nowe',
+  ACCEPTED:    'Przyjęte',
+  IN_PROGRESS: 'W realizacji',
+  READY:       'Gotowe',
+  DELIVERING:  'W drodze',
+  DELIVERED:   'Dostarczone',
+  COMPLETED:   'Zakończone',
+  CANCELLED:   'Anulowane',
+}
 
-  return deliveryStatusMap[status]
+const statusButtonMap = (deliveryMethod: 'DELIVERY' | 'TAKE_OUT', status: OrderStatus) => {
+  const map: { [key in OrderStatus]: { label: string; nextStatus: OrderStatus | null } } = {
+    PENDING:     { label: 'Przyjmij',   nextStatus: 'ACCEPTED' },
+    ACCEPTED:    { label: 'Realizuj',   nextStatus: 'IN_PROGRESS' },
+    IN_PROGRESS: { label: 'Wydaj',      nextStatus: 'READY' },
+    READY:       deliveryMethod === 'DELIVERY'
+      ? { label: 'Wyślij',    nextStatus: 'DELIVERING' }
+      : { label: 'Odebrane',  nextStatus: 'COMPLETED' },
+    DELIVERING:  { label: 'Zakończ',    nextStatus: 'DELIVERED' },
+    DELIVERED:   { label: 'Odebrane',   nextStatus: 'COMPLETED' },
+    COMPLETED:   { label: 'Zakończone', nextStatus: null },
+    CANCELLED:   { label: 'Anulowane',  nextStatus: null },
+  }
+  return map[status]
 }
 
 const statusOrder: OrderStatus[] = [
-  'PENDING',
-  'ACCEPTED',
-  'IN_PROGRESS',
-  'READY',
-  'DELIVERING',
-  'DELIVERED',
-  'COMPLETED',
-  'CANCELLED',
+  'PENDING', 'ACCEPTED', 'IN_PROGRESS', 'READY',
+  'DELIVERING', 'DELIVERED', 'COMPLETED', 'CANCELLED',
 ]
 
+const TABS = [
+  { value: 'new',         label: 'Nowe',       statuses: ['PENDING'] as OrderStatus[] },
+  { value: 'in-progress', label: 'W trakcie',  statuses: ['ACCEPTED', 'IN_PROGRESS', 'READY', 'DELIVERING'] as OrderStatus[] },
+  { value: 'completed',   label: 'Zakończone', statuses: ['COMPLETED', 'DELIVERED', 'CANCELLED'] as OrderStatus[] },
+]
+
+const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
+  <div>
+    <p className="text-xs font-sans font-normal uppercase tracking-widest text-muted-foreground mb-1">{label}</p>
+    <p className="text-base font-sans font-normal text-dark-gray">{value || '—'}</p>
+  </div>
+)
+
 const Orders = () => {
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'ALL'>('ALL')
-  const [deliveryMethodFilter, setDeliveryMethodFilter] = useState<
-    'DELIVERY' | 'TAKE_OUT' | 'ALL'
-  >('ALL')
-
-  const [selectedStatus, setSelectedStatus] = useState<{
-    [key: string]: OrderStatus
-  }>({})
-  const [isEditingStatus, setIsEditingStatus] = useState<{
-    [key: string]: boolean
-  }>({})
-  const [sortConfig, setSortConfig] = useState<{
-    key: 'status' | 'deliveryMethod' | 'createdAt' | 'deliveryTime'
-    direction: 'asc' | 'desc'
-  }>({
-    key: 'createdAt', // Сортуємо за датою створення за замовчуванням
-    direction: 'desc', // Найновіші замовлення зверху
-  })
-
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [orderToDelete, setOrderToDelete] = useState<string | null>(null)
+  const [activeTab, setActiveTab]                       = useState('new')
+  const [statusFilter, setStatusFilter]                 = useState<OrderStatus | 'ALL'>('ALL')
+  const [deliveryMethodFilter, setDeliveryMethodFilter] = useState<'DELIVERY' | 'TAKE_OUT' | 'ALL'>('ALL')
+  const [selectedStatus, setSelectedStatus]             = useState<{ [key: string]: OrderStatus }>({})
+  const [isEditingStatus, setIsEditingStatus]           = useState<{ [key: string]: boolean }>({})
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen]     = useState(false)
+  const [orderToDelete, setOrderToDelete]               = useState<string | null>(null)
 
   const {
     allOrders,
@@ -134,661 +113,388 @@ const Orders = () => {
   } = useOrders()
 
   const updateStatus = trpc.order.updateStatus.useMutation({
-    onSuccess: (data, variables) => {
-      setAllOrders((prevOrders) =>
-        prevOrders.map((order) =>
-          order.id === variables.orderId
-            ? {
-                ...order,
-                status: variables.status,
-                statusUpdatedAt: new Date(),
-              }
-            : order
+    onSuccess: (_, variables) => {
+      setAllOrders((prev) =>
+        prev.map((o) =>
+          o.id === variables.orderId
+            ? { ...o, status: variables.status, statusUpdatedAt: new Date() }
+            : o
         )
       )
-      toast.success('Status zamówienia został pomyślnie zmieniony')
     },
   })
 
   const { mutate: mutateDelete, isLoading: isLoadingDelete } =
     trpc.order.deleteOrder.useMutation({
-      onSuccess: (data, variables) => {
-        // Видаляємо замовлення з allOrders
-        setAllOrders((prevOrders) =>
-          prevOrders.filter((order) => order.id !== variables.orderId)
-        )
+      onSuccess: (_, variables) => {
+        setAllOrders((prev) => prev.filter((o) => o.id !== variables.orderId))
         setIsDeleteDialogOpen(false)
-        toast.success('Zamówienie zostało pomyślnie usunięte')
       },
     })
 
-  const sortedOrders = sortConfig
-    ? orderBy(
-        [...allOrders],
-        [
-          sortConfig.key === 'status'
-            ? (order: OrderWithItems) => statusOrder.indexOf(order.status)
-            : (order: OrderWithItems) => {
-                if (
-                  sortConfig.key === 'createdAt' ||
-                  sortConfig.key === 'deliveryTime'
-                ) {
-                  return new Date(order[sortConfig.key]).getTime()
-                }
-                return order[sortConfig.key]
-              },
-        ],
-        [sortConfig.direction]
-      )
-    : allOrders
+  const activeFilterCount = [
+    statusFilter !== 'ALL',
+    deliveryMethodFilter !== 'ALL',
+  ].filter(Boolean).length
 
-  const handleSort = (
-    key: 'status' | 'deliveryMethod' | 'createdAt' | 'deliveryTime'
-  ) => {
-    setSortConfig((prev) => {
-      if (prev?.key === key) {
-        // Якщо поточний ключ вже обраний, змінюємо напрямок
-        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
-      }
-      // Інакше, встановлюємо новий ключ з напрямком за замовчуванням
-      return { key, direction: 'asc' }
-    })
-  }
+  const sortedOrders = orderBy(
+    [...(allOrders || [])],
+    [(o: OrderWithItems) => new Date(o.createdAt).getTime()],
+    ['desc']
+  )
 
-  const getSortIcon = (
-    key: 'status' | 'deliveryMethod' | 'createdAt' | 'deliveryTime'
-  ) => {
-    if (!sortConfig || sortConfig.key !== key) {
-      return <GoSortDesc />
-    }
-    return sortConfig.direction === 'asc' ? <GoSortAsc /> : <GoSortDesc />
-  }
-
-  const filteredOrders = sortedOrders.filter((order) => {
-    const matchesStatus =
-      statusFilter !== 'ALL' ? order.status === statusFilter : true
-    const matchesDeliveryMethod =
-      deliveryMethodFilter !== 'ALL'
-        ? order.deliveryMethod === deliveryMethodFilter
-        : true
-
-    return matchesStatus && matchesDeliveryMethod
+  const filteredOrders = sortedOrders.filter((o) => {
+    const matchStatus = statusFilter !== 'ALL' ? o.status === statusFilter : true
+    const matchMethod = deliveryMethodFilter !== 'ALL' ? o.deliveryMethod === deliveryMethodFilter : true
+    return matchStatus && matchMethod
   })
 
-  const handleStatusChange = (orderId: string, status: OrderStatus) => {
-    setSelectedStatus((prev) => ({ ...prev, [orderId]: status }))
-  }
+  const tabOrders = (tab: typeof TABS[number]) =>
+    filteredOrders.filter((o) => tab.statuses.includes(o.status))
 
-  const confirmStatusChange = (
-    orderId: string,
-    event: React.MouseEvent,
-    newStatus: OrderStatus | null
-  ) => {
-    event.stopPropagation()
+  const currentTab = TABS.find((t) => t.value === activeTab)!
 
-    if (!newStatus) return
-
-    const currentStatus = allOrders?.find(
-      (order) => order.id === orderId
-    )?.status
-
-    if (newStatus && newStatus !== currentStatus) {
-      // Оновлюємо статус локально
-      setAllOrders((prevOrders) =>
-        prevOrders.map((order) =>
-          order.id === orderId ? { ...order, status: newStatus } : order
-        )
-      )
-
-      updateStatus.mutate({
-        orderId: orderId,
-        status: newStatus,
-      })
-    }
+  const confirmStatusChange = (orderId: string, e: React.MouseEvent, next: OrderStatus | null) => {
+    e.stopPropagation()
+    if (!next) return
+    setAllOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: next } : o))
+    updateStatus.mutate({ orderId, status: next })
     setIsEditingStatus((prev) => ({ ...prev, [orderId]: false }))
   }
 
-  const toggleStatusEdit = (orderId: string, event: React.MouseEvent) => {
-    event.stopPropagation()
-    const currentStatus = allOrders?.find(
-      (order) => order.id === orderId
-    )?.status
-    setSelectedStatus((prev) => ({
-      ...prev,
-      [orderId]: currentStatus as OrderStatus,
-    }))
+  const toggleStatusEdit = (orderId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const current = allOrders?.find((o) => o.id === orderId)?.status
+    setSelectedStatus((prev) => ({ ...prev, [orderId]: current as OrderStatus }))
     setIsEditingStatus((prev) => ({ ...prev, [orderId]: !prev[orderId] }))
   }
 
-  const openDeleteDialog = (orderId: string) => {
-    setOrderToDelete(orderId)
-    setIsDeleteDialogOpen(true)
-  }
-
-  const closeDeleteDialog = () => {
-    setIsDeleteDialogOpen(false)
-    setOrderToDelete(null)
-  }
-
-  const handleDeleteOrder = () => {
-    if (!orderToDelete) return
-    mutateDelete({ orderId: orderToDelete })
+  const clearFilters = () => {
+    setStatusFilter('ALL')
+    setDeliveryMethodFilter('ALL')
   }
 
   const getOrderLabel = (count: number) => {
-    if (count === 1) return `nowe zamówienie`
-    if (count >= 2 && count <= 4) return `nowe zamówienia`
-    return `nowych zamówień`
+    if (count === 1) return 'nowe zamówienie'
+    if (count >= 2 && count <= 4) return 'nowe zamówienia'
+    return 'nowych zamówień'
   }
 
-  const renderOrders = (orders: OrderWithItems[]) => {
+  // ── Tabs (center slot) ─────────────────────────────────────────────────────
+  const tabsNode = (
+    <div className="flex items-center gap-0.5">
+      {TABS.map((tab) => {
+        const count = tabOrders(tab).length
+        const isActive = activeTab === tab.value
+        return (
+          <button
+            key={tab.value}
+            onClick={() => setActiveTab(tab.value)}
+            className={cn(
+              'flex items-center gap-2 h-14 px-5 text-sm font-sans font-normal border-b-2 transition-all duration-150',
+              isActive
+                ? 'border-primary text-dark-gray'
+                : 'border-transparent text-muted-foreground hover:text-dark-gray'
+            )}
+          >
+            {tab.label}
+            <span className={cn(
+              'inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-normal',
+              isActive ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
+            )}>
+              {count}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+
+  // ── Toolbar (right slot) ───────────────────────────────────────────────────
+  const toolbarNode = (
+    <FilterButton
+      activeCount={activeFilterCount}
+      onClear={clearFilters}
+      filters={[
+        {
+          label: 'Status',
+          value: statusFilter,
+          onChange: (v) => setStatusFilter(v as OrderStatus | 'ALL'),
+          options: statusOrder.map((s) => ({ label: statusLabelMap[s], value: s })),
+          allLabel: 'Wszystkie statusy',
+        },
+        {
+          label: 'Metoda dostawy',
+          value: deliveryMethodFilter,
+          onChange: (v) => setDeliveryMethodFilter(v as 'DELIVERY' | 'TAKE_OUT' | 'ALL'),
+          options: [
+            { label: 'Dostawa', value: 'DELIVERY' },
+            { label: 'Odbiór własny', value: 'TAKE_OUT' },
+          ],
+          allLabel: 'Wszystkie metody',
+        },
+      ]}
+    />
+  )
+
+  // ── Loading skeleton ───────────────────────────────────────────────────────
+  if (!allOrders) {
     return (
       <>
-        {/* Заголовки */}
-        <div className="flex flex-1 justify-between items-center gap-4 w-full">
-          <div className=" w-full flex justify-between items-center px-4 py-2 text-secondary text-sm md:text-lg text-center">
-            <p className="w-1/12 hidden md:block">#</p>
-            <p
-              className="w-2/12 hidden md:flex items-center justify-center gap-2 "
-              onClick={() => handleSort('deliveryMethod')}
-              style={{ cursor: 'pointer' }}
-            >
-              Metoda dostawy {getSortIcon('deliveryMethod')}
-            </p>
-            <p
-              className="w-2/12 flex items-center justify-center gap-2"
-              onClick={() => handleSort('createdAt')}
-              style={{ cursor: 'pointer' }}
-            >
-              Czas utworzenia {getSortIcon('createdAt')}
-            </p>
-            <p
-              className="w-2/12 hidden md:flex items-center justify-center gap-2"
-              onClick={() => handleSort('deliveryTime')}
-              style={{ cursor: 'pointer' }}
-            >
-              Czas dostawy {getSortIcon('deliveryTime')}
-            </p>
-            <p
-              className="w-2/12 flex items-center justify-center gap-2"
-              onClick={() => handleSort('status')}
-              style={{ cursor: 'pointer' }}
-            >
-              Status {getSortIcon('status')}
-            </p>
-            <p className="w-2/12">Akcje</p>
-          </div>
-          <RiArrowDropRightLine className="h-4 w-4 shrink-0" />
+        <div className="sticky top-14 z-20 bg-white border-b border-border h-12" />
+        <div className="p-4 md:p-6 lg:p-8 space-y-3">
+          {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
         </div>
-        <Accordion type="single" collapsible>
-          {orders.length === 0 && <EmptyOrders />}
-          {orders.map((order, index) => {
-            const { relativeTime, fullDate, fullTime } = formatTimeAgo(
-              new Date(order.createdAt)
-            )
-            const statusButton = statusButtonMap(
-              order.deliveryMethod,
-              order.status
-            )
-            return (
-              <AccordionItem key={order.id} value={order.id}>
-                <AccordionTrigger
-                  className={cn(
-                    `flex items-center gap-2 px-0 py-2 border-b hover:no-underline ${
-                      statusColorMap[order.status]
-                    } text-text-secondary text-sm md:text-base`,
-                    {
-                      'bg-success/80': highlightedOrderIds.has(order.id),
-                    }
-                  )}
-                >
-                  <div className="flex justify-between items-center w-full">
-                    <p className="w-1/12 hidden md:block">{index + 1}</p>
-                    <p
-                      className="w-2/12 hidden md:block"
-                      onClick={() =>
-                        setDeliveryMethodFilter(order.deliveryMethod)
-                      }
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <span className="hover:text-secondary hover:underline">
-                        {order.deliveryMethod === 'DELIVERY'
-                          ? 'Dostawa'
-                          : 'Odbiór'}
-                      </span>
-                    </p>
-                    <div className="w-4/12 md:w-2/12">
-                      {relativeTime ? (
-                        relativeTime
-                      ) : (
-                        <p className="flex flex-col">
-                          <span>{fullDate}</span>
-                          <span>{fullTime}</span>
-                        </p>
-                      )}
-                    </div>
-                    <div className="w-2/12 hidden md:block">
-                      <p className="flex flex-col">
-                        <span>
-                          {new Date(order.deliveryTime).toLocaleDateString()}
-                        </span>
-                        <span>
-                          {new Date(order.deliveryTime).toLocaleTimeString()}
-                        </span>
-                      </p>
-                    </div>
-                    <p
-                      className={`w-4/12 md:w-2/12 flex gap-2 items-center justify-center ${
-                        statusColorMap[order.status]
-                      }`}
-                    >
-                      {isEditingStatus[order.id] ? (
-                        <Select
-                          value={selectedStatus[order.id]}
-                          onValueChange={(value) =>
-                            handleStatusChange(order.id, value as OrderStatus)
-                          }
-                        >
-                          <SelectTrigger className="text-sm">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {getOrderStatuses(order.deliveryMethod).map(
-                              (status) => (
-                                <SelectItem key={status.key} value={status.key}>
-                                  {status.label}
-                                </SelectItem>
-                              )
-                            )}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <span>
-                          {
-                            getOrderStatuses(order.deliveryMethod).find(
-                              (s) => s.key === order.status
-                            )?.label
-                          }
-                        </span>
-                      )}
-
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(event) =>
-                          isEditingStatus[order.id]
-                            ? confirmStatusChange(
-                                order.id,
-                                event,
-                                selectedStatus[order.id]
-                              )
-                            : toggleStatusEdit(order.id, event)
-                        }
-                        className="text-success hover:text-success-light p-0"
-                      >
-                        {isEditingStatus[order.id] ? (
-                          <IoCheckmark />
-                        ) : (
-                          <RiPencilLine />
-                        )}
-                      </Button>
-                    </p>
-                    <div className="w-4/12 md:w-2/12 flex items-center justify-center">
-                      {statusButton?.nextStatus ? (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={(event) =>
-                            confirmStatusChange(
-                              order.id,
-                              event,
-                              statusButton.nextStatus
-                            )
-                          }
-                        >
-                          {statusButton.label}{' '}
-                          <RiArrowDropRightLine size={18} />
-                        </Button>
-                      ) : (
-                        <p className="italic">Zakończone</p>
-                      )}
-                    </div>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="p-4">
-                  <p className="text-base md:hidden">
-                    <span className="text-secondary font-bold">
-                      Metoda dostawy:{' '}
-                    </span>{' '}
-                    {order.deliveryMethod === 'DELIVERY' ? 'DOSTAWA' : 'ODBIÓR'}
-                  </p>
-                  <p className="text-base md:hidden">
-                    <span className="text-secondary font-bold ">
-                      Czas dostawy/odbioru:{' '}
-                    </span>
-                    {`${new Date(
-                      order.deliveryTime
-                    ).toLocaleDateString()}  ${new Date(
-                      order.deliveryTime
-                    ).toLocaleTimeString()}`}
-                  </p>
-                  <p className="text-base">
-                    <span className="text-secondary font-bold ">
-                      Metoda płatności:{' '}
-                    </span>
-                    {order.paymentMethod === 'cash_offline'
-                      ? 'GOTÓWKA PRZY ODBIORZE'
-                      : 'KARTA PRZY ODBIORZE'}
-                  </p>
-                  <p className="text-base">
-                    <span className="text-secondary font-bold">
-                      Numer zamówienia:
-                    </span>{' '}
-                    {order.id}
-                  </p>
-                  <p className="text-base">
-                    <span className="text-secondary font-bold">
-                      Imię klienta:
-                    </span>{' '}
-                    {order.name}
-                  </p>
-                  <p className="text-base">
-                    <span className="text-secondary font-bold">
-                      Nr telefonu:
-                    </span>{' '}
-                    {order.phone}
-                  </p>
-                  <p className="text-base">
-                    <span className="text-secondary font-bold">Komentarz:</span>{' '}
-                    {order.comment || 'Brak komentarza'}
-                  </p>
-                  {order.promoCode?.code && (
-                    <div className="text-base">
-                      <span className="text-secondary font-bold">
-                        Promocja:
-                      </span>
-                      <ul className="text-sm">
-                        <li className="pl-8 text-secondary">
-                          {' '}
-                          - Kod promocyjny:{' '}
-                          <span className="text-text-secondary">
-                            {order.promoCode?.code}
-                          </span>
-                        </li>
-                        <li className="pl-8 text-secondary">
-                          {' '}
-                          - Rabat:{' '}
-                          <span className="text-text-secondary">
-                            {order.promoCode?.discountValue}{' '}
-                            {order.promoCode?.discountType === 'PERCENTAGE'
-                              ? '%'
-                              : 'zł'}
-                          </span>
-                        </li>
-                        <li className="pl-8 text-secondary">
-                          {' '}
-                          - Kwota przed rabatem:{' '}
-                          <span className="text-text-secondary">
-                            {order.totalAmount} zł
-                          </span>
-                        </li>
-                      </ul>
-                    </div>
-                  )}
-                  <p className="text-base">
-                    <span className="text-secondary font-bold">
-                      Kwota ostateczna:
-                    </span>{' '}
-                    {order.finalAmount} zł
-                  </p>
-                  {order.nip && (
-                    <p className="text-base">
-                      <span className="text-secondary font-bold">
-                        Numer NIP:
-                      </span>{' '}
-                      {order.nip}
-                    </p>
-                  )}
-
-                  {order.deliveryMethod === 'DELIVERY' && (
-                    <div className="">
-                      <p className="text-base">
-                        <span className="text-secondary font-bold">
-                          Adres dostawy:
-                        </span>
-                      </p>
-                      <ul className="pl-8 ml-4 text-lg">
-                        <li>
-                          <span>Miasto:</span> {order.city || 'Brak danych'}
-                        </li>
-                        <li>
-                          <span>Kod pocztowy:</span>{' '}
-                          {order.postalCode || 'Brak danych'}
-                        </li>
-                        <li>
-                          <span>Ulica:</span> {order.street || 'Brak danych'}
-                        </li>
-                        <li>
-                          <span>Numer budynku:</span>{' '}
-                          {order.buildingNumber || 'Brak danych'}
-                        </li>
-                        <li>
-                          <span>Numer mieszkania:</span>{' '}
-                          {order.apartment || 'Brak danych'}
-                        </li>
-                      </ul>
-                    </div>
-                  )}
-
-                  <p className="text-base">
-                    <span className="text-secondary font-bold">
-                      Zamówienie:
-                    </span>
-                  </p>
-                  <ul className="list-decimal pl-8 ml-4 text-lg">
-                    {order.items?.map((item) => (
-                      <li key={item.id}>
-                        <span>{item.quantity}x</span>{' '}
-                        {item.menuItem?.name || 'Unknown item'}
-                      </li>
-                    ))}
-                  </ul>
-
-                  <DeliveryTimeManager
-                    orderId={order.id}
-                    currentDeliveryTime={order.deliveryTime}
-                  />
-
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => openDeleteDialog(order.id)}
-                    className="mt-4"
-                  >
-                    Usuń zamówienie
-                  </Button>
-                </AccordionContent>
-              </AccordionItem>
-            )
-          })}
-        </Accordion>
       </>
     )
   }
 
-  if (!allOrders) {
-    return (
-      <div className="w-full p-4">
-        {/* Скелетон для заголовків */}
-        <Skeleton className="w-1/4 h-8 mb-4" />
-        {/* Скелетон для таблиці */}
-        <div className="space-y-2">
-          {[...Array(3)].map((_, index) => (
-            <Skeleton key={index} className="w-full h-12" />
-          ))}
-        </div>
-      </div>
-    )
-  }
+  // ── Order list renderer ────────────────────────────────────────────────────
+  const orders = tabOrders(currentTab)
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Orders</h1>
+    <>
+      <PageHeader
+        title="Zamówienia"
+        tabs={tabsNode}
+        toolbar={toolbarNode}
+      />
 
-      {/* Фільтри */}
-      <div className="mb-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Фільтр за статусом */}
-        <Select
-          value={statusFilter}
-          onValueChange={(value) =>
-            setStatusFilter(value as OrderStatus | 'ALL')
-          }
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Status zamówienia" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Wszystkie statusy</SelectItem>
-            {statusOrder.map((status) => (
-              <SelectItem key={status} value={status}>
-                {getOrderStatuses('DELIVERY').find((s) => s.key === status)
-                  ?.label || status}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="flex-1 overflow-y-auto min-h-0 p-4 md:p-6 lg:p-8">
+        {orders.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
+            <Package size={40} strokeWidth={1} className="mb-3 opacity-30" />
+            <p className="text-sm font-sans font-normal">Brak zamówień</p>
+          </div>
+        ) : (
+          <Accordion type="single" collapsible className="space-y-2">
+            {orders.map((order, index) => {
+              const { relativeTime, fullDate, fullTime } = formatTimeAgo(new Date(order.createdAt))
+              const btn = statusButtonMap(order.deliveryMethod, order.status)
+              const isHighlighted = highlightedOrderIds.has(order.id)
+              const itemsPreview = order.items?.slice(0, 2).map((i) => i.menuItem?.name).join(', ')
+              const itemsMore = (order.items?.length || 0) - 2
 
-        {/* Фільтр за типом доставки */}
-        <Select
-          value={deliveryMethodFilter}
-          onValueChange={(value) =>
-            setDeliveryMethodFilter(value as 'DELIVERY' | 'TAKE_OUT' | 'ALL')
-          }
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Metoda dostawy" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Wszystkie metody</SelectItem>
-            <SelectItem value="DELIVERY">Dostawa</SelectItem>
-            <SelectItem value="TAKE_OUT">Odbiór</SelectItem>
-          </SelectContent>
-        </Select>
+              return (
+                <AccordionItem
+                  key={order.id}
+                  value={order.id}
+                  className={cn(
+                    'bg-white rounded-xl border border-border overflow-hidden',
+                    isHighlighted && 'border-success ring-1 ring-success/30'
+                  )}
+                >
+                  <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/40 transition-colors [&>svg]:hidden">
+                    <div className="flex items-center gap-4 w-full text-left">
+                      {/* Index */}
+                      <span className="hidden md:block text-sm font-sans font-normal text-muted-foreground w-6 shrink-0 tabular-nums">
+                        {index + 1}
+                      </span>
+
+                      {/* Method badge */}
+                      <span className={cn(
+                        'hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-sans font-normal shrink-0',
+                        order.deliveryMethod === 'DELIVERY'
+                          ? 'bg-secondary/10 text-secondary'
+                          : 'bg-muted text-dark-gray'
+                      )}>
+                        {order.deliveryMethod === 'DELIVERY'
+                          ? <><Truck size={12} strokeWidth={2} /> Dostawa</>
+                          : <><Package size={12} strokeWidth={2} /> Odbiór</>}
+                      </span>
+
+                      {/* Customer + items */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-base font-sans font-normal text-dark-gray truncate">{order.name}</p>
+                        <p className="text-sm font-sans font-normal text-muted-foreground truncate">
+                          {itemsPreview}{itemsMore > 0 ? ` +${itemsMore}` : ''}
+                        </p>
+                      </div>
+
+                      {/* Time */}
+                      <div className="hidden md:block text-right shrink-0">
+                        <p className="text-sm font-sans font-normal text-dark-gray">
+                          {relativeTime || `${fullDate} ${fullTime}`}
+                        </p>
+                        <p className="text-xs font-sans font-normal text-muted-foreground">
+                          dostawa: {new Date(order.deliveryTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+
+                      {/* Status (click to edit) */}
+                      <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        {isEditingStatus[order.id] ? (
+                          <div className="flex items-center gap-1.5">
+                            <Select
+                              value={selectedStatus[order.id]}
+                              onValueChange={(v) => setSelectedStatus((prev) => ({ ...prev, [order.id]: v as OrderStatus }))}
+                            >
+                              <SelectTrigger className="h-7 text-xs w-36">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {getOrderStatuses(order.deliveryMethod).map((s) => (
+                                  <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <button
+                              onClick={(e) => confirmStatusChange(order.id, e, selectedStatus[order.id])}
+                              className="w-7 h-7 rounded-full bg-success/10 text-success flex items-center justify-center hover:bg-success/20"
+                            >
+                              <Check size={13} strokeWidth={2.5} />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => toggleStatusEdit(order.id, e)}
+                            className={cn(
+                              'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-sans font-normal transition-opacity hover:opacity-80',
+                              statusBadgeMap[order.status]
+                            )}
+                          >
+                            {statusLabelMap[order.status]}
+                            <Pencil size={10} strokeWidth={2} />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Action button */}
+                      <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                        {btn?.nextStatus ? (
+                          <Button
+                            size="sm"
+                            className="h-8 text-xs font-sans font-normal gap-1.5"
+                            onClick={(e) => confirmStatusChange(order.id, e, btn.nextStatus)}
+                          >
+                            {btn.label}
+                            <ArrowRight size={13} strokeWidth={2} />
+                          </Button>
+                        ) : (
+                          <span className="text-xs font-sans text-muted-foreground italic">—</span>
+                        )}
+                      </div>
+
+                      {/* Chevron */}
+                      <ChevronDown size={15} strokeWidth={1.5} className="shrink-0 text-muted-foreground transition-transform duration-200 [[data-state=open]_&]:rotate-180" />
+                    </div>
+                  </AccordionTrigger>
+
+                  <AccordionContent className="border-t border-border">
+                    <div className="p-5 space-y-5">
+                      {/* Details grid */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
+                        <DetailRow label="Klient" value={order.name} />
+                        <DetailRow label="Telefon" value={order.phone} />
+                        <DetailRow label="Płatność" value={
+                          order.paymentMethod === 'cash_offline' ? 'Gotówka przy odbiorze' : 'Karta przy odbiorze'
+                        } />
+                        <DetailRow label="Nr zamówienia" value={<span className="font-mono text-xs">{order.id.slice(0, 8)}…</span>} />
+                        {order.nip && <DetailRow label="NIP" value={order.nip} />}
+                        {order.comment && <DetailRow label="Komentarz" value={order.comment} />}
+                      </div>
+
+                      {/* Delivery address */}
+                      {order.deliveryMethod === 'DELIVERY' && (
+                        <div>
+                          <p className="text-[10px] font-sans font-normal uppercase tracking-widest text-muted-foreground mb-1.5">Adres dostawy</p>
+                          <p className="text-sm font-sans font-normal text-dark-gray">
+                            {order.street} {order.buildingNumber}{order.apartment ? `/${order.apartment}` : ''}, {order.postalCode} {order.city}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Order items */}
+                      <div>
+                        <p className="text-[10px] font-sans font-normal uppercase tracking-widest text-muted-foreground mb-2">Zamówienie</p>
+                        <ul className="space-y-1.5">
+                          {order.items?.map((item) => (
+                            <li key={item.id} className="flex items-center gap-2.5 text-sm font-sans font-normal text-dark-gray">
+                              <span className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[10px] font-normal text-muted-foreground shrink-0">
+                                {item.quantity}
+                              </span>
+                              {item.menuItem?.name || 'Nieznana pozycja'}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {/* Promo */}
+                      {order.promoCode?.code && (
+                        <div className="bg-muted rounded-lg p-3 space-y-1">
+                          <p className="text-[10px] font-sans font-normal uppercase tracking-widest text-muted-foreground">Promocja</p>
+                          <p className="text-xs font-sans font-normal text-dark-gray">
+                            Kod: <span className="font-mono">{order.promoCode.code}</span> — rabat {order.promoCode.discountValue}{order.promoCode.discountType === 'PERCENTAGE' ? '%' : ' zł'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Kwota przed rabatem: {order.totalAmount} zł</p>
+                        </div>
+                      )}
+
+                      {/* Total */}
+                      <p className="text-sm font-sans font-normal text-dark-gray">
+                        Kwota: <span className="font-semibold">{order.finalAmount} zł</span>
+                      </p>
+
+                      {/* Delivery time manager */}
+                      <div className="border-t border-border pt-4">
+                        <DeliveryTimeManager orderId={order.id} currentDeliveryTime={order.deliveryTime} />
+                      </div>
+
+                      {/* Delete */}
+                      <div className="border-t border-border pt-3">
+                        <button
+                          onClick={() => { setOrderToDelete(order.id); setIsDeleteDialogOpen(true) }}
+                          className="flex items-center gap-1.5 text-xs font-sans font-normal text-muted-foreground hover:text-danger transition-colors"
+                        >
+                          <Trash2 size={13} strokeWidth={2} />
+                          Usuń zamówienie
+                        </button>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              )
+            })}
+          </Accordion>
+        )}
       </div>
 
-      {/* Замовлення */}
-      <Tabs defaultValue="new" className="w-full">
-        <TabsList className="w-full lg:gap-4 p-8">
-          <TabsTrigger
-            value="new"
-            className="flex flex-col md:flex-row md:gap-2 text-xl md:text-2xl lg:text-4xl text-text-foreground h-fit data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-4 border-primary rounded-none transition-all"
-          >
-            <p>Nowe</p>
-            <p>
-              {
-                filteredOrders.filter((order) => order.status === 'PENDING')
-                  .length
-              }
-            </p>
-          </TabsTrigger>
-          <TabsTrigger
-            value="in-progress"
-            className="flex flex-col md:flex-row md:gap-2 text-xl md:text-2xl lg:text-4xl text-text-foreground h-fit data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-4 border-primary rounded-none transition-all"
-          >
-            <p>W trakcie</p>
-            <p>
-              {
-                filteredOrders.filter((order) =>
-                  ['ACCEPTED', 'IN_PROGRESS', 'READY', 'DELIVERING'].includes(
-                    order.status
-                  )
-                ).length
-              }
-            </p>
-          </TabsTrigger>
-          <TabsTrigger
-            value="completed"
-            className="flex flex-col md:flex-row md:gap-2 text-xl md:text-2xl lg:text-4xl text-text-foreground h-fit data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-4 border-primary rounded-none transition-all"
-          >
-            <p>Zakończone</p>
-            <p>
-              {
-                filteredOrders.filter((order) =>
-                  ['COMPLETED', 'CANCELED', 'DELIVERED'].includes(order.status)
-                ).length
-              }
-            </p>
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="new">
-          {renderOrders(
-            filteredOrders.filter((order) => order.status === 'PENDING')
-          )}
-        </TabsContent>
-        <TabsContent value="in-progress">
-          {renderOrders(
-            filteredOrders.filter((order) =>
-              ['ACCEPTED', 'IN_PROGRESS', 'READY', 'DELIVERING'].includes(
-                order.status
-              )
-            )
-          )}
-        </TabsContent>
-        <TabsContent value="completed">
-          {renderOrders(
-            filteredOrders.filter((order) =>
-              ['COMPLETED', 'CANCELED', 'DELIVERED'].includes(order.status)
-            )
-          )}
-        </TabsContent>
-      </Tabs>
-
-      {/* Діалог видалення */}
+      {/* Delete dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Czy na pewno chcesz usunąć zamówienie?</DialogTitle>
-            <DialogDescription className="text-text-foreground">
-              Ta operacja usunie zamówienie bezpowrotnie.
+            <DialogTitle className="font-serif text-dark-gray">Usunąć zamówienie?</DialogTitle>
+            <DialogDescription className="font-sans font-normal text-muted-foreground">
+              Ta operacja jest nieodwracalna.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-end space-x-4">
-            <Button variant="secondary" onClick={closeDeleteDialog}>
-              Anuluj
-            </Button>
-            <LoadingButton
-              variant="danger"
-              isLoading={isLoadingDelete}
-              onClick={handleDeleteOrder}
-            >
+          <DialogFooter className="gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setIsDeleteDialogOpen(false)}>Anuluj</Button>
+            <LoadingButton variant="danger" size="sm" isLoading={isLoadingDelete} onClick={() => orderToDelete && mutateDelete({ orderId: orderToDelete })}>
               Usuń
             </LoadingButton>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Діалог нових замовлень */}
-      <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
-        <DialogContent
-          className="w-full items-center justify-center"
-          aria-describedby={undefined}
-        >
-          <DialogTitle className="sr-only">
-            Powiadomienie o nowym zamówieniu
-          </DialogTitle>
-          <div className="flex items-center text-xl">
-            <p>
-              🔔 Masz {newOrderCount} {getOrderLabel(newOrderCount)}!
-            </p>
-          </div>
-          <DialogFooter className="w-full">
-            <Button onClick={handleCloseDialog} className="w-full">
-              OK
-            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+
+      {/* New orders dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
+        <DialogContent className="rounded-2xl" aria-describedby={undefined}>
+          <DialogTitle className="sr-only">Nowe zamówienie</DialogTitle>
+          <div className="flex flex-col items-center gap-3 py-4">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <Bell size={22} strokeWidth={1.5} className="text-primary" />
+            </div>
+            <p className="text-base font-sans font-normal text-dark-gray">
+              Masz <span className="font-semibold">{newOrderCount}</span> {getOrderLabel(newOrderCount)}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleCloseDialog} className="w-full">OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 

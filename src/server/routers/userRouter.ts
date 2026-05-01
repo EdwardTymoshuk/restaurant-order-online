@@ -1,6 +1,6 @@
 // server/trpc/routers/user.ts
 import { prisma } from "@/lib/prisma"
-import { publicProcedure, router } from "@/server/trpc/trpc"
+import { publicProcedure, router } from "@/server/trpc"
 import { TRPCError } from "@trpc/server"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"

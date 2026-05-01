@@ -24,5 +24,4 @@ export const appRouter = router({
   reservations: reservationsRouter,
 })
 
-// Експортуємо типи для автозаповнення та перевірки типів
 export type AppRouter = typeof appRouter

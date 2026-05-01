@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { publicProcedure, router } from './trpc'
+import { publicProcedure, router } from '../trpc'
 
 export const newsRouter = router({
   // Fetch all events from the database
@@ -17,7 +17,7 @@ export const newsRouter = router({
         description: z.string(),
         fullDescription: z.string(),
         galleryImages: z.array(z.string()),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       return await prisma.news.create({ data: input })
@@ -33,7 +33,7 @@ export const newsRouter = router({
         description: z.string().optional(),
         fullDescription: z.string().optional(),
         galleryImages: z.array(z.string()).optional(),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       return await prisma.news.update({

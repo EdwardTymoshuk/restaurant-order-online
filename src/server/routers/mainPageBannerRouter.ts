@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { publicProcedure, router } from './trpc'
+import { publicProcedure, router } from '../trpc'
 
 export const mainPageBannerRouter = router({
   // ✅ Create a new main banner
@@ -11,7 +11,7 @@ export const mainPageBannerRouter = router({
         mobileImageUrl: z.string().optional(),
         linkUrl: z.string().optional(),
         position: z.number().optional(),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       return await prisma.mainBanner.create({
@@ -38,7 +38,7 @@ export const mainPageBannerRouter = router({
         mobileImageUrl: z.string().optional(),
         linkUrl: z.string().optional(),
         position: z.number().optional(),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const { id, ...data } = input

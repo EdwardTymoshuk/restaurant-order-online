@@ -59,14 +59,34 @@
   }
 }
 
+/* Elegant thin scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 100, 100, 0.25);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(100, 100, 100, 0.45);
+}
+
 @layer base {
   * {
     @apply border-border;
   }
 
   body {
-    @apply bg-background text-text-secondary font-sans overflow-x-hidden min-h-screen flex flex-col;
-    scrollbar-gutter: stable;
+    @apply bg-background text-text-secondary font-sans;
   }
 
   h1,

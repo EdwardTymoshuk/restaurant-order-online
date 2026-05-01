@@ -58,6 +58,7 @@ export const OrdersProvider = ({ children }: { children: ReactNode }) => {
         ? `?lastUpdatedAt=${encodeURIComponent(lastUpdatedAtRef.current)}`
         : ''
       const response = await fetch(`/api/orders/stream${query}`)
+      if (!response.ok) return
       const orders: OrderWithItems[] = await response.json()
 
       setAllOrders((prevOrders) => {

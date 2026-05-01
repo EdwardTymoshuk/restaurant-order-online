@@ -1,9 +1,16 @@
 import { protectedProcedure, publicProcedure, router } from '@/server/trpc'
-import { EventType, PackageCode, ReservationStatus } from '@prisma/client'
+import { EventType, PackageCode, ReservationExtraType, ReservationStatus } from '@prisma/client'
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { createReservationFromDraft } from '../helpers/reservation/createReservationFromDraft'
 import { createReservationInput } from '../helpers/reservation/validators'
+
+const extraItemInput = z.object({
+  type: z.nativeEnum(ReservationExtraType),
+  label: z.string(),
+  quantity: z.number().int().min(1),
+  unitPrice: z.number().int().min(0),
+})
 
 const reservationUpsertInput = z.object({
   eventDate: z.string(), // ISO date string
@@ -21,6 +28,7 @@ const reservationUpsertInput = z.object({
   }),
   packageCode: z.nativeEnum(PackageCode).nullable().optional(),
   total: z.number().nullable().optional(),
+  extras: z.array(extraItemInput).optional(),
 })
 
 export const reservationsRouter = router({
@@ -57,7 +65,12 @@ export const reservationsRouter = router({
     .query(async ({ ctx, input }) => {
       const reservation = await ctx.prisma.reservation.findUnique({
         where: { id: input.id },
-        include: { offerSnapshot: true, extras: true, contact: true },
+        include: {
+          offerSnapshot: true,
+          extras: true,
+          contact: true,
+          summaryPdf: { select: { filename: true, createdAt: true } },
+        },
       })
       if (!reservation) throw new TRPCError({ code: 'NOT_FOUND', message: 'Reservation not found' })
       return reservation
@@ -88,6 +101,19 @@ export const reservationsRouter = router({
                     serviceFee: 0,
                     total: input.total,
                   },
+                },
+              }
+            : {}),
+          ...(input.extras && input.extras.length > 0
+            ? {
+                extras: {
+                  create: input.extras.map((e) => ({
+                    type: e.type,
+                    label: e.label,
+                    quantity: e.quantity,
+                    unitPrice: e.unitPrice,
+                    totalPrice: e.quantity * e.unitPrice,
+                  })),
                 },
               }
             : {}),
