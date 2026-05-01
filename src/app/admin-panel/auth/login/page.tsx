@@ -12,7 +12,6 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-// Валідація через Zod
 const loginSchema = z.object({
 	identifier: z.string().nonempty('Wprowadź nazwę użytkownika lub email'),
 	password: z.string().min(6, 'Wprowadź hasło o długości co najmniej 6 znaków'),
@@ -25,13 +24,12 @@ const LoginPage = () => {
 	const [error, setError] = useState<string | null>(null)
 	const [isLoading, setIsLoading] = useState(false)
 
-	// Ініціалізація форми
 	const form = useForm<LoginFormData>({
 		resolver: zodResolver(loginSchema),
 	})
 
-	// Обробка логування
 	const handleLogin = async (data: LoginFormData) => {
+		setError(null)
 		setIsLoading(true)
 		const result = await signIn('credentials', {
 			redirect: false,
@@ -43,30 +41,61 @@ const LoginPage = () => {
 			setError('Nieprawidłowa nazwa użytkownika lub hasło')
 			setIsLoading(false)
 		} else {
-			// Оновлюємо сесію
-			const session = await getSession()
+			await getSession()
 			router.push('/admin-panel')
 		}
 	}
 
 
 	return (
-		<div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-			<Card className="w-full max-w-md shadow-md">
-				<CardHeader>
-					<CardTitle className="text-center">Logowanie</CardTitle>
+		<div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-10">
+			<div className="pointer-events-none absolute inset-0">
+				<div className="absolute -left-20 top-10 h-72 w-72 rounded-full bg-secondary/35 blur-3xl" />
+				<div className="absolute -right-20 bottom-10 h-72 w-72 rounded-full bg-primary/35 blur-3xl" />
+			</div>
+
+			<div className="relative z-10 grid w-full max-w-5xl grid-cols-1 overflow-hidden rounded-2xl border border-white/15 bg-white/95 shadow-2xl lg:grid-cols-2">
+				<section className="hidden flex-col justify-between bg-slate-900 p-10 text-white lg:flex">
+					<div>
+						<p className="text-xs uppercase tracking-[0.24em] text-slate-300">Spoko Sopot</p>
+						<h1 className="mt-3 text-3xl font-semibold leading-tight">
+							Panel administracyjny
+						</h1>
+						<p className="mt-4 text-sm leading-6 text-slate-300">
+							Zarządzaj zamówieniami, menu i ustawieniami restauracji z jednego miejsca.
+						</p>
+					</div>
+					<p className="text-xs text-slate-400">
+						Bezpieczny dostęp tylko dla kont z uprawnieniami administracyjnymi.
+					</p>
+				</section>
+
+				<Card className="w-full border-0 bg-transparent shadow-none">
+					<CardHeader className="px-6 pb-4 pt-8 sm:px-10">
+						<p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400 lg:hidden">
+							Spoko Admin
+						</p>
+						<CardTitle className="text-2xl font-semibold text-slate-900">Logowanie</CardTitle>
+						<p className="text-sm text-slate-500">
+							Podaj dane konta administratora, aby przejść do panelu.
+						</p>
 				</CardHeader>
-				<CardContent>
+					<CardContent className="px-6 pb-2 sm:px-10">
 					<Form {...form}>
-						<form onSubmit={form.handleSubmit(handleLogin)} className="space-y-4">
+							<form onSubmit={form.handleSubmit(handleLogin)} className="space-y-5">
 							<FormField
 								name="identifier"
 								control={form.control}
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>Nazwa użytkownika lub email</FormLabel>
+											<FormLabel className="text-slate-700">Nazwa użytkownika lub email</FormLabel>
 										<FormControl>
-											<Input {...field} placeholder="Wprowadź nazwę lub email" autoComplete="off" />
+												<Input
+													{...field}
+													placeholder="np. admin@spokosopot.pl"
+													autoComplete="username"
+													className="h-11"
+												/>
 										</FormControl>
 										<FormMessage />
 									</FormItem>
@@ -77,25 +106,40 @@ const LoginPage = () => {
 								control={form.control}
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>Hasło</FormLabel>
+											<FormLabel className="text-slate-700">Hasło</FormLabel>
 										<FormControl>
-											<Input {...field} type="password" placeholder="Wprowadź hasło" autoComplete="off" />
+												<Input
+													{...field}
+													type="password"
+													placeholder="Wprowadź hasło"
+													autoComplete="current-password"
+													className="h-11"
+												/>
 										</FormControl>
 										<FormMessage />
 									</FormItem>
 								)}
 							/>
-							{error && <p className="text-red-500 text-sm">{error}</p>}
-							<LoadingButton isLoading={isLoading} type="submit" className="w-full mt-4">
+								{error && (
+									<p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+										{error}
+									</p>
+								)}
+								<LoadingButton
+									isLoading={isLoading}
+									type="submit"
+									className="mt-2 h-11 w-full rounded-lg"
+								>
 								Zaloguj się
 							</LoadingButton>
 						</form>
 					</Form>
 				</CardContent>
-				<CardFooter className="text-center text-sm text-gray-500">
-					<p>Nie masz konta? Skontaktuj się z administratorem.</p>
+					<CardFooter className="px-6 pb-8 pt-3 text-sm text-slate-500 sm:px-10">
+						<p>Brak dostępu? Skontaktuj się z właścicielem systemu.</p>
 				</CardFooter>
 			</Card>
+			</div>
 		</div>
 	)
 }

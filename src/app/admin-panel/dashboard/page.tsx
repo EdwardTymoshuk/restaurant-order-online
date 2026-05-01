@@ -1,148 +1,195 @@
 'use client'
 
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
 } from '@/app/components/ui/card'
+import { Skeleton } from '@/app/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/app/components/ui/tabs'
 import {
-  BarElement,
-  CategoryScale,
-  Chart as ChartJS,
-  Legend,
-  LinearScale,
-  Title,
-  Tooltip,
+	BarElement,
+	CategoryScale,
+	Chart as ChartJS,
+	Legend,
+	LinearScale,
+	Title,
+	Tooltip,
 } from 'chart.js'
 import { useState } from 'react'
 import { Bar } from 'react-chartjs-2'
-import { FiUsers } from 'react-icons/fi'
+import { FiActivity, FiGlobe, FiUsers } from 'react-icons/fi'
 import useSWR from 'swr'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
-// Funkcja fetcher pobierająca dane z endpointu z uwzględnieniem zakresu
 const fetcher = async (url: string) => {
-  const response = await fetch(url)
-  if (!response.ok) throw new Error('Błąd podczas pobierania danych')
-  return response.json()
+	const response = await fetch(url)
+	if (!response.ok) throw new Error('Błąd podczas pobierania danych')
+	return response.json()
 }
 
 export default function DashboardPage() {
-  // Używamy stanu do przechowywania wybranego zakresu: day, week, month
-  const [range, setRange] = useState<'day' | 'week' | 'month'>('week')
-  const { data, error } = useSWR(`/api/analytics?range=${range}`, fetcher)
+	const [range, setRange] = useState<'day' | 'week' | 'month'>('week')
+	const { data, error } = useSWR(`/api/analytics?range=${range}`, fetcher)
 
-  if (error) return <div>❌ Błąd wczytywania statystyk.</div>
-  if (!data) return <div>Ładowanie...</div>
+	if (!data && !error) {
+		return (
+			<div className="space-y-4">
+				<Skeleton className="h-24 w-full rounded-2xl" />
+				<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+					<Skeleton className="h-32 w-full rounded-2xl" />
+					<Skeleton className="h-32 w-full rounded-2xl" />
+				</div>
+				<Skeleton className="h-72 w-full rounded-2xl" />
+			</div>
+		)
+	}
 
-  // Przykład: używamy danych dla order.spokosopot.pl do wykresu
-  const orderReport = data.order
+	const orderReport = data?.order
 
-  // Agregacja aktywnych użytkowników (możesz rozbudować w zależności od danych)
-  const aggregateActiveUsers = (report: any): number => {
-    if (!report || !report.rows) return 0
-    return report.rows.reduce(
-      (sum: number, row: any) => sum + Number(row.metricValues[0].value),
-      0
-    )
-  }
+	const aggregateActiveUsers = (report: any): number => {
+		if (!report || !report.rows) return 0
+		return report.rows.reduce(
+			(sum: number, row: any) => sum + Number(row.metricValues[0].value),
+			0
+		)
+	}
 
-  const spokosopotActiveUsers = aggregateActiveUsers(data.spokosopot)
-  const orderActiveUsers = aggregateActiveUsers(orderReport)
+	const spokosopotActiveUsers = aggregateActiveUsers(data?.spokosopot)
+	const orderActiveUsers = aggregateActiveUsers(orderReport)
+	const totalUsers = spokosopotActiveUsers + orderActiveUsers
 
-  // Przygotowanie danych do wykresu na podstawie raportu dla order.spokosopot.pl
-  let chartLabels: string[] = []
-  let chartData: number[] = []
-  if (orderReport && orderReport.rows) {
-    chartLabels = orderReport.rows.map(
-      (row: any) => row.dimensionValues[1].value
-    )
-    chartData = orderReport.rows.map((row: any) =>
-      Number(row.metricValues[0].value)
-    )
-  }
+	let chartLabels: string[] = []
+	let chartData: number[] = []
+	if (orderReport && orderReport.rows) {
+		chartLabels = orderReport.rows.map((row: any) => row.dimensionValues[1].value)
+		chartData = orderReport.rows.map((row: any) => Number(row.metricValues[0].value))
+	}
 
-  const barChartData = {
-    labels: chartLabels,
-    datasets: [
-      {
-        label: 'Aktywni użytkownicy (order.spokosopot.pl)',
-        data: chartData,
-        backgroundColor: '#3B82F6',
-      },
-    ],
-  }
+	const barChartData = {
+		labels: chartLabels,
+		datasets: [
+			{
+				label: 'Aktywni użytkownicy (order.spokosopot.pl)',
+				data: chartData,
+				backgroundColor: 'rgba(30, 64, 175, 0.85)',
+				borderRadius: 8,
+			},
+		],
+	}
 
-  const barChartOptions = {
-    responsive: true,
-    plugins: {
-      legend: { display: true },
-    },
-    scales: {
-      y: { beginAtZero: true },
-    },
-  }
+	const barChartOptions = {
+		responsive: true,
+		plugins: {
+			legend: { display: true },
+		},
+		scales: {
+			y: { beginAtZero: true, ticks: { precision: 0 } },
+		},
+	}
 
-  return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold mb-4">Pulpit</h1>
+	return (
+		<div className="space-y-5 p-1 sm:space-y-6">
+			<div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 to-slate-700 px-5 py-5 text-white">
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+					<div>
+						<p className="text-xs uppercase tracking-[0.22em] text-slate-200/80">Pulpit</p>
+						<h2 className="mt-1 text-2xl font-semibold">Podgląd ruchu i aktywności</h2>
+					</div>
+					<Tabs
+						value={range}
+						onValueChange={(val) => setRange(val as 'day' | 'week' | 'month')}
+					>
+						<TabsList className="grid w-full grid-cols-3 bg-white/10 p-1 sm:w-[310px]">
+							<TabsTrigger
+								value="day"
+								className="data-[state=active]:bg-white data-[state=active]:text-slate-900"
+							>
+								Dzisiaj
+							</TabsTrigger>
+							<TabsTrigger
+								value="week"
+								className="data-[state=active]:bg-white data-[state=active]:text-slate-900"
+							>
+								Tydzień
+							</TabsTrigger>
+							<TabsTrigger
+								value="month"
+								className="data-[state=active]:bg-white data-[state=active]:text-slate-900"
+							>
+								Miesiąc
+							</TabsTrigger>
+						</TabsList>
+					</Tabs>
+				</div>
+			</div>
 
-      {/* Zakładki do wyboru zakresu */}
-      <Tabs
-        value={range}
-        onValueChange={(val) => setRange(val as 'day' | 'week' | 'month')}
-      >
-        <TabsList>
-          <TabsTrigger value="day">Dzisiaj</TabsTrigger>
-          <TabsTrigger value="week">Tydzień</TabsTrigger>
-          <TabsTrigger value="month">Miesiąc</TabsTrigger>
-        </TabsList>
-      </Tabs>
+			{error && (
+				<div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+					Nie udało się pobrać statystyk. Sekcja działa, ale dane analityczne są tymczasowo niedostępne.
+				</div>
+			)}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Karta: spokosopot.pl */}
-        <Card>
-          <CardHeader className="flex items-center space-x-2">
-            <FiUsers className="text-xl text-secondary" />
-            <CardTitle>spokosopot.pl</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-500">Aktywni użytkownicy:</p>
-            <p className="text-xl font-semibold">{spokosopotActiveUsers}</p>
-          </CardContent>
-        </Card>
+			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+				<Card className="border-slate-200 shadow-none">
+					<CardHeader className="pb-2">
+						<CardTitle className="flex items-center gap-2 text-base">
+							<FiActivity className="text-secondary" />
+							Suma aktywnych użytkowników
+						</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<p className="text-3xl font-semibold text-slate-900">{totalUsers}</p>
+					</CardContent>
+				</Card>
 
-        {/* Karta: order.spokosopot.pl */}
-        <Card>
-          <CardHeader className="flex items-center space-x-2">
-            <FiUsers className="text-xl text-secondary" />
-            <CardTitle>order.spokosopot.pl</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-500">Aktywni użytkownicy:</p>
-            <p className="text-xl font-semibold">{orderActiveUsers}</p>
-          </CardContent>
-        </Card>
-      </div>
+				<Card className="border-slate-200 shadow-none">
+					<CardHeader className="pb-2">
+						<CardTitle className="flex items-center gap-2 text-base">
+							<FiGlobe className="text-secondary" />
+							spokosopot.pl
+						</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<p className="text-sm text-slate-500">Aktywni użytkownicy</p>
+						<p className="text-3xl font-semibold text-slate-900">{spokosopotActiveUsers}</p>
+					</CardContent>
+				</Card>
 
-      {/* Sekcja z wykresem dla order.spokosopot.pl */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            Wykres aktywnych użytkowników (order.spokosopot.pl)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {chartLabels.length > 0 ? (
-            <Bar data={barChartData} options={barChartOptions} />
-          ) : (
-            <p>Brak danych do wyświetlenia.</p>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  )
+				<Card className="border-slate-200 shadow-none">
+					<CardHeader className="pb-2">
+						<CardTitle className="flex items-center gap-2 text-base">
+							<FiUsers className="text-secondary" />
+							order.spokosopot.pl
+						</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<p className="text-sm text-slate-500">Aktywni użytkownicy</p>
+						<p className="text-3xl font-semibold text-slate-900">{orderActiveUsers}</p>
+					</CardContent>
+				</Card>
+			</div>
+
+			<Card className="border-slate-200 shadow-none">
+				<CardHeader className="pb-1">
+					<CardTitle className="text-lg">
+						Wykres aktywności użytkowników (order.spokosopot.pl)
+					</CardTitle>
+				</CardHeader>
+				<CardContent className="pt-4">
+					{chartLabels.length > 0 ? (
+						<div className="h-[280px] sm:h-[360px]">
+							<Bar data={barChartData} options={barChartOptions} />
+						</div>
+					) : (
+						<div className="rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500">
+							Brak danych do wyświetlenia dla wybranego zakresu.
+						</div>
+					)}
+				</CardContent>
+			</Card>
+		</div>
+	)
 }

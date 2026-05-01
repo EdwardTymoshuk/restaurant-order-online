@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from '@/app/components/ui/select'
 import { Switch } from '@/app/components/ui/switch'
+import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
 import { trpc } from '@/utils/trpc'
 import { useEffect, useState } from 'react'
 
@@ -55,13 +56,26 @@ const Settings = () => {
   }, [settingsData])
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Ustawienia</h1>
-      <div className="space-y-8">
-        {/* Online ordering settings */}
-        <section>
-          <h2 className="text-xl font-semibold">Zamówienia Online</h2>
-          <div className="flex items-center space-x-4">
+    <div className="space-y-5 p-1">
+      <div>
+        <h1 className="text-2xl font-semibold text-slate-900">Ustawienia</h1>
+        <p className="text-sm text-slate-500">
+          Zarządzaj konfiguracją systemu i sekcjami widocznymi dla gości.
+        </p>
+      </div>
+
+      <Card className="border-slate-200 shadow-none">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Zamówienia online</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+            <div>
+              <p className="text-sm font-medium text-slate-900">Przyjmowanie zamówień</p>
+              <p className="text-xs text-slate-500">
+                Status: {isOrderingOpen ? 'Aktywne' : 'Wyłączone'}
+              </p>
+            </div>
             <Switch
               checked={isOrderingOpen}
               onCheckedChange={(checked) => {
@@ -69,38 +83,15 @@ const Settings = () => {
                 updateOrderingState.mutate({ isOrderingOpen: checked })
               }}
             />
-            <span>{isOrderingOpen ? 'Aktywne' : 'Wyłączone'}</span>
           </div>
-        </section>
+        </CardContent>
+      </Card>
 
-        {/* Delivery zones settings */}
-        <section>
-          <DeliveryZonesSettings
-            deliveryZones={deliveryZones}
-            onUpdateZones={updateDeliveryZonePrices.mutate}
-          />
-        </section>
-
-        {/* Pizza settings */}
-        <section>
-          <PizzaSettings
-            settingsData={{
-              pizzaCategoryEnabled: settingsData?.pizzaCategoryEnabled ?? false,
-              pizzaAvailability: Array.isArray(settingsData?.pizzaAvailability)
-                ? (settingsData?.pizzaAvailability as {
-                    day: number
-                    startHour: number
-                    endHour: number
-                  }[])
-                : [],
-            }}
-            refetchSettings={refetchSettings}
-          />
-        </section>
-
-        {/* Order waiting time settings */}
-        <section>
-          <h2 className="text-xl font-semibold">Czas oczekiwania</h2>
+      <Card className="border-slate-200 shadow-none">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Czas oczekiwania</CardTitle>
+        </CardHeader>
+        <CardContent>
           <Select
             value={orderWaitTime.toString()}
             onValueChange={(value) => {
@@ -121,35 +112,67 @@ const Settings = () => {
               <SelectItem value="120">120 minut</SelectItem>
             </SelectContent>
           </Select>
-        </section>
+        </CardContent>
+      </Card>
 
-        {/* Promo code settings */}
-        <section>
+      <Card className="border-slate-200 shadow-none">
+        <CardContent className="pt-6">
+          <DeliveryZonesSettings
+            deliveryZones={deliveryZones}
+            onUpdateZones={updateDeliveryZonePrices.mutate}
+          />
+        </CardContent>
+      </Card>
+
+      <Card className="border-slate-200 shadow-none">
+        <CardContent className="pt-6">
+          <PizzaSettings
+            settingsData={{
+              pizzaCategoryEnabled: settingsData?.pizzaCategoryEnabled ?? false,
+              pizzaAvailability: Array.isArray(settingsData?.pizzaAvailability)
+                ? (settingsData?.pizzaAvailability as {
+                    day: number
+                    startHour: number
+                    endHour: number
+                  }[])
+                : [],
+            }}
+            refetchSettings={refetchSettings}
+          />
+        </CardContent>
+      </Card>
+
+      <Card className="border-slate-200 shadow-none">
+        <CardContent className="pt-6">
           <PromoCodeSettings />
-        </section>
+        </CardContent>
+      </Card>
 
-        {/* Banner settings at order.spokosopot.pl*/}
-        <section>
+      <Card className="border-slate-200 shadow-none">
+        <CardContent className="pt-6">
           <BannerSettings />
-        </section>
+        </CardContent>
+      </Card>
 
-        {/* Banner settings at spokosopot.pl*/}
-        <section>
+      <Card className="border-slate-200 shadow-none">
+        <CardContent className="pt-6">
           <MainPageBannerSettings />
-        </section>
+        </CardContent>
+      </Card>
 
-        {/* Event settings */}
-        <section>
+      <Card className="border-slate-200 shadow-none">
+        <CardContent className="pt-6">
           <EventSettings />
-        </section>
+        </CardContent>
+      </Card>
 
-        {/* User management (admin only) */}
-        {isAdmin && (
-          <section>
+      {isAdmin && (
+        <Card className="border-slate-200 shadow-none">
+          <CardContent className="pt-6">
             <UserList />
-          </section>
-        )}
-      </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
