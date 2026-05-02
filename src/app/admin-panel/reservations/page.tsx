@@ -916,7 +916,7 @@ const MainCalendar = ({
   }, [month])
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col lg:h-full">
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col lg:flex-1 lg:min-h-0">
       {/* Month header */}
       <div className="grid grid-cols-[40px_1fr_40px] items-center px-7 pt-7 pb-6">
         <button
@@ -1449,47 +1449,48 @@ const Reservations = () => {
 
             {/* Selected day actions panel */}
             {selectedDate && (
-              <div className="rounded-xl border border-border bg-white shadow-sm overflow-hidden">
-                <div className="px-4 py-2.5 border-b border-border bg-slate-50/50 flex items-center justify-between">
-                  <p className="text-xs font-semibold text-slate-600 capitalize">
+              <div className="shrink-0 rounded-xl border border-border bg-white shadow-sm overflow-hidden">
+                <div className="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+                  <p className="text-xs font-semibold text-slate-600 capitalize lg:min-w-[180px]">
                     {format(selectedDate, 'EEEE, d MMMM yyyy', { locale: pl })}
                   </p>
-                </div>
-                <div className="px-4 py-3 flex flex-col gap-2">
-                  {/* Add reservation */}
-                  <Button
-                    size="sm"
-                    className="w-full h-8 gap-1.5 text-xs"
-                    onClick={() => setAddOpen(true)}
-                  >
-                    <Plus size={12} /> Dodaj rezerwację na ten dzień
-                  </Button>
 
-                  {/* Block / unblock */}
-                  {selectedBlocked ? (
-                    <div className="flex items-center gap-3 px-1">
-                      <Lock size={13} className="text-red-400 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-red-600">Dzień zablokowany</p>
-                        {selectedBlocked.notes && (
-                          <p className="text-[10px] text-slate-400 truncate">{selectedBlocked.notes}</p>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => deleteBlocked.mutate({ id: selectedBlocked.id })}
-                        className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-700 transition-colors shrink-0"
-                      >
-                        <LockOpen size={12} /> Odblokuj
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => upsertBlocked.mutate({ date: toDateKey(selectedDate), isBlocked: true, notes: 'Termin zajęty' })}
-                      className="w-full flex items-center justify-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 border border-dashed border-border rounded-lg py-2 transition-colors"
+                  {/* Add reservation */}
+                  <div className="flex flex-col gap-2 lg:flex-1 lg:flex-row lg:items-center lg:justify-end">
+                    <Button
+                      size="sm"
+                      className="w-full h-8 gap-1.5 text-xs lg:w-auto lg:min-w-[220px]"
+                      onClick={() => setAddOpen(true)}
                     >
-                      <Lock size={11} /> Zablokuj ten dzień
-                    </button>
-                  )}
+                      <Plus size={12} /> Dodaj rezerwację na ten dzień
+                    </Button>
+
+                    {/* Block / unblock */}
+                    {selectedBlocked ? (
+                      <div className="flex min-w-0 items-center gap-3 rounded-lg border border-red-100 bg-red-50/50 px-3 py-2 lg:max-w-[360px]">
+                        <Lock size={13} className="text-red-400 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-red-600">Dzień zablokowany</p>
+                          {selectedBlocked.notes && (
+                            <p className="text-[10px] text-slate-400 truncate">{selectedBlocked.notes}</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => deleteBlocked.mutate({ id: selectedBlocked.id })}
+                          className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-700 transition-colors shrink-0"
+                        >
+                          <LockOpen size={12} /> Odblokuj
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => upsertBlocked.mutate({ date: toDateKey(selectedDate), isBlocked: true, notes: 'Termin zajęty' })}
+                        className="w-full flex items-center justify-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 border border-dashed border-border rounded-lg px-3 py-2 transition-colors lg:w-auto lg:min-w-[180px]"
+                      >
+                        <Lock size={11} /> Zablokuj ten dzień
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
