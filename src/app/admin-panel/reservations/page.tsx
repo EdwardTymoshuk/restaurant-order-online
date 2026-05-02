@@ -1003,7 +1003,13 @@ const MainCalendar = ({
                           : 'bg-slate-200 text-slate-600'
                         : pillBg[r.status],
                     )}>
-                      {r.startTime && <span className="opacity-70 mr-0.5">{r.startTime}</span>}
+                      {(r.startTime || r.endTime) && (
+                        <span className="opacity-70 mr-0.5">
+                          {r.startTime && r.endTime
+                            ? `${r.startTime}-${r.endTime}`
+                            : r.startTime ?? r.endTime}
+                        </span>
+                      )}
                       {r.contact?.name ?? '—'}
                     </span>
                   ))}
@@ -1088,19 +1094,19 @@ const ReservationCard = ({
       <button
         type="button"
         onClick={onExpand}
-        className="w-full flex items-start gap-3 px-4 py-3 text-left hover:brightness-95 transition-all"
+        className="w-full flex items-start gap-2 px-3 py-3 text-left hover:brightness-95 transition-all sm:gap-3 sm:px-4"
       >
         {/* Status dot */}
         <span className={cn('h-2.5 w-2.5 rounded-full mt-1 shrink-0', DOT_COLOR[res.status])} />
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-semibold text-slate-800 truncate">{res.contact?.name ?? '—'}</p>
+            <p className="min-w-0 truncate text-sm font-semibold text-slate-800">{res.contact?.name ?? '—'}</p>
             <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full border', statusBadgeMap[res.status])}>
               {statusLabelMap[res.status]}
             </span>
           </div>
-          <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+          <div className="flex items-center gap-x-3 gap-y-1 mt-0.5 flex-wrap">
             <span className="flex items-center gap-1 text-xs text-slate-500">
               <Calendar size={10} className="shrink-0" />
               {formatDate(res.eventDate)}
@@ -1118,7 +1124,7 @@ const ReservationCard = ({
           </div>
         </div>
 
-        <div className="shrink-0 flex flex-col items-end gap-1">
+        <div className="shrink-0 flex flex-col items-end gap-1 pl-1">
           {res.offerSnapshot?.total != null && (
             <span className="text-sm font-bold text-slate-800">{res.offerSnapshot.total} zł</span>
           )}
@@ -1501,7 +1507,7 @@ const Reservations = () => {
             <div className="bg-white rounded-2xl border border-border shadow-sm flex flex-col lg:flex-1 lg:min-h-0 overflow-hidden">
 
               {/* Tab bar */}
-              <div className="flex items-center border-b border-border px-4 shrink-0">
+              <div className="grid grid-cols-3 border-b border-border px-3 shrink-0 sm:px-4">
                 {TABS.map((tab) => {
                   const count = tabCount(tab)
                   const isActive = activeTab === tab.value
@@ -1510,13 +1516,13 @@ const Reservations = () => {
                       key={tab.value}
                       onClick={() => { setActiveTab(tab.value); setExpandedId(null) }}
                       className={cn(
-                        'flex items-center gap-2 h-12 px-4 text-sm font-medium border-b-2 transition-all -mb-px',
+                        'flex min-w-0 items-center justify-center gap-1.5 h-12 px-1 text-sm font-medium border-b-2 transition-all -mb-px sm:gap-2 sm:px-3',
                         isActive
                           ? 'border-primary text-slate-800'
                           : 'border-transparent text-slate-400 hover:text-slate-700'
                       )}
                     >
-                      {tab.label}
+                      <span className="truncate">{tab.label}</span>
                       <span className={cn(
                         'inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold',
                         isActive ? 'bg-primary/15 text-primary' : 'bg-slate-100 text-slate-500'
@@ -1526,20 +1532,31 @@ const Reservations = () => {
                     </button>
                   )
                 })}
-
-                {selectedDate && (
-                  <button
-                    onClick={() => setSelectedDate(null)}
-                    className="ml-auto flex items-center gap-1.5 text-xs text-primary font-medium hover:text-primary/70 transition-colors py-2 px-2 rounded-lg"
-                  >
-                    <X size={12} />
-                    {format(selectedDate, 'd MMM', { locale: pl })}
-                  </button>
-                )}
               </div>
 
+              {selectedDate && (
+                <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-primary/5 px-4 py-2.5">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary/70">
+                      Wybrany dzień
+                    </p>
+                    <p className="truncate text-sm font-semibold text-slate-800">
+                      {format(selectedDate, 'EEEE, d MMMM yyyy', { locale: pl })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedDate(null)}
+                    className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-primary transition-colors hover:bg-primary/10 hover:text-primary/80"
+                    aria-label="Wyczyść wybrany dzień"
+                  >
+                    <X size={12} />
+                    <span className="hidden sm:inline">Wyczyść</span>
+                  </button>
+                </div>
+              )}
+
               {/* List */}
-              <div className="p-4 space-y-2 lg:flex-1 lg:overflow-y-auto">
+              <div className="p-3 space-y-2 sm:p-4 lg:flex-1 lg:overflow-y-auto">
                 {filteredReservations.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 text-slate-300">
                     <Calendar size={36} strokeWidth={1} className="mb-3" />

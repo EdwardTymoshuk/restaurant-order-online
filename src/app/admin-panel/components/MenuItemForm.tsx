@@ -2,8 +2,10 @@
 
 import ImageUploader from '@/app/admin-panel/components/ImageUploader'
 import LoadingButton from '@/app/components/LoadingButton'
-import { Checkbox } from '@/app/components/ui/checkbox'
+import { Card } from '@/app/components/ui/card'
 import { Input } from '@/app/components/ui/input'
+import { Label } from '@/app/components/ui/label'
+import { Separator } from '@/app/components/ui/separator'
 import {
   Select,
   SelectContent,
@@ -11,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/app/components/ui/select'
+import { Switch } from '@/app/components/ui/switch'
 import { Textarea } from '@/app/components/ui/textarea'
 import { MenuItemCategory } from '@/app/types/types'
 import { menuItemCategories } from '@/config'
@@ -100,98 +103,162 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
   }
 
   return (
-    <div className="space-y-4">
-      <label className="block font-medium text-secondary">Nazwa</label>
-      <Input
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Nazwa"
-      />
-      {errors.name && <p className="text-red-600">{errors.name}</p>}
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <Card className="space-y-5 p-5 md:p-6">
+        <div>
+          <h2 className="text-base font-semibold text-slate-900">Dane pozycji</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Nazwa, cena i opis widoczne dla klienta w menu.
+          </p>
+        </div>
 
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="w-full">
-          <label className="block font-medium text-secondary">Cena (PLN)</label>
+        <Separator />
+
+        <div className="space-y-2">
+          <Label htmlFor="menu-item-name">Nazwa</Label>
           <Input
-            type="number"
-            value={price}
-            onChange={(e) => setPrice(parseFloat(e.target.value))}
-            placeholder="Cena"
+            id="menu-item-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Np. Pizza Margherita"
+            aria-invalid={Boolean(errors.name)}
           />
-          {errors.price && <p className="text-red-600">{errors.price}</p>}
+          {errors.name && <p className="text-sm text-danger">{errors.name}</p>}
         </div>
-        <div className="w-full">
-          <label className="block font-medium text-secondary">Kategoria</label>
-          <Select
-            value={category}
-            onValueChange={(val) => setCategory(val as MenuItemCategory)}
-          >
-            <SelectTrigger aria-label="Kategoria">
-              <SelectValue placeholder="Wybierz kategorię" />
-            </SelectTrigger>
-            <SelectContent>
-              {menuItemCategories.map((cat) => (
-                <SelectItem key={cat} value={cat}>
-                  {cat}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="menu-item-price">Cena (PLN)</Label>
+            <Input
+              id="menu-item-price"
+              type="number"
+              value={Number.isNaN(price) ? '' : price}
+              onChange={(e) => setPrice(e.target.value === '' ? 0 : parseFloat(e.target.value))}
+              placeholder="0"
+              min={0}
+              step="0.01"
+              aria-invalid={Boolean(errors.price)}
+            />
+            {errors.price && <p className="text-sm text-danger">{errors.price}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Kategoria</Label>
+            <Select
+              value={category}
+              onValueChange={(val) => setCategory(val as MenuItemCategory)}
+            >
+              <SelectTrigger aria-label="Kategoria">
+                <SelectValue placeholder="Wybierz kategorię" />
+              </SelectTrigger>
+              <SelectContent>
+                {menuItemCategories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      </div>
 
-      <label className="block font-medium text-secondary">Opis</label>
-      <Textarea
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        placeholder="Opis"
-      />
+        <div className="space-y-2">
+          <Label htmlFor="menu-item-description">Opis</Label>
+          <Textarea
+            id="menu-item-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Krótki opis składników, sposobu podania albo wyróżników pozycji."
+            className="min-h-[140px]"
+          />
+        </div>
+      </Card>
 
-      <label className="block font-medium text-secondary">Zdjęcie</label>
-      <ImageUploader
-        label="Zdjęcie produktu"
-        onImageUpload={(images) => setImage(images[0])}
-        multiple={false}
-        aspectRatio={1}
-        currentImages={[image]}
-      />
+      <div className="space-y-5">
+        <Card className="space-y-4 p-5 md:p-6">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">Zdjęcie</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Zdjęcie produktu w karcie menu i zamówieniach online.
+            </p>
+          </div>
 
-      <div className="flex flex-col space-y-2">
-        <label className="flex items-center space-x-2">
-          <Checkbox
-            checked={isActive}
-            onCheckedChange={(value) => setIsActive(value as boolean)}
+          <ImageUploader
+            label="Zdjęcie produktu"
+            onImageUpload={(images) => setImage(images[0] ?? '')}
+            multiple={false}
+            aspectRatio={1}
+            currentImages={image ? [image] : []}
           />
-          <span>Aktywne</span>
-        </label>
-        <label className="flex items-center space-x-2">
-          <Checkbox
-            checked={isOrderable}
-            onCheckedChange={(value) => setIsOrderable(value as boolean)}
-          />
-          <span>Dostępne do zamówienia</span>
-        </label>
-        <label className="flex items-center space-x-2">
-          <Checkbox
-            checked={isRecommended}
-            onCheckedChange={(value) => setIsRecommended(value as boolean)}
-          />
-          <span>Polecane</span>
-        </label>
-        <label className="flex items-center space-x-2">
-          <Checkbox
-            checked={isOnMainPage}
-            onCheckedChange={(value) => setIsOnMainPage(value as boolean)}
-          />
-          <span>Specjał</span>
-        </label>
-      </div>
+        </Card>
 
-      <div className="text-right">
-        <LoadingButton isLoading={isLoading} onClick={handleSubmit}>
-          Zapisz
-        </LoadingButton>
+        <Card className="space-y-4 p-5 md:p-6">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">Widoczność</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Kontroluj, gdzie pozycja pojawia się dla klienta.
+            </p>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <Label htmlFor="menu-item-active">Aktywne</Label>
+                <p className="text-xs text-muted-foreground">Pozycja widoczna w menu.</p>
+              </div>
+              <Switch
+                id="menu-item-active"
+                checked={isActive}
+                onCheckedChange={setIsActive}
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <Label htmlFor="menu-item-orderable">Dostępne do zamówienia</Label>
+                <p className="text-xs text-muted-foreground">Klient może dodać pozycję do koszyka.</p>
+              </div>
+              <Switch
+                id="menu-item-orderable"
+                checked={isOrderable}
+                onCheckedChange={setIsOrderable}
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <Label htmlFor="menu-item-recommended">Polecane</Label>
+                <p className="text-xs text-muted-foreground">Pozycja może pojawić się w rekomendacjach.</p>
+              </div>
+              <Switch
+                id="menu-item-recommended"
+                checked={isRecommended}
+                onCheckedChange={setIsRecommended}
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <Label htmlFor="menu-item-special">Specjał</Label>
+                <p className="text-xs text-muted-foreground">Wyróżnienie na stronie głównej.</p>
+              </div>
+              <Switch
+                id="menu-item-special"
+                checked={isOnMainPage}
+                onCheckedChange={setIsOnMainPage}
+              />
+            </div>
+          </div>
+        </Card>
+
+        <div className="flex justify-end">
+          <LoadingButton isLoading={isLoading} onClick={handleSubmit} className="min-w-[140px]">
+            Zapisz pozycję
+          </LoadingButton>
+        </div>
       </div>
     </div>
   )

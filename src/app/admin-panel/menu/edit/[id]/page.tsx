@@ -1,14 +1,14 @@
 'use client'
 
 import MenuItemForm from '@/app/admin-panel/components/MenuItemForm'
-import PageSubHeader from '@/app/components/PageSubHeader'
+import { AdminNavbar } from '@/app/admin-panel/components/AdminNavbar'
 import { Button } from '@/app/components/ui/button'
 import { Skeleton } from '@/app/components/ui/skeleton'
 import { MenuItemCategory } from '@/app/types/types'
 import { trpc } from '@/utils/trpc'
 import { useQueryClient } from '@tanstack/react-query'
+import { ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { MdKeyboardArrowLeft } from 'react-icons/md'
 
 const EditMenuItemPage = ({ params }: { params: { id: string } }) => {
 	const { data: menuItem, isLoading } = trpc.menu.getMenuItemById.useQuery({ id: params.id })
@@ -31,6 +31,7 @@ const EditMenuItemPage = ({ params }: { params: { id: string } }) => {
 		isActive: boolean
 		isRecommended: boolean
 		isOnMainPage: boolean
+		isOrderable: boolean
 	}) => {
 		try {
 			await updateMenuItem({ id: params.id, ...values })
@@ -41,44 +42,64 @@ const EditMenuItemPage = ({ params }: { params: { id: string } }) => {
 
 	if (isLoading || !menuItem) {
 		return (
-			<div className="container mx-auto space-y-8 px-4 py-6">
-				<Skeleton className='h-8 w-1/6 lg:w-1/12' />
-				<Skeleton className='h-14 w-1/2 mx-auto' />
-				<Skeleton className='h-10 w-full mx-auto' />
-				<div className='flex flex-row gap-4'>
-					<Skeleton className='h-10 w-full mx-auto' />
-					<Skeleton className='h-10 w-full mx-auto' />
+			<div className="min-h-screen bg-muted/40 pt-14">
+				<AdminNavbar activeTab="menu" />
+				<div className="mx-auto max-w-7xl space-y-5 px-4 py-6 md:px-6">
+					<Skeleton className="h-24 w-full rounded-2xl" />
+					<div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+						<Skeleton className="h-[420px] rounded-2xl" />
+						<div className="space-y-5">
+							<Skeleton className="h-[300px] rounded-2xl" />
+							<Skeleton className="h-[240px] rounded-2xl" />
+						</div>
+					</div>
 				</div>
-				<Skeleton className='h-32 w-full mx-auto' />
-				<Skeleton className='h-52 w-full md:w-1/6' />
-				<Skeleton className='h-32 w-full mx-auto' />
-				<Skeleton className='h-8 w-1/6 lg:w-1/12 justify-end' />
 			</div>
 		)
 	}
 
 	return (
-		<div className="container mx-auto px-4 py-6">
-			<Button variant="link" onClick={() => router.push('/admin-panel?tab=menu')} className='p-0 text-secondary'>
-				<MdKeyboardArrowLeft size={24} /><span>Wróć do menu</span>
-			</Button>
-			<PageSubHeader title={`Edytuj pozycję ${menuItem.name}`} />
+		<div className="min-h-screen bg-muted/40 pt-14">
+			<AdminNavbar activeTab="menu" />
+			<header className="border-b border-border bg-white">
+				<div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-5 md:px-6">
+					<div className="min-w-0">
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={() => router.push('/admin-panel?tab=menu')}
+							className="mb-2 -ml-2 gap-1.5 text-slate-600"
+						>
+							<ArrowLeft size={16} />
+							Wróć do menu
+						</Button>
+						<h1 className="truncate font-serif text-2xl font-semibold text-slate-950 md:text-3xl">
+							Edytuj pozycję
+						</h1>
+						<p className="mt-1 truncate text-sm text-muted-foreground">
+							{menuItem.name}
+						</p>
+					</div>
+				</div>
+			</header>
 
-			<MenuItemForm
-				initialValues={{
-					name: menuItem.name,
-					price: menuItem.price,
-					description: menuItem.description || '',
-					category: menuItem.category as MenuItemCategory,
-					image: menuItem.image || '',
-					isActive: menuItem.isActive,
-					isOrderable: menuItem.isOrderable,
-					isRecommended: menuItem.isRecommended,
-					isOnMainPage: menuItem.isOnMainPage,
-				}}
-				isLoading={false}
-				onSubmit={handleSubmit}
-			/>
+			<main className="mx-auto max-w-7xl px-4 py-6 md:px-6">
+				<MenuItemForm
+					initialValues={{
+						name: menuItem.name,
+						price: menuItem.price,
+						description: menuItem.description || '',
+						category: menuItem.category as MenuItemCategory,
+						image: menuItem.image || '',
+						isActive: menuItem.isActive,
+						isOrderable: menuItem.isOrderable,
+						isRecommended: menuItem.isRecommended,
+						isOnMainPage: menuItem.isOnMainPage,
+					}}
+					isLoading={false}
+					onSubmit={handleSubmit}
+				/>
+			</main>
 		</div>
 	)
 }

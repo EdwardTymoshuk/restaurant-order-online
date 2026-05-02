@@ -27,12 +27,13 @@ const navItems = [
 
 interface AdminNavbarProps {
 	className?: string
+	activeTab?: string
 }
 
-export const AdminNavbar = ({ className }: AdminNavbarProps) => {
+export const AdminNavbar = ({ className, activeTab }: AdminNavbarProps) => {
 	const { data: session } = useSession()
 	const searchParams = useSearchParams()
-	const currentTab = searchParams.get('tab') || 'dashboard'
+	const currentTab = activeTab || searchParams.get('tab') || 'dashboard'
 	const [mobileOpen, setMobileOpen] = useState(false)
 
 	const displayName = session?.user?.name || session?.user?.email || 'Admin'

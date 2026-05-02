@@ -13,6 +13,7 @@ import {
 import { Skeleton } from '@/app/components/ui/skeleton'
 import { Switch } from '@/app/components/ui/switch'
 import { MenuItemCategory } from '@/app/types/types'
+import { menuItemCategories } from '@/config'
 import { trpc } from '@/utils/trpc'
 import { cn } from '@/utils/utils'
 import { MenuItem } from '@prisma/client'
@@ -20,7 +21,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { getQueryKey } from '@trpc/react-query'
 import { ArrowUpDown, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { FilterButton } from '../components/FilterButton'
 import { PageHeader } from '../components/PageHeader'
 
@@ -36,11 +37,6 @@ const SORT_OPTIONS = [
   { value: 'date_desc',  label: 'Najnowsze' },
 ]
 
-const TABLE_COLS = [
-  { key: 'name',  label: 'Nazwa',     sortAsc: 'name_asc',   sortDesc: 'name_desc'  },
-  { key: 'price', label: 'Cena',      sortAsc: 'price_asc',  sortDesc: 'price_desc' },
-]
-
 const MenuTable = () => {
   const [sortOption, setSortOption]               = useState<SortOption>('default')
   const [categoryFilter, setCategoryFilter]       = useState<MenuItemCategory | 'ALL'>('ALL')
@@ -48,6 +44,7 @@ const MenuTable = () => {
   const [isOrderableFilter, setIsOrderableFilter] = useState<'ALL' | 'true' | 'false'>('ALL')
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [menuItemToDelete, setMenuItemToDelete]   = useState<string | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   const { data: menuItems = [], isLoading } = trpc.menu.getAllMenuItems.useQuery()
   const queryClient = useQueryClient()
@@ -68,7 +65,6 @@ const MenuTable = () => {
     onError: (_, __, context) => {
       if (context?.previousData) queryClient.setQueryData(queryKey, context.previousData)
     },
-    onSettled: () => queryClient.invalidateQueries(queryKey),
   })
 
   const { mutateAsync: deleteMenuItem, isLoading: isLoadingDelete } =
@@ -106,6 +102,35 @@ const MenuTable = () => {
     }
     return items
   }, [menuItems, sortOption, categoryFilter, isActiveFilter, isOrderableFilter])
+
+  const groupedItems = useMemo(() => {
+    const groups = new Map<MenuItemCategory, typeof sortedItems>()
+
+    for (const item of sortedItems) {
+      const current = groups.get(item.category) ?? []
+      current.push(item)
+      groups.set(item.category, current)
+    }
+
+    return Array.from(groups.entries())
+      .map(([category, items]) => ({ category, items }))
+      .sort((a, b) => {
+        const aIndex = menuItemCategories.indexOf(a.category)
+        const bIndex = menuItemCategories.indexOf(b.category)
+        if (aIndex === -1 && bIndex === -1) return a.category.localeCompare(b.category)
+        if (aIndex === -1) return 1
+        if (bIndex === -1) return -1
+        return aIndex - bIndex
+      })
+  }, [sortedItems])
+
+  const updateMenuItemWithoutJump = async (payload: { id: string; isActive?: boolean; isOrderable?: boolean }) => {
+    const scrollTop = scrollRef.current?.scrollTop ?? 0
+    await updateMenuItem(payload)
+    requestAnimationFrame(() => {
+      if (scrollRef.current) scrollRef.current.scrollTop = scrollTop
+    })
+  }
 
   const clearFilters = () => {
     setSortOption('default')
@@ -180,127 +205,152 @@ const MenuTable = () => {
     <>
       <PageHeader title="Menu" actions={actionsNode} toolbar={toolbarNode} />
 
-      <div className="flex-1 overflow-y-auto min-h-0 p-4 md:p-6 lg:p-8">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0 p-4 md:p-6 lg:p-8">
         {isLoading ? (
           <div className="space-y-2">
             {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
           </div>
         ) : (
           <>
-            {/* Count */}
-            <p className="text-sm font-sans font-normal text-muted-foreground mb-4">
-              {sortedItems.length} {sortedItems.length === 1 ? 'pozycja' : 'pozycji'}
-            </p>
-
-            {/* Table */}
-            <div className="bg-white rounded-2xl border border-border overflow-hidden">
-              {/* Header row */}
-              <div className="grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto] items-center gap-4 px-5 py-3 border-b border-border bg-muted/40">
-                <span className="text-xs font-sans font-normal uppercase tracking-widest text-muted-foreground w-6">#</span>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <p className="text-sm font-sans font-normal text-muted-foreground">
+                {sortedItems.length} {sortedItems.length === 1 ? 'pozycja' : 'pozycji'}
+              </p>
+              <div className="hidden items-center gap-4 text-xs uppercase tracking-widest text-muted-foreground lg:flex">
                 <button
                   onClick={() => cycleSort('name_asc', 'name_desc')}
-                  className="flex items-center gap-1.5 text-xs font-sans font-normal uppercase tracking-widest text-muted-foreground hover:text-dark-gray text-left"
+                  className="flex items-center gap-1.5 hover:text-dark-gray"
                 >
                   Nazwa <SortIcon ascKey="name_asc" descKey="name_desc" />
                 </button>
-                <span className="text-xs font-sans font-normal uppercase tracking-widest text-muted-foreground w-24 text-center">Kategoria</span>
                 <button
                   onClick={() => cycleSort('price_asc', 'price_desc')}
-                  className="flex items-center gap-1.5 text-xs font-sans font-normal uppercase tracking-widest text-muted-foreground hover:text-dark-gray w-20 justify-end"
+                  className="flex items-center gap-1.5 hover:text-dark-gray"
                 >
                   <SortIcon ascKey="price_asc" descKey="price_desc" /> Cena
                 </button>
-                <span className="text-xs font-sans font-normal uppercase tracking-widest text-muted-foreground w-20 text-center hidden lg:block">Aktywne</span>
-                <span className="text-xs font-sans font-normal uppercase tracking-widest text-muted-foreground w-24 text-center hidden lg:block">Zamówienie</span>
-                <span className="w-16" />
               </div>
-
-              {/* Rows */}
-              {sortedItems.length === 0 ? (
-                <div className="flex items-center justify-center py-16 text-muted-foreground">
-                  <p className="text-sm font-sans font-normal">Brak pozycji</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-border">
-                  {sortedItems.map((item, index) => (
-                    <div
-                      key={item.id}
-                      className="grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto] items-center gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors group"
-                    >
-                      {/* Index */}
-                      <span className="text-sm font-sans font-normal text-muted-foreground w-6 tabular-nums">
-                        {index + 1}
-                      </span>
-
-                      {/* Name + image */}
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-muted">
-                          <ImageWithFallback
-                            key={item.image}
-                            src={item.image || ''}
-                            alt={item.name}
-                            width={40}
-                            height={40}
-                            className="w-10 h-10 object-cover"
-                            containerClassName="w-10 h-10"
-                          />
-                        </div>
-                        <button
-                          onClick={() => router.push(`/admin-panel/menu/edit/${item.id}`)}
-                          className="text-base font-sans font-normal text-dark-gray hover:text-secondary transition-colors truncate text-left"
-                        >
-                          {item.name}
-                        </button>
-                      </div>
-
-                      {/* Category */}
-                      <span className="w-24 text-center">
-                        <span className="inline-block px-2.5 py-0.5 rounded-full bg-muted text-xs font-sans font-normal text-dark-gray truncate max-w-full">
-                          {item.category}
-                        </span>
-                      </span>
-
-                      {/* Price */}
-                      <span className="text-base font-sans font-normal text-dark-gray w-20 text-right tabular-nums">
-                        {item.price} zł
-                      </span>
-
-                      {/* Active toggle */}
-                      <div className="w-20 flex justify-center hidden lg:flex">
-                        <Switch
-                          checked={item.isActive}
-                          onCheckedChange={(v) => updateMenuItem({ id: item.id, isActive: v })}
-                        />
-                      </div>
-
-                      {/* Orderable toggle */}
-                      <div className="w-24 flex justify-center hidden lg:flex">
-                        <Switch
-                          checked={item.isOrderable}
-                          onCheckedChange={(v) => updateMenuItem({ id: item.id, isOrderable: v })}
-                        />
-                      </div>
-
-                      {/* Actions */}
-                      <div className="w-16 flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => router.push(`/admin-panel/menu/edit/${item.id}`)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-secondary hover:bg-secondary/10 transition-colors"
-                        >
-                          <Pencil size={14} strokeWidth={2} />
-                        </button>
-                        <button
-                          onClick={() => { setMenuItemToDelete(item.id); setIsDeleteDialogOpen(true) }}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-danger hover:bg-danger/10 transition-colors"
-                        >
-                          <Trash2 size={14} strokeWidth={2} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
+
+            {sortedItems.length === 0 ? (
+              <div className="flex items-center justify-center rounded-2xl border border-border bg-white py-16 text-muted-foreground">
+                <p className="text-sm font-sans font-normal">Brak pozycji</p>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {groupedItems.map((group) => (
+                  <section key={group.category} className="overflow-hidden rounded-2xl border border-border bg-white">
+                    <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/35 px-5 py-3">
+                      <div>
+                        <h2 className="text-sm font-semibold text-slate-900">{group.category}</h2>
+                        <p className="text-xs text-muted-foreground">
+                          {group.items.length} {group.items.length === 1 ? 'pozycja' : 'pozycji'}
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-sm">
+                        {group.items.filter((item) => item.isActive).length} aktywne
+                      </span>
+                    </div>
+
+                    <div className="hidden grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-4 border-b border-border bg-white px-5 py-2.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground lg:grid">
+                      <span className="w-6">#</span>
+                      <button
+                        onClick={() => cycleSort('name_asc', 'name_desc')}
+                        className="flex items-center gap-1.5 text-left hover:text-dark-gray"
+                      >
+                        Pozycja <SortIcon ascKey="name_asc" descKey="name_desc" />
+                      </button>
+                      <button
+                        onClick={() => cycleSort('price_asc', 'price_desc')}
+                        className="flex w-20 items-center justify-end gap-1.5 hover:text-dark-gray"
+                      >
+                        <SortIcon ascKey="price_asc" descKey="price_desc" /> Cena
+                      </button>
+                      <span className="w-20 text-center">Widoczna</span>
+                      <span className="w-24 text-center">Zamówienia</span>
+                      <span className="w-24 text-right">Akcje</span>
+                    </div>
+
+                    <div className="divide-y divide-border">
+                      {group.items.map((item, index) => (
+                        <div
+                          key={item.id}
+                          className="grid grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3.5 transition-colors hover:bg-muted/30 group lg:grid-cols-[auto_1fr_auto_auto_auto_auto] lg:gap-4 lg:px-5"
+                        >
+                          <span className="hidden w-6 text-sm font-sans font-normal text-muted-foreground tabular-nums lg:block">
+                            {index + 1}
+                          </span>
+
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-muted">
+                              <ImageWithFallback
+                                key={item.image}
+                                src={item.image || ''}
+                                alt={item.name}
+                                width={44}
+                                height={44}
+                                className="h-11 w-11 object-cover"
+                                containerClassName="h-11 w-11"
+                              />
+                            </div>
+                            <div className="min-w-0">
+                              <button
+                                onClick={() => router.push(`/admin-panel/menu/edit/${item.id}`)}
+                                className="block truncate text-left text-base font-sans font-normal text-dark-gray transition-colors hover:text-secondary"
+                              >
+                                {item.name}
+                              </button>
+                              <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground lg:hidden">
+                                <span>{item.price} zł</span>
+                                <span>{item.isActive ? 'Widoczna' : 'Ukryta'}</span>
+                                <span>{item.isOrderable ? 'Zamówienia online' : 'Bez zamówień online'}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <span className="w-20 text-right text-base font-sans font-normal text-dark-gray tabular-nums">
+                            {item.price} zł
+                          </span>
+
+                          <div className="hidden w-20 justify-center lg:flex">
+                            <Switch
+                              checked={item.isActive}
+                              aria-label={`Widoczność pozycji ${item.name}`}
+                              onCheckedChange={(v) => updateMenuItemWithoutJump({ id: item.id, isActive: v })}
+                            />
+                          </div>
+
+                          <div className="hidden w-24 justify-center lg:flex">
+                            <Switch
+                              checked={item.isOrderable}
+                              aria-label={`Dostępność do zamówienia pozycji ${item.name}`}
+                              onCheckedChange={(v) => updateMenuItemWithoutJump({ id: item.id, isOrderable: v })}
+                            />
+                          </div>
+
+                          <div className="flex w-20 items-center justify-end gap-1 lg:w-24">
+                            <button
+                              onClick={() => router.push(`/admin-panel/menu/edit/${item.id}`)}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary/10 hover:text-secondary"
+                              aria-label={`Edytuj ${item.name}`}
+                            >
+                              <Pencil size={15} strokeWidth={2} />
+                            </button>
+                            <button
+                              onClick={() => { setMenuItemToDelete(item.id); setIsDeleteDialogOpen(true) }}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
+                              aria-label={`Usuń ${item.name}`}
+                            >
+                              <Trash2 size={15} strokeWidth={2} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>
