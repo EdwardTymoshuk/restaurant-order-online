@@ -78,9 +78,14 @@ const MainPageBannerSettings = () => {
   return (
     <section>
       <Accordion type="single" collapsible>
-        <AccordionItem value="mainPageBanners">
+        <AccordionItem value="mainPageBanners" className="border-0">
           <AccordionTrigger className="text-left font-semibold text-lg hover:no-underline">
-            Banery reklamowe (spokosopot.pl)
+            <span className="flex w-full items-center justify-between gap-3 pr-3">
+              <span>Banery reklamowe (spokosopot.pl)</span>
+              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                {bannersData.length}
+              </span>
+            </span>
           </AccordionTrigger>
           <AccordionContent>
             <div className="space-y-6">

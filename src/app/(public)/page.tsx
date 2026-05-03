@@ -2,169 +2,186 @@
 
 import DeliveryForm from '@/app/components/DeliveryForm'
 import LoadingButton from '@/app/components/LoadingButton'
-import PageSubHeader from '@/app/components/PageSubHeader'
 import RestaurantMap from '@/app/components/RestaurantMap'
 import { Skeleton } from '@/app/components/ui/skeleton'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/components/ui/tabs'
 import { RESTAURANT_COORDINATES } from '@/config/constants'
-import { Coordinates } from '@/utils/deliveryUtils'
+import { type DeliveryZone } from '../types/types'
 import { trpc } from '@/utils/trpc'
-import { LoadScriptNext } from "@react-google-maps/api"
+import { LoadScriptNext } from '@react-google-maps/api'
+import Image from 'next/image'
+import { Bike, Info, Mail, Phone, Store } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useMemo, useState, useTransition } from "react"
-import { MdOutlineDeliveryDining, MdOutlineKeyboardArrowRight, MdOutlineRestaurantMenu } from "react-icons/md"
-import MainContainer from '../components/MainContainer'
-import { Separator } from '../components/ui/separator'
-import { DeliveryZone } from '../types/types'
+import { useMemo, useState, useTransition } from 'react'
 
 const Home = () => {
-  const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('delivery')
   const [formData, setFormData] = useState({ address: '' })
   const [addressVerified, setAddressVerified] = useState(false)
-  const [addressCoordinates, setAddressCoordinates] = useState<Coordinates | null>(null)
-
-  // Fetch delivery zones from settings
   const { data: settingsData, isLoading: isSettingsLoading } = trpc.settings.getSettings.useQuery()
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
-  const libraries: ("places")[] = ["places"]
-
-  // Parse delivery zones with type safety
   const deliveryZones: DeliveryZone[] = useMemo(() => {
-    try {
-      return Array.isArray(settingsData?.deliveryZones)
-        ? (settingsData?.deliveryZones as unknown as DeliveryZone[])
-        : []
-    } catch {
-      console.error('Failed to parse delivery zones from settings.')
-      return []
-    }
+    if (!Array.isArray(settingsData?.deliveryZones)) return []
+    return settingsData.deliveryZones as unknown as DeliveryZone[]
   }, [settingsData])
 
-  const handleOrderClick = () => {
+  const deliveryFromPrice = useMemo(() => {
+    const prices = deliveryZones
+      .map((zone) => zone.price)
+      .filter((price) => Number.isFinite(price))
+
+    if (prices.length > 0) return Math.min(...prices)
+    return typeof settingsData?.deliveryCost === 'number' ? settingsData.deliveryCost : 0
+  }, [deliveryZones, settingsData])
+
+  const goToOrder = () => {
     startTransition(() => {
       router.push('/order')
     })
   }
 
   return (
-    <div className='my-auto w-full mx-auto min-h-screen py-8 px-8 pt-20 flex flex-col justify-center bg-[url("/img/main-page.webp")] bg-no-repeat bg-cover bg-center'>
-      <div className='flex flex-col align-center mx-auto mt-8 md:w-full lg:w-3/4 bg-background/90 rounded-md max-w-5xl'>
+    <main className="min-h-screen bg-secondary">
+      <section className="relative min-h-screen overflow-hidden pt-16">
+        <div className="absolute inset-0 bg-[url('/img/main-page.webp')] bg-cover bg-center" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(18,48,124,0.96)_0%,rgba(18,48,124,0.78)_48%,rgba(18,48,124,0.34)_78%,rgba(18,48,124,0.08)_100%)]" />
 
-        <Separator className='mx-auto mt-8 w-1/2 bg-primary' />
-
-        <h2 className='text-4xl text-center font-semibold text-text-secondary py-8 px-2 self-center mx-2'>
-          Witamy w Spoko zamówieniach!
-        </h2>
-
-        <Separator className='mx-auto w-1/2 bg-primary' />
-        <MainContainer className='pt-4 min-h-fit w-full'>
-          <LoadScriptNext
-            googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""}
-            libraries={libraries}
-            loadingElement={
-              <div className='flex gap-2'>
-                <div className="space-y-4">
-                  <Skeleton className="w-full h-64" />
-                </div>
-                <div className="space-y-4">
-                  <Skeleton className="w-full h-64" />
-                  <Skeleton className="w-full h-10" />
-                  <Skeleton className="w-full h-10" />
-                </div>
+        <div className="relative mx-auto grid min-h-[calc(100vh-64px)] w-full max-w-6xl items-center gap-5 px-4 py-6 lg:grid-cols-[minmax(420px,500px)_minmax(420px,520px)] lg:content-center lg:items-stretch lg:justify-center lg:px-6">
+          <div className="mx-auto w-full max-w-[520px] lg:order-2 lg:max-w-none">
+            <div className="w-full rounded-[24px] border border-white/35 bg-white/18 p-4 shadow-[0_24px_90px_rgba(9,24,61,0.28)] backdrop-blur-2xl md:p-6">
+              <div className="flex justify-center">
+                <Image
+                  src="/img/logo-spoko-2.png"
+                  alt="Spoko Sopot"
+                  width={190}
+                  height={68}
+                  className="h-auto w-40 object-contain"
+                  priority
+                />
               </div>
-            }
-          >
-            <div className="flex flex-col-reverse md:flex-row md:space-x-8 my-8 mx-auto w-full min-h-96 px-8 relative z-0">
-              <div className="w-full md:w-1/2 h-96 my-auto">
-                {!isSettingsLoading && (
-                  <RestaurantMap
-                    center={RESTAURANT_COORDINATES}
-                    zoom={11.3}
-                    markers={[RESTAURANT_COORDINATES].filter(Boolean) as Coordinates[]}
-                    deliveryZones={deliveryZones} // Pass delivery zones to the map
-                    addressMarker={addressCoordinates}
+
+              <h1 className="mt-5 text-center text-3xl font-semibold leading-tight text-slate-950">
+                Zamów tak, jak Ci wygodnie.
+              </h1>
+              <p className="mx-auto mt-3 max-w-sm text-center text-sm font-medium leading-6 text-slate-800">
+                Dostawa pod wskazany adres albo szybki odbiór w restauracji.
+              </p>
+
+              {isSettingsLoading ? (
+                <Skeleton className="mt-4 h-11 w-full rounded-xl" />
+              ) : !settingsData?.isOrderingOpen ? (
+                <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+                  <Info size={17} className="mt-0.5 shrink-0 text-amber-600" />
+                  <span>Zamawianie online jest chwilowo niedostępne. Skontaktuj się z restauracją albo odwiedź nas osobiście.</span>
+                </div>
+              ) : null}
+
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+                <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-2xl bg-white/55 p-1.5 shadow-inner shadow-slate-950/5">
+                  <TabsTrigger
+                    value="delivery"
+                    className="min-h-[88px] flex-col items-start justify-center gap-1 rounded-xl px-4 py-3 text-left text-slate-500 data-[state=active]:bg-secondary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-secondary/20"
+                  >
+                    <Bike size={18} />
+                    <span className="text-sm font-semibold">Dostawa</span>
+                    <span className="text-[11px] font-normal opacity-70">od {deliveryFromPrice} zł</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="take-out"
+                    className="min-h-[88px] flex-col items-start justify-center gap-1 rounded-xl px-4 py-3 text-left text-slate-500 data-[state=active]:bg-secondary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-secondary/20"
+                  >
+                    <Store size={18} />
+                    <span className="text-sm font-semibold">Odbiór</span>
+                    <span className="text-[11px] font-normal opacity-70">Hestii 3, 81-731 Sopot</span>
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="delivery" className="mt-4 space-y-3">
+                  <DeliveryForm
+                    formData={formData}
+                    onFormDataChange={setFormData}
+                    addressVerified={addressVerified}
+                    setAddressVerified={setAddressVerified}
+                    setAddressCoordinates={() => {}}
                   />
-                )}
-              </div>
-              <div className="w-full md:w-1/2">
-                <Tabs defaultValue="delivery" onValueChange={setActiveTab}>
-                  <TabsList className='p-2 h-fit flex flex-row justify-around bg-transparent relative'>
-                    <TabsTrigger
-                      className='flex flex-col items-center text-lg text-gray-400 md:text-2xl data-[state=active]:bg-transparent data-[state=active]:text-secondary data-[state=active]:shadow-none rounded-none relative z-10'
-                      value="delivery"
+
+                  {addressVerified && (
+                    <LoadingButton
+                      isLoading={isPending}
+                      type="button"
+                      className="h-12 w-full rounded-xl bg-primary font-semibold text-secondary hover:bg-primary/85"
+                      onClick={goToOrder}
                     >
-                      <MdOutlineDeliveryDining className='text-4xl' />
-                      <span className="relative">DOSTAWA</span>
-                    </TabsTrigger>
-                    <TabsTrigger
-                      className='flex flex-col items-center text-lg text-gray-400 md:text-2xl data-[state=active]:bg-transparent data-[state=active]:text-secondary data-[state=active]:shadow-none rounded-none relative z-10'
-                      value="take-out"
-                    >
-                      <MdOutlineRestaurantMenu className='text-4xl' />
-                      <span className="relative">ODBIÓR</span>
-                    </TabsTrigger>
-                    <span
-                      className='absolute bottom-0 left-0 h-[2px] bg-secondary transition-all duration-300 ease-out'
-                      style={{
-                        width: '25%',
-                        transform: activeTab === 'delivery' ? 'translateX(60%)' : 'translateX(250%)',
-                      }}
-                    />
-                  </TabsList>
-                  <TabsContent value="delivery">
-                    <PageSubHeader title='Sprawdź czy dowozimy do Ciebie' className='text-2xl' />
+                      Przejdź do menu
+                    </LoadingButton>
+                  )}
+                </TabsContent>
 
-                    <div className='flex flex-col mb-8'>
-                      <DeliveryForm
-                        formData={formData}
-                        onFormDataChange={setFormData}
-                        addressVerified={addressVerified}
-                        setAddressVerified={setAddressVerified}
-                        setAddressCoordinates={setAddressCoordinates}
-                      />
-                      <LoadingButton
-                        isLoading={isPending}
-                        type="button"
-                        variant="secondary"
-                        className="w-full"
-                        onClick={handleOrderClick}
-                      >
-                        Do zamówienia <MdOutlineKeyboardArrowRight />
-                      </LoadingButton>
-                    </div>
-
-                  </TabsContent>
-                  <TabsContent value="take-out">
-                    <PageSubHeader title='Zamów online, odbierz w restauracji' className='text-2xl' />
-
-                    <div className='space-y-4 mb-8'>
-                      <div className='flex flex-col text-lg text-center text-text-secondary'>
-                        <span className='text-secondary'>Hestii 3, Sopot</span>
-                        <span>Pn-Pt: 10:00 - 19:00</span>
-                        <span>Sb-Nd 8:00 - 19:00</span>
+                <TabsContent value="take-out" className="mt-4 space-y-3">
+                  <div className="rounded-xl border border-border bg-slate-50 px-4 py-4">
+                    <div className="flex items-start gap-3">
+                      <Store size={18} className="mt-0.5 shrink-0 text-primary" />
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">Odbiór w restauracji</p>
+                        <p className="mt-1 text-sm text-slate-500">Hestii 3, 81-731 Sopot</p>
+                        <p className="mt-2 text-xs leading-5 text-slate-400">
+                          Pn-Pt: 10:00 - 19:00, Sb-Nd: 8:00 - 19:00
+                        </p>
                       </div>
-                      <LoadingButton
-                        isLoading={isPending}
-                        type="button"
-                        variant="secondary"
-                        className="w-full"
-                        onClick={handleOrderClick}
-                      >
-                        Do zamówienia <MdOutlineKeyboardArrowRight />
-                      </LoadingButton>
                     </div>
+                  </div>
 
-                  </TabsContent>
-                </Tabs>
+                  <LoadingButton
+                    isLoading={isPending}
+                    type="button"
+                    className="h-12 w-full rounded-xl bg-primary font-semibold text-secondary hover:bg-primary/85"
+                    onClick={goToOrder}
+                  >
+                    Przejdź do menu
+                  </LoadingButton>
+                </TabsContent>
+              </Tabs>
+
+              <div className="mt-4 grid grid-cols-2 gap-3 border-t border-white/40 pt-4 text-sm font-medium text-primary">
+                <a href="tel:530659666" className="flex items-center justify-center gap-2 transition hover:text-primary/75">
+                  <Phone size={16} className="shrink-0" />
+                  <span>530 659 666</span>
+                </a>
+                <a href="mailto:info@spokosopot.pl" className="flex items-center justify-center gap-2 transition hover:text-primary/75">
+                  <Mail size={16} className="shrink-0" />
+                  <span>info@spokosopot.pl</span>
+                </a>
               </div>
             </div>
-          </LoadScriptNext>
-        </MainContainer>
-      </div>
-    </div>
+          </div>
+
+          <div className="hidden lg:order-1 lg:flex">
+            <div className="flex w-full flex-col rounded-[24px] border border-white/35 bg-white/18 p-4 shadow-[0_24px_90px_rgba(9,24,61,0.24)] backdrop-blur-2xl">
+              <div className="mb-4 text-center">
+                <h2 className="text-center text-3xl font-semibold leading-tight text-primary">Sprawdź, gdzie dowozimy</h2>
+              </div>
+              <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/35 bg-slate-100/80">
+                <LoadScriptNext
+                  googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
+                  libraries={['geometry']}
+                >
+                  <div className="h-full w-full">
+                    <RestaurantMap
+                      center={RESTAURANT_COORDINATES}
+                      zoom={11.5}
+                      markers={[RESTAURANT_COORDINATES]}
+                      deliveryZones={deliveryZones}
+                    />
+                  </div>
+                </LoadScriptNext>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   )
 }
 

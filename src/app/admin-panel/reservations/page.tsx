@@ -50,6 +50,7 @@ import {
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { useEffect, useMemo, useState } from 'react'
+import { useAdminRealtime } from '../hooks/useAdminRealtime'
 import { PageHeader } from '../components/PageHeader'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1337,6 +1338,13 @@ const Reservations = () => {
   const deleteBlocked = trpc.reservations.deleteBlockedDate.useMutation({
     onSuccess: () => void refetchBlocked(),
   })
+
+  useAdminRealtime({
+    onReservationsChanged: () => {
+      void refetch()
+      void refetchBlocked()
+    },
+  }, enabled)
 
   const reservationsByDate = useMemo(() => {
     const map = new Map<string, ReservationListItem[]>()

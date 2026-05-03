@@ -18,9 +18,7 @@ import { useCart } from '@/app/context/CartContext'
 import { MIN_ORDER_AMOUNT } from '@/config/constants'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-import { FaMinus, FaPlus } from 'react-icons/fa'
-import { IoTrashOutline } from 'react-icons/io5'
-import { MdKeyboardArrowRight } from 'react-icons/md'
+import { Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react'
 import ImageWithFallback from './ImageWithFallback'
 import RecommendDialog from './RecommendDialog'
 
@@ -32,10 +30,8 @@ const CartSheet = ({ onClose }: { onClose: () => void }) => {
 
   const now = new Date()
   const isBreakfastOnly = now.getHours() >= 8 && now.getHours() < 12
-
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-
   const amountNeeded = Math.max(0, MIN_ORDER_AMOUNT - state.totalAmount)
 
   const incrementQuantity = (id: string) => {
@@ -55,17 +51,8 @@ const CartSheet = ({ onClose }: { onClose: () => void }) => {
     setIsDialogOpen(false)
   }
 
-  const handleClearCartClick = () => {
-    setIsDialogOpen(true)
-  }
-
-  const handleRecommendDialogOpen = () => {
-    setIsRecommendDialogOpen(true)
-  }
-
   const handleContinue = () => {
     setIsLoading(true)
-
     startTransition(() => {
       router.push('/checkout')
     })
@@ -76,126 +63,131 @@ const CartSheet = ({ onClose }: { onClose: () => void }) => {
     onClose()
   }
 
-  // Підрахунок загальної кількості товарів у кошику
-  const totalItemsInCart = state.items.reduce(
-    (total, item) => total + item.quantity,
-    0
-  )
+  const totalItemsInCart = state.items.reduce((total, item) => total + item.quantity, 0)
+  const canContinue = state.items.length > 0
 
   return (
-    <Sheet open={true} onOpenChange={onClose}>
-      {' '}
-      {/* Передайте функцію закриття */}
-      <SheetContent
-        side="right"
-        className="w-full max-w-md bg-white shadow-xl overflow-y-auto"
-      >
-        <SheetHeader className="border-b border-gray-200 py-6">
-          <div className="flex items-start">
-            <SheetTitle className="text-xl font-medium text-text-secondary">
-              Twój koszyk
-            </SheetTitle>
+    <Sheet open onOpenChange={onClose}>
+      <SheetContent side="right" className="flex w-full max-w-md flex-col overflow-hidden bg-white p-0 shadow-2xl">
+        <SheetHeader className="border-b border-border px-5 py-5 text-left">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <SheetTitle className="font-serif text-2xl text-slate-950">Koszyk</SheetTitle>
+              <p className="mt-1 text-sm text-slate-500">{totalItemsInCart} pozycji w zamówieniu</p>
+            </div>
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <ShoppingBag size={20} />
+            </div>
           </div>
         </SheetHeader>
-        <div className="flex-1 overflow-y-auto py-6">
+
+        <div className="flex-1 overflow-y-auto px-5 py-5">
           {state.items.length === 0 ? (
-            <p className="text-center text-text-foreground">
-              Twój koszyk jest pusty
-            </p>
+            <div className="flex h-full min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/30 px-5 text-center">
+              <ShoppingBag className="mb-3 text-slate-300" size={42} strokeWidth={1.5} />
+              <p className="text-base font-semibold text-slate-900">Koszyk jest pusty</p>
+              <p className="mt-1 text-sm leading-6 text-slate-500">Dodaj dania z menu, a pokażą się tutaj.</p>
+            </div>
           ) : (
-            <>
-              <ul role="list" className="-my-6 divide-y divide-gray-200">
-                {state.items.map((item) => (
-                  <li key={item.id} className="flex py-6">
-                    <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
+            <ul role="list" className="space-y-3">
+              {state.items.map((item) => (
+                <li key={item.id} className="rounded-2xl border border-border bg-white p-3 shadow-sm">
+                  <div className="flex gap-3">
+                    <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted">
                       <ImageWithFallback
                         src={item.image}
                         alt={item.name}
-                        width={48}
-                        height={48}
-                        className="h-full w-full object-cover object-center"
-                        containerClassName="h-24 w-24"
+                        width={80}
+                        height={80}
+                        className="h-full w-full object-cover"
+                        containerClassName="h-20 w-20"
                       />
                     </div>
 
-                    <div className="ml-4 flex flex-1 flex-col">
-                      <div>
-                        <div className="flex justify-between text-base font-medium text-text-secondary">
-                          <h3 className="text-secondary">
-                            {item.name.toUpperCase()}
-                          </h3>
-                          <p className="ml-4">{item.price} zł</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="line-clamp-2 text-sm font-semibold leading-5 text-slate-950">{item.name}</p>
+                          <p className="mt-1 text-xs text-slate-400">{item.category}</p>
                         </div>
+                        <p className="shrink-0 text-sm font-semibold text-secondary">{item.price * item.quantity} zł</p>
                       </div>
-                      <div className="flex flex-1 items-end justify-between text-sm">
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="secondary"
-                            size="sm"
+
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <div className="flex items-center rounded-full border border-border bg-muted/40 p-1">
+                          <button
+                            type="button"
                             onClick={() => decrementQuantity(item.id)}
                             disabled={item.quantity === 1}
-                            className="h-6 w-6 p-2"
+                            className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                            aria-label="Zmniejsz ilość"
                           >
-                            <FaMinus />
-                          </Button>
-                          <p className="text-gray-500">{item.quantity}</p>
-                          <Button
-                            variant="secondary"
-                            size="sm"
+                            <Minus size={13} />
+                          </button>
+                          <span className="flex min-w-8 justify-center text-xs font-semibold text-slate-900">{item.quantity}</span>
+                          <button
+                            type="button"
                             onClick={() => incrementQuantity(item.id)}
-                            className="h-6 w-6 p-2"
+                            className="flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-white shadow-sm transition hover:bg-secondary/90"
+                            aria-label="Zwiększ ilość"
                           >
-                            <FaPlus />
-                          </Button>
+                            <Plus size={13} />
+                          </button>
                         </div>
-                        <Button
-                          variant="link"
-                          size="link"
+                        <button
+                          type="button"
                           onClick={() => removeItem(item.id)}
-                          className="text-danger hover:text-danger-light flex items-center space-x-2"
+                          className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-red-50 hover:text-danger"
+                          aria-label="Usuń pozycję"
                         >
-                          <span>Usuń</span> <IoTrashOutline />
-                        </Button>
+                          <Trash2 size={15} />
+                        </button>
                       </div>
                     </div>
-                  </li>
-                ))}
-              </ul>
-              <p className="border-b border w-full mt-8 -px-2"></p>
-              <div className="mt-6 flex justify-between text-lg font-semibold text-text-secondary">
-                <p>Łączna kwota</p>
-                <p>{state.totalAmount} zł</p>
-              </div>
-              {state.totalAmount < MIN_ORDER_AMOUNT && (
-                <div className="mt-4 p-2 bg-warning-light text-warning text-center rounded-md">
-                  Brakuje jeszcze {amountNeeded.toFixed(2)} zł do minimalnej
-                  kwoty zamówienia, która wynosi 50 zł.
-                </div>
-              )}
-              <div className="mt-6">
-                <Button
-                  variant="secondary"
-                  className="w-full flex items-center justify-center"
-                  onClick={handleRecommendDialogOpen}
-                >
-                  <span>Do podsumowania</span> <MdKeyboardArrowRight />
-                </Button>
-              </div>
-              <div className="mt-6 flex justify-center text-sm text-gray-500">
-                <Button
-                  variant="link"
-                  size="link"
-                  onClick={handleClearCartClick}
-                  className="font-medium text-danger hover:text-danger-light flex items-center space-x-2"
-                >
-                  <span>Wyczyść koszyk</span> <IoTrashOutline />
-                </Button>
-              </div>
-            </>
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
+
+        {state.items.length > 0 && (
+          <div className="border-t border-border bg-white px-5 py-5 shadow-[0_-10px_30px_rgba(15,23,42,0.06)]">
+            {state.totalAmount < MIN_ORDER_AMOUNT && (
+              <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-800">
+                Brakuje jeszcze {amountNeeded.toFixed(2)} zł do minimalnej kwoty zamówienia {MIN_ORDER_AMOUNT} zł.
+              </div>
+            )}
+
+            <div className="mb-4 space-y-2">
+              <div className="flex items-center justify-between text-sm text-slate-500">
+                <span>Suma produktów</span>
+                <span>{state.totalAmount} zł</span>
+              </div>
+              <div className="flex items-center justify-between text-lg font-semibold text-slate-950">
+                <span>Razem</span>
+                <span>{state.totalAmount} zł</span>
+              </div>
+            </div>
+
+            <Button
+              className="h-12 w-full rounded-xl bg-primary text-secondary hover:bg-primary/90"
+              onClick={() => setIsRecommendDialogOpen(true)}
+              disabled={!canContinue}
+            >
+              Przejdź do podsumowania
+            </Button>
+            <button
+              type="button"
+              onClick={() => setIsDialogOpen(true)}
+              className="mt-3 flex w-full items-center justify-center gap-1.5 text-xs text-slate-400 transition hover:text-danger"
+            >
+              <Trash2 size={13} /> Wyczyść koszyk
+            </button>
+          </div>
+        )}
       </SheetContent>
-      {/* Модальне вікно для підтвердження очищення кошика */}
+
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -214,7 +206,7 @@ const CartSheet = ({ onClose }: { onClose: () => void }) => {
           </div>
         </DialogContent>
       </Dialog>
-      {/* Діалогове вікно з рекомендованими товарами */}
+
       <RecommendDialog
         isOpen={isRecommendDialogOpen}
         onOpenChange={setIsRecommendDialogOpen}

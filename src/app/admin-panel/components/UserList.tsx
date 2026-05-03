@@ -56,9 +56,14 @@ const UserList = () => {
   return (
     <div>
       <Accordion type="single" collapsible>
-        <AccordionItem value="users">
+        <AccordionItem value="users" className="border-0">
           <AccordionTrigger className="text-left font-semibold text-lg hover:no-underline">
-            Lista użytkowników
+            <span className="flex w-full items-center justify-between gap-3 pr-3">
+              <span>Lista użytkowników</span>
+              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                {users?.length ?? 0}
+              </span>
+            </span>
           </AccordionTrigger>
           <AccordionContent>
             {isLoading ? (

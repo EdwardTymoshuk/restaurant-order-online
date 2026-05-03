@@ -3,6 +3,7 @@
 import { trpc } from '@/utils/trpc'
 import { Prisma } from '@prisma/client'
 import { Dispatch, ReactNode, SetStateAction, createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { useAdminRealtime } from '../admin-panel/hooks/useAdminRealtime'
 
 type OrderWithItems = Prisma.OrderGetPayload<{
   include: {
@@ -65,14 +66,19 @@ export const OrdersProvider = ({ children }: { children: ReactNode }) => {
         let updatedOrders = [...prevOrders]
 
         if (orders.length > 0) {
-          const latestOrderCreatedAt = orders[orders.length - 1].createdAt
-          lastUpdatedAtRef.current = new Date(latestOrderCreatedAt).toISOString()
+          const latestOrderUpdatedAt = orders[orders.length - 1].updatedAt
+          lastUpdatedAtRef.current = new Date(latestOrderUpdatedAt).toISOString()
 
           const existingOrderIds = new Set(updatedOrders.map((order) => order.id))
           const newUniqueOrders = orders.filter((order) => !existingOrderIds.has(order.id))
+          const changedExistingOrders = orders.filter((order) => existingOrderIds.has(order.id))
+          updatedOrders = updatedOrders.map((order) => {
+            const changed = changedExistingOrders.find((nextOrder) => nextOrder.id === order.id)
+            return changed ?? order
+          })
           updatedOrders = [...updatedOrders, ...newUniqueOrders]
 
-          const newOrders = orders.filter(
+          const newOrders = newUniqueOrders.filter(
             (order) => new Date(order.createdAt) > loginTimeRef.current
           )
 
@@ -143,10 +149,12 @@ export const OrdersProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     fetchOrders()
-    const interval = setInterval(fetchOrders, 5000)
-    return () => clearInterval(interval)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Запускаємо тільки один раз
+
+  useAdminRealtime({
+    onOrdersChanged: fetchOrders,
+  })
 
   useEffect(() => {
     if (!isDialogOpen && audioIntervalRef.current) {

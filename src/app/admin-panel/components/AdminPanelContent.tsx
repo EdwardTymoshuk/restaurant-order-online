@@ -8,7 +8,6 @@ import MenuTable from '../menu/page'
 import Orders from '../orders/page'
 import Reservations from '../reservations/page'
 import Settings from '../settings/page'
-import Statistics from '../statistics/page'
 import { AdminNavbar } from './AdminNavbar'
 
 // Orders and Menu handle their own scroll container (below PageHeader).
@@ -23,7 +22,6 @@ const renderTabContent = (tab: string) => {
 		case 'reservations': return <Reservations />
 		case 'menu':         return <MenuTable />
 		case 'dashboard':    return withScroll(<Dashboard />)
-		case 'statistics':   return withScroll(<Statistics />)
 		case 'settings':     return withScroll(<Settings />)
 		default:             return withScroll(<Dashboard />)
 	}
@@ -32,7 +30,7 @@ const renderTabContent = (tab: string) => {
 const AdminPanelContent = () => {
 	const searchParams = useSearchParams()
 	const tabParam = searchParams.get('tab')
-	const validTabs = ['dashboard', 'orders', 'reservations', 'menu', 'statistics', 'settings']
+	const validTabs = ['dashboard', 'orders', 'reservations', 'menu', 'settings']
 	const tab = tabParam && validTabs.includes(tabParam) ? tabParam : 'dashboard'
 
 	return (

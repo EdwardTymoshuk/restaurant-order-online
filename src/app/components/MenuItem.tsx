@@ -1,193 +1,189 @@
 'use client'
 
-import {
-	Card,
-	CardContent,
-	CardFooter,
-	CardHeader
-} from "@/app/components/ui/card"
 import { useCart } from '@/app/context/CartContext'
 import { MenuItemCategory, MenuItemType } from '@/app/types/types'
 import { cn } from '@/utils/utils'
+import { Check, Minus, Plus, ShoppingBasket } from 'lucide-react'
 import React, { useState } from 'react'
-import { CiShoppingBasket } from 'react-icons/ci'
-import { FaCheck, FaMinus, FaPlus } from 'react-icons/fa'
 import { toast } from 'sonner'
 import ImageWithFallback from './ImageWithFallback'
 import { Button } from './ui/button'
-import { Skeleton } from './ui/skeleton'
 
 type MenuItemProps = Partial<MenuItemType> & {
-	id: string,
-	name: string,
-	price: number,
-	category: MenuItemCategory,
-	description?: string,
-	image: string,
-	orientation?: 'vertical' | 'horizontal',
-	className?: string,
-	isOrderingActive: boolean | undefined,
-	isPizzaAvailable: boolean | undefined,
+  id: string
+  name: string
+  price: number
+  category: MenuItemCategory
+  description?: string
+  image: string
+  orientation?: 'vertical' | 'horizontal'
+  className?: string
+  isOrderingActive: boolean | undefined
+  isPizzaAvailable: boolean | undefined
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ id, name, price, description, image, orientation = 'vertical', className, category, isOrderingActive, isPizzaAvailable }) => {
-	const [addedToCart, setAddedToCart] = useState(false)
-	const [isImageLoaded, setIsImageLoaded] = useState(false)
-	const isVertical = orientation === 'vertical'
+const MenuItem: React.FC<MenuItemProps> = ({
+  id,
+  name,
+  price,
+  description,
+  image,
+  orientation = 'horizontal',
+  className,
+  category,
+  isOrderingActive,
+  isPizzaAvailable,
+}) => {
+  const [addedToCart, setAddedToCart] = useState(false)
+  const { state, dispatch } = useCart()
+  const isVertical = orientation === 'vertical'
 
-	const { state, dispatch } = useCart()
+  const existingItem = state.items.find((item) => item.id === id)
+  const itemQuantity = existingItem ? existingItem.quantity : 0
+  const isDisabled = !isOrderingActive || (category === 'Pizza' && !isPizzaAvailable)
 
-	// Check if the item already exists in the cart and get its quantity
-	const existingItem = state.items.find(item => item.id === id)
-	const itemQuantity = existingItem ? existingItem.quantity : 0
+  const checkCategoryConflict = () => {
+    const hasBreakfast = state.items.some((cartItem) => cartItem.category === 'Śniadania')
+    const hasRegular = state.items.some((cartItem) => cartItem.category !== 'Śniadania' && cartItem.category !== 'Napoje bezalkoholowe')
 
-	const isDisabled =
-		!isOrderingActive ||
-		(category === 'Pizza' && !isPizzaAvailable)
+    if ((hasBreakfast && category !== 'Śniadania' && category !== 'Napoje bezalkoholowe') || (hasRegular && category === 'Śniadania')) {
+      toast.warning('Nie można łączyć śniadań z innymi posiłkami w jednym zamówieniu.')
+      return false
+    }
+    return true
+  }
 
-	// Function to check conflict between breakfast and other items
-	const checkCategoryConflict = () => {
-		const hasBreakfast = state.items.some(cartItem => cartItem.category === 'Śniadania')
-		const hasRegular = state.items.some(cartItem => cartItem.category !== 'Śniadania' && cartItem.category !== 'Napoje bezalkoholowe')
-	
-		if ((hasBreakfast && category !== 'Śniadania' && category !== 'Napoje bezalkoholowe') || 
-			(hasRegular && category === 'Śniadania')) {
-			toast.warning('Nie można łączyć śniadań z innymi posiłkami w jednym zamówieniu.')
-			return false
-		}
-		return true
-	}
-	
+  const addToCart = () => {
+    if (!name || !price) return
+    if (!checkCategoryConflict()) return
 
-	const addToCart = () => {
-		if (name && price) {
-			if (!checkCategoryConflict()) return // Block adding if there's a conflict
+    dispatch({
+      type: 'ADD_ITEM',
+      payload: {
+        id,
+        name,
+        category,
+        price,
+        quantity: 1,
+        image,
+      },
+    })
 
-			dispatch({
-				type: 'ADD_ITEM',
-				payload: {
-					id,
-					name,
-					category,
-					price,
-					quantity: 1,
-					image
-				},
-			})
+    setAddedToCart(true)
+    setTimeout(() => setAddedToCart(false), 650)
+  }
 
-			setAddedToCart(true)
-			setTimeout(() => setAddedToCart(false), 500)
-		} else {
-			console.error('Item name or price is missing.')
-		}
-	}
+  const incrementQuantity = () => {
+    if (checkCategoryConflict()) {
+      dispatch({ type: 'INCREASE_QUANTITY', payload: id })
+    }
+  }
 
-	// Functions to manage quantity
-	const incrementQuantity = () => {
-		if (checkCategoryConflict()) {
-			dispatch({ type: 'INCREASE_QUANTITY', payload: id })
-		}
-	}
+  const decrementQuantity = () => {
+    if (itemQuantity > 1) {
+      dispatch({ type: 'DECREASE_QUANTITY', payload: id })
+    } else {
+      dispatch({ type: 'REMOVE_ITEM', payload: id })
+    }
+  }
 
-	const decrementQuantity = () => {
-		if (itemQuantity > 1) {
-			dispatch({ type: 'DECREASE_QUANTITY', payload: id })
-		} else {
-			dispatch({ type: 'REMOVE_ITEM', payload: id })
-		}
-	}
+  return (
+    <article
+      className={cn(
+        'group flex w-full overflow-hidden rounded-2xl border border-border bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-secondary/20 hover:shadow-md',
+        isVertical ? 'flex-col' : 'min-h-[156px] flex-row',
+        isDisabled && 'opacity-70',
+        className
+      )}
+    >
+      <div
+        className={cn(
+          'relative shrink-0 overflow-hidden bg-muted',
+          isVertical ? 'aspect-[4/3] w-full' : 'h-auto w-32 sm:w-40'
+        )}
+      >
+        <ImageWithFallback
+          src={image}
+          alt={name}
+          width={isVertical ? 520 : 180}
+          height={isVertical ? 390 : 180}
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          containerClassName="h-full w-full"
+        />
+        {isDisabled && (
+          <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-slate-600 shadow-sm">
+            Niedostępne
+          </span>
+        )}
+      </div>
 
-	const showSkeleton = image && !isImageLoaded
+      <div className="flex min-w-0 flex-1 flex-col p-4">
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
+                {category}
+              </p>
+              <h3 className="line-clamp-2 text-base font-semibold leading-6 text-slate-950">
+                {name}
+              </h3>
+            </div>
+            <p className="shrink-0 text-base font-semibold text-secondary">{price} zł</p>
+          </div>
 
-	return (
-		<Card className={cn('w-full max-w-full border-0 shadow-none flex justify-between p-2', {
-			'flex-col': isVertical,
-			'flex-row items-center': !isVertical,
-		}, className)}>
-			<CardHeader className={cn('p-0', {
-				'w-full h-48': isVertical,
-				'w-24 h-24': !isVertical,
-			})}>
-				<div className='relative w-48 h-48'>
-					{showSkeleton && (
-						<Skeleton
-							className={cn('absolute inset-0 rounded-md', {
-								'w-full h-48': isVertical,
-								'w-24 h-24': !isVertical,
-							})}
-						/>
-					)}
-					<ImageWithFallback
-						src={image}
-						alt={name ?? 'Menu item image'}
-						width={isVertical ? 192 : 96}
-						height={isVertical ? 192 : 96}
-						style={{ objectFit: 'cover' }}
-						className='rounded-md'
-						containerClassName={cn('p-0', {
-							'w-full h-48': isVertical,
-							'w-24 h-24': !isVertical,
-						})}
-						onLoad={() => setIsImageLoaded(true)}
-					/>
-				</div>
-			</CardHeader>
-			<CardContent className='p-2 border-0 flex-1'>
-				<h4 className={cn('uppercase text-secondary py-2 font-bold', {
-					'text-lg': isVertical,
-					'text-sm': !isVertical,
-				})}>{name}</h4>
-				<span className={cn('text-sm text-text-foreground italic', {
-					'text-sm': isVertical,
-					'text-xs': !isVertical,
-				})}>{description}</span>
-			</CardContent>
-			<CardFooter className={cn('px-2 pb-2 mt-auto flex flex-col h-full justify-evenly', {
-				'my-auto pb-0': !isVertical,
-			})}>
-				<span className='text-secondary'>{price} zł</span>
+          {description && (
+            <p className="line-clamp-3 text-sm leading-6 text-slate-500">{description}</p>
+          )}
+        </div>
 
-				{/* Якщо товар у кошику, показати кількість */}
-				{itemQuantity > 0 && !addedToCart ? (
-					<div className='flex items-center space-x-2'>
-						<Button
-							variant='secondary'
-							className={cn('h-6 w-6 flex items-center justify-center px-2', {
-								'opacity-50 cursor-not-allowed': itemQuantity <= 1 || isDisabled,
-							})}
-							onClick={decrementQuantity}
-							disabled={isDisabled}
-						>
-							<FaMinus />
-						</Button>
-						<span className="text-sm">{itemQuantity}</span>
-						<Button
-							variant='secondary'
-							className={cn('h-6 w-6 flex items-center justify-center px-2', {
-								'opacity-50 cursor-not-allowed': isDisabled,
-							})}
-							onClick={incrementQuantity}
-							disabled={isDisabled}
-						>
-							<FaPlus />
-						</Button>
-					</div>
-				) : (
-					<Button
-						variant='secondary'
-						className={cn('h-6 transition-colors duration-300', {
-							'opacity-50 cursor-not-allowed': isDisabled,
-							'text-success scale-105': addedToCart,
-						})}
-						onClick={addToCart}
-						disabled={isDisabled}
-					>
-						{addedToCart ? <FaCheck /> : <CiShoppingBasket />}
-					</Button>
-				)}
-			</CardFooter>
-		</Card>
-	)
+        <div className="mt-4 flex items-center justify-between gap-3">
+          {itemQuantity > 0 && !addedToCart ? (
+            <div className="flex items-center rounded-full border border-border bg-muted/40 p-1">
+              <button
+                type="button"
+                onClick={decrementQuantity}
+                disabled={isDisabled}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Zmniejsz ilość"
+              >
+                <Minus size={14} />
+              </button>
+              <span className="flex min-w-9 justify-center text-sm font-semibold text-slate-900">{itemQuantity}</span>
+              <button
+                type="button"
+                onClick={incrementQuantity}
+                disabled={isDisabled}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-white shadow-sm transition hover:bg-secondary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Zwiększ ilość"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              onClick={addToCart}
+              disabled={isDisabled}
+              className={cn(
+                'h-10 rounded-full px-4 text-xs font-semibold',
+                addedToCart ? 'bg-emerald-600 text-white hover:bg-emerald-600' : 'bg-secondary text-white hover:bg-secondary/90'
+              )}
+            >
+              {addedToCart ? (
+                <>
+                  <Check size={15} /> Dodano
+                </>
+              ) : (
+                <>
+                  <ShoppingBasket size={15} /> Dodaj
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      </div>
+    </article>
+  )
 }
 
 export default MenuItem

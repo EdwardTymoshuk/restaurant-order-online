@@ -6,8 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { BsCart4 } from 'react-icons/bs'
-import { FaSearch } from 'react-icons/fa'
+import { Search, ShoppingBag } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import OrderTrackingDialog from './OrderTrackingDialog'
 import { Button } from './ui/button'
@@ -17,6 +16,7 @@ const Header = () => {
 	const [isOrderTrackingOpen, setIsOrderTrackingOpen] = useState(false)
 	const { state } = useCart()
 	const currentPath = usePathname()
+	const isHomePage = currentPath === '/'
 
 	const totalItemsInCart = state.items.reduce((total, item) => total + item.quantity, 0)
 
@@ -33,33 +33,39 @@ const Header = () => {
 	}
 
 	return (
-		<header className='bg-background p-4 shadow-sm shadow-primary min-h-20 h-auto fixed w-full z-10'>
-			<div className={cn('mx-auto flex justify-between items-center')}>
+		<header className={cn(
+			'fixed left-0 right-0 top-0 z-30 px-4',
+			isHomePage ? 'h-16 pt-3' : 'h-12',
+			isHomePage ? 'bg-transparent shadow-none' : 'bg-secondary shadow-sm'
+		)}>
+			<div className={cn('mx-auto flex h-full items-center justify-between')}>
 				<Link href='/'>
 					<Image
-						src='/img/page-main-logo.png'
+						src="/img/logo-admin.svg"
 						alt='Spoko Restaurant Logo'
-						width={96}
-						height={96}
+						width={isHomePage ? 118 : 92}
+						height={isHomePage ? 44 : 36}
+						priority
+						className="object-contain"
 					/>
 				</Link>
 
-				<div className="flex items-center space-x-4">
+				<div className="flex items-center gap-2">
 
 					{!currentPath.includes('/checkout') && !currentPath.includes('/thank-you') && (
-						<Button onClick={handleOrderTrackingOpen} variant="secondary" className="flex items-center text-xs md:text-sm text-text-primary space-x-2 ring-0">
-							<FaSearch className="h-4 md:h-5 w-4 md:w-5" />
-							<span className=" sm:inline">Śledź zamówienie</span>
+						<Button onClick={handleOrderTrackingOpen} className="h-9 gap-2 rounded-lg bg-primary px-3 text-xs font-semibold text-secondary hover:bg-primary/90 md:px-4">
+							<Search size={16} />
+							<span className="hidden sm:inline">Śledź zamówienie</span>
 						</Button>
 					)}
 					{currentPath.includes('/order') && (
 
-						<Button onClick={handleCartSheetOpen} variant="ghost" className="flex items-center space-x-2 hover:bg-transparent p-0 m-0 ring-0">
-							<div className="relative scale-75 group text-xs md:text-sm">
-								<BsCart4 className="h-8 w-8 text-text-secondary group-hover:text-secondary" />
+						<Button onClick={handleCartSheetOpen} variant="ghost" className="h-9 w-9 rounded-lg p-0 text-white hover:bg-white/10 hover:text-white">
+							<div className="relative">
+								<ShoppingBag size={20} />
 								{totalItemsInCart > 0 && (
-									<span className="absolute -top-2 left-4 rounded-full bg-secondary group-hover:brightness-125 p-0.5 px-2 text-sm text-text-primary transition-all">
-										{totalItemsInCart}
+									<span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-secondary transition-all">
+										{totalItemsInCart > 9 ? '9+' : totalItemsInCart}
 									</span>
 								)}
 							</div>

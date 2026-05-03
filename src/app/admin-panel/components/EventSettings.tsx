@@ -120,9 +120,14 @@ const EventSettings = () => {
   return (
     <section>
       <Accordion type="single" collapsible>
-        <AccordionItem value="events">
+        <AccordionItem value="events" className="border-0">
           <AccordionTrigger className="text-left font-semibold text-lg hover:no-underline">
-            Zarządzanie wydarzeniami
+            <span className="flex w-full items-center justify-between gap-3 pr-3">
+              <span>Zarządzanie wydarzeniami</span>
+              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                {events.length}
+              </span>
+            </span>
           </AccordionTrigger>
           <AccordionContent>
             <div className="space-y-4">
@@ -252,9 +257,11 @@ const EventSettings = () => {
             className="h-40 pb-8"
           />
 
-          <Button onClick={handleAddOrUpdateEvent} className="w-full">
-            {isEditMode ? 'Zapisz zmiany' : 'Dodaj wydarzenie'}
-          </Button>
+          <div className="pb-3 pt-2">
+            <Button onClick={handleAddOrUpdateEvent} className="w-full">
+              {isEditMode ? 'Zapisz zmiany' : 'Dodaj wydarzenie'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </section>

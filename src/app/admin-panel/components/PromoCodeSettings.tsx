@@ -180,9 +180,14 @@ const PromoCodeSettings: React.FC = () => {
 
   return (
     <Accordion type="single" collapsible>
-      <AccordionItem value="promoCodes">
+      <AccordionItem value="promoCodes" className="border-0">
         <AccordionTrigger className="text-left font-semibold text-lg hover:no-underline">
-          Kody promocyjne
+          <span className="flex w-full items-center justify-between gap-3 pr-3">
+            <span>Kody promocyjne</span>
+            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+              {promoCodes.length}
+            </span>
+          </span>
         </AccordionTrigger>
         <AccordionContent>
           <Table>

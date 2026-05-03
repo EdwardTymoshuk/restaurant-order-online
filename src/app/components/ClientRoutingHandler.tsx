@@ -20,7 +20,7 @@ const ClientRoutingHandler: React.FC<{ children: React.ReactNode }> = ({ childre
 			) : (
 				children
 			)}
-			{!isAdminPanel && <Footer />}
+			{!isAdminPanel && !isHomePage && <Footer />}
 		</>
 	)
 }

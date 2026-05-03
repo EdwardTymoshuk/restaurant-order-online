@@ -1,287 +1,325 @@
 'use client'
 
 import MenuItem from '@/app/components/MenuItem'
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/app/components/ui/accordion'
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/app/components/ui/carousel'
+import { Input } from '@/app/components/ui/input'
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/app/components/ui/select'
 import { Skeleton } from '@/app/components/ui/skeleton'
+import { useCart } from '@/app/context/CartContext'
 import { MenuItemCategory, MenuItemType } from '@/app/types/types'
 import { CLOSING_HOUR, OPENING_HOUR } from '@/config/constants'
 import { trpc } from '@/utils/trpc'
+import { cn } from '@/utils/utils'
 import Autoplay from 'embla-carousel-autoplay'
+import { Clock, Search, ShoppingBag, Sparkles, Store } from 'lucide-react'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
-import { LuCircleSlash2 } from "react-icons/lu"
-import PageSubHeader from '../../components/PageSubHeader'
+import { useEffect, useMemo, useState } from 'react'
 
 const categoryOrder: Record<string, number> = {
-	'Oferta Walentynkowa': 0,
-	'Oferta Specjalna': 1,
+  'Oferta Walentynkowa': 0,
+  'Oferta Specjalna': 1,
+  'Śniadania': 2,
+  'Pizza': 3,
+}
+
+const sortItems = (items: MenuItemType[], sortOption: string | undefined) => {
+  const next = [...items]
+  switch (sortOption) {
+    case 'Nazwa rosnąco':
+      return next.sort((a, b) => a.name.localeCompare(b.name))
+    case 'Nazwa malejąco':
+      return next.sort((a, b) => b.name.localeCompare(a.name))
+    case 'Cena rosnąco':
+      return next.sort((a, b) => a.price - b.price)
+    case 'Cena malejąco':
+      return next.sort((a, b) => b.price - a.price)
+    default:
+      return next
+  }
 }
 
 const Order = () => {
-	// States for managing UI and data
-	const [sortedItems, setSortedItems] = useState<MenuItemType[]>([])
-	const [sortOption, setSortOption] = useState<string | undefined>(undefined)
-	const [categoryFilter, setCategoryFilter] = useState<string | undefined>('all')
-	const [activeAccordion, setActiveAccordion] = useState<string | null>(null)
-	const [isBreakfastOnly, setIsBreakfastOnly] = useState<boolean>(false)
-	const [isOpen, setIsOpen] = useState(true)
+  const [sortOption, setSortOption] = useState<string | undefined>(undefined)
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [search, setSearch] = useState('')
+  const [isOpen, setIsOpen] = useState(true)
+  const { state } = useCart()
 
-	// Fetch menu items, banners, and settings from the server
-	const { data: menuItems = [], isLoading } = trpc.menu.getMenuItems.useQuery()
-	const { data: carouselImages = [], isLoading: isLoadingCarouselImages } = trpc.banner.getAllBanners.useQuery()
-	const { data: settings, isLoading: isLoadingSettings } = trpc.settings.getSettings.useQuery()
+  const { data: menuItems = [], isLoading } = trpc.menu.getMenuItems.useQuery()
+  const { data: carouselImages = [], isLoading: isLoadingCarouselImages } = trpc.banner.getAllBanners.useQuery()
+  const { data: settings, isLoading: isLoadingSettings } = trpc.settings.getSettings.useQuery()
 
-	// Utility function to check if the restaurant is open
-	const isRestaurantOpen = () => {
-		const now = new Date()
-		const openingTime = new Date()
-		openingTime.setHours(OPENING_HOUR, 0, 0, 0)
-		const closingTime = new Date()
-		closingTime.setHours(CLOSING_HOUR, 0, 0, 0)
+  useEffect(() => {
+    const now = new Date()
+    const openingTime = new Date()
+    openingTime.setHours(OPENING_HOUR, 0, 0, 0)
+    const closingTime = new Date()
+    closingTime.setHours(CLOSING_HOUR, 0, 0, 0)
+    setIsOpen(now >= openingTime && now < closingTime)
+  }, [])
 
-		return now >= openingTime && now < closingTime
-	}
+  const activeItems = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    const filtered = menuItems
+      .map((item) => ({ ...item, category: item.category as MenuItemCategory }))
+      .filter((item) => item.isActive)
+      .filter((item) => categoryFilter === 'all' || item.category === categoryFilter)
+      .filter((item) => {
+        if (!query) return true
+        return `${item.name} ${item.description ?? ''} ${item.category}`.toLowerCase().includes(query)
+      }) as MenuItemType[]
 
-	useEffect(() => {
-		setIsOpen(isRestaurantOpen())
-	}, [])
+    return sortItems(filtered, sortOption)
+  }, [menuItems, categoryFilter, search, sortOption])
 
-	// // Logic for restricting menu items based on time (e.g., breakfast only)
-	// useEffect(() => {
-	// 	const now = new Date()
-	// 	const currentHour = now.getHours()
-	// 	const isBreakfastTime = currentHour >= 8 && currentHour < 12
-	// 	setIsBreakfastOnly(isBreakfastTime)
-	// 	if (isBreakfastTime) {
-	// 		setCategoryFilter('Śniadania')
-	// 		setActiveAccordion('Śniadania')
-	// 	}
-	// }, [])
+  const categories = useMemo(() => {
+    return Array.from(new Set(menuItems.filter((item) => item.isActive).map((item) => item.category))).sort((a, b) => {
+      const orderA = categoryOrder[a] ?? 100
+      const orderB = categoryOrder[b] ?? 100
+      if (orderA !== orderB) return orderA - orderB
+      return a.localeCompare(b, 'pl')
+    })
+  }, [menuItems])
 
-	// Sorting and filtering logic for menu items
-	useEffect(() => {
-		if (!menuItems || menuItems.length === 0) return
+  const categoryCounts = useMemo(() => {
+    return menuItems.reduce<Record<string, number>>((acc, item) => {
+      if (!item.isActive) return acc
+      acc[item.category] = (acc[item.category] ?? 0) + 1
+      return acc
+    }, {})
+  }, [menuItems])
 
-		let itemsFiltered = menuItems
-			.map(item => ({
-				...item,
-				category: item.category as MenuItemCategory,
-			}))
-			.filter(item => item.isActive)
+  const groupedItems = useMemo(() => {
+    return categories
+      .filter((category) => categoryFilter === 'all' || categoryFilter === category)
+      .map((category) => ({
+        category,
+        items: activeItems.filter((item) => item.category === category),
+      }))
+      .filter((group) => group.items.length > 0)
+  }, [activeItems, categories, categoryFilter])
 
-		if (isBreakfastOnly && categoryFilter !== 'Śniadania') {
-			itemsFiltered = []
-		} else if (categoryFilter && categoryFilter !== 'all') {
-			itemsFiltered = itemsFiltered.filter(item => item.category === categoryFilter)
-		}
+  const totalItemsInCart = state.items.reduce((total, item) => total + item.quantity, 0)
 
-		switch (sortOption) {
-			case 'Nazwa rosnąco':
-				itemsFiltered.sort((a, b) => a.name.localeCompare(b.name))
-				break
-			case 'Nazwa malejąco':
-				itemsFiltered.sort((a, b) => b.name.localeCompare(a.name))
-				break
-			case 'Cena rosnąco':
-				itemsFiltered.sort((a, b) => a.price - b.price)
-				break
-			case 'Cena malejąco':
-				itemsFiltered.sort((a, b) => b.price - a.price)
-				break
-			default:
-				break
-		}
+  return (
+    <div className="w-full bg-[#f6f7f8] pb-10">
+      <section className="w-full rounded-b-[28px] bg-white shadow-sm">
+        <div className="mx-auto grid w-full max-w-6xl gap-5 px-4 pb-5 pt-5 lg:grid-cols-[1.25fr_0.75fr]">
+          <div className="min-w-0">
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                <Sparkles size={13} /> Zamów online
+              </span>
+              <span className={cn(
+                'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
+                isOpen ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
+              )}>
+                <Clock size={13} /> {isOpen ? `Otwarte do ${CLOSING_HOUR}:00` : `Otwarte od ${OPENING_HOUR}:00`}
+              </span>
+            </div>
 
-		setSortedItems(itemsFiltered)
-	}, [menuItems, sortOption, categoryFilter, isBreakfastOnly])
+            <h1 className="max-w-2xl text-3xl font-semibold leading-tight text-slate-950 md:text-5xl">
+              Menu Spoko Sopot
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 md:text-base">
+              Wybierz dania, dodaj je do koszyka i zamów z odbiorem albo dostawą. Ceny i dostępność są pobierane z aktualnego menu restauracji.
+            </p>
 
-	// Generate unique category list from menu items
-	const categories = Array.from(new Set(menuItems.map(item => item.category)))
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-border bg-muted/40 px-4 py-3">
+                <p className="text-xs text-slate-400">Godziny</p>
+                <p className="mt-1 text-sm font-semibold text-slate-900">{OPENING_HOUR}:00 - {CLOSING_HOUR}:00</p>
+              </div>
+              <div className="rounded-xl border border-border bg-muted/40 px-4 py-3">
+                <p className="text-xs text-slate-400">Menu</p>
+                <p className="mt-1 text-sm font-semibold text-slate-900">{categories.length || '...'} kategorii</p>
+              </div>
+              <div className="rounded-xl border border-border bg-muted/40 px-4 py-3">
+                <p className="text-xs text-slate-400">Koszyk</p>
+                <p className="mt-1 text-sm font-semibold text-slate-900">{totalItemsInCart} pozycji</p>
+              </div>
+            </div>
+          </div>
 
-	// Sorting categories
-	const sortedCategories = [...new Set([...categories])].sort((a, b) => {
-		const orderA = categoryOrder[a] ?? Infinity
-		const orderB = categoryOrder[b] ?? Infinity
-		return orderA - orderB
-	  })
-	  
+          <Carousel
+            className="min-h-[220px] overflow-hidden rounded-2xl border border-border bg-muted"
+            plugins={[Autoplay({ delay: 5000 })]}
+          >
+            <CarouselContent>
+              {isLoadingCarouselImages && (
+                <CarouselItem>
+                  <Skeleton className="h-[220px] w-full lg:h-[300px]" />
+                </CarouselItem>
+              )}
+              {!isLoadingCarouselImages && carouselImages.length === 0 && (
+                <CarouselItem>
+                  <div className="flex h-[220px] items-center justify-center bg-secondary text-white lg:h-[300px]">
+                    <Store size={38} strokeWidth={1.5} />
+                  </div>
+                </CarouselItem>
+              )}
+              {carouselImages.map((item) => (
+                <CarouselItem key={item.id}>
+                  <div className="relative h-[220px] w-full lg:h-[300px]">
+                    <Image
+                      src={item.imageUrl}
+                      alt="Promocja Spoko Sopot"
+                      fill
+                      sizes="(min-width: 1024px) 420px, 100vw"
+                      className="object-cover"
+                    />
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            {carouselImages.length > 1 && (
+              <>
+                <CarouselPrevious className="left-3 border-white/70 bg-white/90 text-slate-900 hover:bg-white" />
+                <CarouselNext className="right-3 border-white/70 bg-white/90 text-slate-900 hover:bg-white" />
+              </>
+            )}
+          </Carousel>
+        </div>
+      </section>
 
-	return (
-		<div className="container mx-auto px-4 py-4 space-y-4">
-			{/* Carousel for banners */}
-			<Carousel
-				className="w-full h-96"
-				plugins={[
-					Autoplay({
-						delay: 5000,
-					}),
-				]}
-			>
-				<CarouselContent className="h-full">
-					{isLoadingCarouselImages && <Skeleton className="w-[1056px] h-[384px]" />}
-					{carouselImages.map((item, index) => (
-						<CarouselItem key={index} className="relative">
-							<div className="relative h-96 w-auto rounded-md">
-								<Image
-									src={item.imageUrl}
-									alt="Carousel image"
-									width={1056}
-									height={384}
-									className="object-cover w-full h-96 rounded-md"
-								/>
-							</div>
-						</CarouselItem>
-					))}
-				</CarouselContent>
-				<CarouselPrevious className="left-0 text-primary hover:text-primary opacity-80 hover:opacity-100 h-8 w-8 bg-transparent hover:bg-transparent" />
-				<CarouselNext className="right-0 text-primary hover:text-primary opacity-80 hover:opacity-100 h-8 w-8 bg-transparent hover:bg-transparent" />
-			</Carousel>
+      <section className="sticky top-20 z-10 border-b border-border bg-white/95 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center">
+          <div className="relative flex-1">
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Szukaj dania, składnika lub kategorii"
+              className="h-11 rounded-xl border-border bg-muted/40 pl-10"
+            />
+          </div>
+          <Select value={sortOption} onValueChange={setSortOption}>
+            <SelectTrigger aria-label="Sortowanie" className="h-11 rounded-xl bg-white lg:w-[190px]">
+              <SelectValue placeholder="Sortuj" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Nazwa rosnąco">Nazwa rosnąco</SelectItem>
+              <SelectItem value="Nazwa malejąco">Nazwa malejąco</SelectItem>
+              <SelectItem value="Cena rosnąco">Cena rosnąco</SelectItem>
+              <SelectItem value="Cena malejąco">Cena malejąco</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-			{/* Page subheader */}
-			<PageSubHeader title="Wybierz na co masz dziś ochotę" />
+        <div className="mx-auto flex w-full max-w-6xl gap-2 overflow-x-auto px-4 pb-3">
+          <button
+            onClick={() => setCategoryFilter('all')}
+            className={cn(
+              'inline-flex h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-sm transition-colors',
+              categoryFilter === 'all'
+                ? 'border-secondary bg-secondary text-white'
+                : 'border-border bg-white text-slate-600 hover:border-secondary/40'
+            )}
+          >
+            Wszystkie
+            <span className={cn('rounded-full px-2 py-0.5 text-xs', categoryFilter === 'all' ? 'bg-white/15' : 'bg-muted')}>
+              {menuItems.filter((item) => item.isActive).length}
+            </span>
+          </button>
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => setCategoryFilter(category)}
+              className={cn(
+                'inline-flex h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-sm transition-colors',
+                categoryFilter === category
+                  ? 'border-secondary bg-secondary text-white'
+                  : 'border-border bg-white text-slate-600 hover:border-secondary/40'
+              )}
+            >
+              {category}
+              <span className={cn('rounded-full px-2 py-0.5 text-xs', categoryFilter === category ? 'bg-white/15' : 'bg-muted')}>
+                {categoryCounts[category] ?? 0}
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
 
-			{/* Display ordering status */}
-			{isLoadingSettings ? <Skeleton className="w-full h-8" /> : (!settings?.isOrderingOpen &&
-				<div className="flex justify-self-center w-fit p-4 bg-yellow-100 text-warning text-center rounded-md">
-					Zamawianie online jest chwilowo niedostępne. <br />W celu zamówienia zadzwoń do nas lub odwiedź nas osobiście.
-				</div>
-			)}
+      <div className="mx-auto w-full max-w-6xl px-4 py-6">
+        {isLoadingSettings ? (
+          <Skeleton className="mb-4 h-12 w-full rounded-xl" />
+        ) : !settings?.isOrderingOpen ? (
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Zamawianie online jest chwilowo niedostępne. W celu zamówienia zadzwoń do nas lub odwiedź nas osobiście.
+          </div>
+        ) : null}
 
-			{/* Sorting and category filtering controls */}
-			<div className="flex gap-4 mb-4 w-1/2">
-				<Select
-					value={sortOption}
-					onValueChange={setSortOption}
-				>
-					<SelectTrigger aria-label="Sortowanie">
-						<SelectValue placeholder="Sortuj" />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="Nazwa rosnąco">Nazwa rosnąco</SelectItem>
-						<SelectItem value="Nazwa malejąco">Nazwa malejąco</SelectItem>
-						<SelectItem value="Cena rosnąco">Cena rosnąco</SelectItem>
-						<SelectItem value="Cena malejąco">Cena malejąco</SelectItem>
-					</SelectContent>
-				</Select>
-				<Select
-					value={categoryFilter}
-					onValueChange={(value) => {
-						setCategoryFilter(value)
-						setActiveAccordion(value === 'all' ? null : value)
-					}}
-					disabled={isBreakfastOnly} // Restrict category changes during breakfast hours
-				>
-					<SelectTrigger aria-label="Kategorie">
-						<SelectValue placeholder="Filtruj" />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="all">Wszystkie</SelectItem>
-						{sortedCategories.map(category => (
-							<SelectItem key={category} value={category}>{category}</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-			</div>
+        {!isOpen && (
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            Restauracja jest teraz zamknięta. Zamówienia realizujemy od {OPENING_HOUR}:00 do {CLOSING_HOUR}:00.
+          </div>
+        )}
 
-			{/* Display breakfast-only notice */}
-			{/* {isBreakfastOnly && (
-				<div className="text-center text-lg text-secondary mt-8">
-					W godzinach 8:00 - 12:00 dostępne są tylko śniadania.
-				</div>
-			)} */}
+        {isLoading ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <Skeleton key={index} className="h-40 w-full rounded-2xl" />
+            ))}
+          </div>
+        ) : groupedItems.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border bg-white px-4 py-16 text-center">
+            <ShoppingBag className="mx-auto mb-3 text-slate-300" size={36} strokeWidth={1.5} />
+            <p className="text-sm font-medium text-slate-700">Nie znaleziono pozycji w menu.</p>
+            <p className="mt-1 text-xs text-slate-400">Zmień kategorię albo wpisz inną frazę.</p>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {groupedItems.map(({ category, items }) => (
+              <section key={category} className="scroll-mt-40">
+                <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <h2 className="text-2xl font-semibold text-slate-950 md:text-3xl">{category}</h2>
+                    {category === 'Śniadania' && (
+                      <p className="mt-1 text-sm text-slate-500">Dostępne wyłącznie w godzinach 8:00 - 12:00.</p>
+                    )}
+                    {category === 'Pizza' && (
+                      <p className="mt-1 text-sm text-slate-500">Pizza 32 cm, dostępna w wybrane dni i godziny.</p>
+                    )}
+                  </div>
+                  <span className="text-sm text-slate-400">{items.length} pozycji</span>
+                </div>
 
-			{/* Display restaurant closed notice */}
-			{!isOpen && (
-				<div className="mt-4 p-2 bg-red-100 text-danger text-center rounded-md">
-					Restauracja jest zamknięta. Zamówienia są realizowane od godziny{' '}
-					{OPENING_HOUR}:00 do{' '}
-					{CLOSING_HOUR}:00.
-				</div>
-			)}
-
-			{/* Menu items displayed by category */}
-			<Accordion
-				type="single"
-				collapsible
-				className="space-y-4"
-				value={activeAccordion || undefined}
-				onValueChange={setActiveAccordion}
-			>
-				{isLoading ? (
-					<div className="grid grid-cols-1 gap-y-4 gap-x-16">
-						{Array.from({ length: 4 }).map((_, index) => (
-							<Skeleton key={index} className="w-full h-24 md:h-32" />
-						))}
-					</div>
-				) : (
-					sortedCategories
-						.filter(category => categoryFilter === 'all' || categoryFilter === category)
-						.map((category, index) => (
-							<AccordionItem key={category} value={category} className="border-0">
-								<AccordionTrigger className="text-text-foreground hover:text-text-secondary data-[state=open]:text-text-secondary text-4xl md:text-5xl hover:no-underline text-start">
-									{/* Add a condition for the breakfast category */}
-									{category === 'Śniadania' ? (
-										<span className="space-x-0 flex flex-col items-start">
-											<span>{category}</span>
-											<span className="text-secondary text-sm">
-												(Dostępne wyłącznie w godzinach 8:00 - 12:00)
-											</span>
-										</span>
-									) : category === 'Pizza' ? (
-										<span className="space-x-0 flex flex-col items-start">
-											<span className='flex items-end gap-2'>{category} <i className='text-4xl flex items-bottom gap-2'>(32 cm <LuCircleSlash2 />)</i></span>
-											<span className="text-secondary text-sm">
-												(Dostępne w wybrane dni i godziny)
-											</span>
-										</span>
-									)  : (
-										category
-									)}
-								</AccordionTrigger>
-								<AccordionContent>
-								{category === 'Oferta Walentynkowa' && (
-                    <div className="w-full bg-red-50 text-danger p-4 rounded-lg mb-4 text-base flex flex-col">
-                        <p><strong>Specjalna oferta Walentynkowa</strong> dostępna tylko w dniach <strong>14-16 lutego</strong>.</p>
-                        <p>Menu walentynkowe jest przygotowane z myślą o wyjątkowych chwilach i dostępne <strong>wyłącznie na dostawę</strong>.</p>
-                        <p>Zalecamy składanie zamówień z wyprzedzeniem, aby zagwarantować sobie romantyczny wieczór bez stresu.</p>
-                        <p>W razie pytań prosimy o kontakt telefoniczny.</p>
-                    </div>
+                {category === 'Oferta Walentynkowa' && (
+                  <div className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
+                    Specjalna oferta Walentynkowa dostępna tylko w dniach 14-16 lutego i wyłącznie na dostawę.
+                  </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-items-center">
-									{sortedItems
-										.filter(item => item.category === category)
-										.map(item => (
-											<MenuItem
-												key={item.id}
-												id={item.id}
-												name={item.name}
-												price={item.price}
-												description={item.description || ''}
-												image={item.image || ''}
-												category={item.category}
-												orientation="horizontal"
-												isOrderingActive={settings?.isOrderingOpen}
-												isPizzaAvailable={settings?.pizzaCategoryEnabled}
-											/>
-										))}
-										</div>
-								</AccordionContent>
-							</AccordionItem>
-
-						))
-				)}
-			</Accordion>
-		</div>
-	)
+                <div className="grid gap-4 md:grid-cols-2">
+                  {items.map((item) => (
+                    <MenuItem
+                      key={item.id}
+                      id={item.id}
+                      name={item.name}
+                      price={item.price}
+                      description={item.description || ''}
+                      image={item.image || ''}
+                      category={item.category}
+                      orientation="horizontal"
+                      isOrderingActive={settings?.isOrderingOpen}
+                      isPizzaAvailable={settings?.pizzaCategoryEnabled}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 export default Order

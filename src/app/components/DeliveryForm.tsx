@@ -12,14 +12,11 @@ import { RESTAURANT_COORDINATES } from '@/config/constants'
 import {
   Coordinates,
   getCoordinates,
-  hasStreetNumber,
   haversineDistance,
 } from '@/utils/deliveryUtils'
 import { trpc } from '@/utils/trpc'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Autocomplete } from '@react-google-maps/api'
-import { useRouter } from 'next/navigation'
-import { useMemo, useState, useTransition } from 'react' // Додаємо useTransition
+import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -47,15 +44,8 @@ export default function DeliveryForm({
   setAddressVerified,
   setAddressCoordinates,
 }: DeliveryFormProps) {
-  const [deliveryAddressCoordinates, setDeliveryAddressCoordinates] =
-    useState<Coordinates | null>(null)
-  const [autocomplete, setAutocomplete] =
-    useState<google.maps.places.Autocomplete | null>(null)
   const [addressValid, setAddressValid] = useState(true)
   const [loading, setLoading] = useState(false)
-
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition() // Використовуємо useTransition для переходу
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -112,55 +102,30 @@ export default function DeliveryForm({
     setLoading(false)
   }
 
-  // Обробляємо перенаправлення при натисканні на кнопку після валідації
-  const handleOrderClick = () => {
-    if (addressVerified) {
-      // Використовуємо startTransition для асинхронного переходу
-      startTransition(() => {
-        router.push('/order')
-      })
-    }
-  }
-
   return (
-    <div className="flex flex-col space-y-8">
+    <div className="flex flex-col">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="mb-2 space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
           <FormField
             control={form.control}
             name="address"
             render={({ field, fieldState }) => (
               <FormItem>
                 <FormControl>
-                  <Autocomplete
-                    onLoad={setAutocomplete}
-                    onPlaceChanged={() => {
-                      if (autocomplete) {
-                        const place = autocomplete.getPlace()
-                        if (place?.formatted_address) {
-                          const isValid = hasStreetNumber(
-                            place.address_components
-                          )
-                          setAddressValid(isValid)
-                          if (!isValid) {
-                            toast.error('Proszę wprowadzić numer budynku.')
-                          }
-                          form.setValue('address', place.formatted_address)
-                          onFormDataChange({ address: place.formatted_address })
-                        }
-                      }
+                  <Input
+                    {...field}
+                    onChange={(event) => {
+                      field.onChange(event)
+                      onFormDataChange({ address: event.target.value })
+                      setAddressValid(true)
                     }}
-                  >
-                    <Input
-                      {...field}
-                      className={`${
-                        fieldState.invalid || !addressValid
-                          ? 'border-danger'
-                          : ''
-                      }`}
-                      placeholder="Wprowadź adres"
-                    />
-                  </Autocomplete>
+                    className={`${
+                      fieldState.invalid || !addressValid
+                        ? 'border-danger'
+                        : ''
+                    } h-12 rounded-xl bg-white px-4 text-sm`}
+                    placeholder="Wprowadź adres dostawy"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -184,10 +149,10 @@ export default function DeliveryForm({
 						)}
 					</LoadingButton> */}
           <LoadingButton
-            isLoading={loading || isPending} // Показуємо стан завантаження під час переходу
+            isLoading={loading}
             type="submit"
             variant="default"
-            className="w-full my-4"
+            className="h-12 w-full rounded-xl bg-primary text-secondary hover:bg-primary/90"
           >
             Sprawdź
           </LoadingButton>

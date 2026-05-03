@@ -7,13 +7,13 @@ export async function GET(req: NextRequest) {
 	const lastUpdatedAtParam = req.nextUrl.searchParams.get('lastUpdatedAt')
 
 	const whereCondition = lastUpdatedAtParam
-		? { createdAt: { gt: new Date(lastUpdatedAtParam) } }
+		? { updatedAt: { gt: new Date(lastUpdatedAtParam) } }
 		: {}
 
 	try {
 		const newOrders = await prisma.order.findMany({
 			where: whereCondition,
-			orderBy: { createdAt: 'asc' },
+			orderBy: { updatedAt: 'asc' },
 			include: {
 				items: { include: { menuItem: true } },
 				promoCode: true,
