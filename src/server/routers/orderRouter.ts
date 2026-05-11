@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { notifyNewOrder } from '@/lib/pushNotifications'
 import { OrderStatus, Prisma } from '@prisma/client' // Додаємо Prisma для типів
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
@@ -69,9 +70,20 @@ export const orderRouter = router({
         })
       }
 
-      return prisma.order.create({
+      const order = await prisma.order.create({
         data: orderData,
       })
+
+      await notifyNewOrder({
+        id: order.id,
+        name: order.name,
+        finalAmount: order.finalAmount,
+        deliveryMethod: order.deliveryMethod,
+      }).catch((error) => {
+        console.error('Failed to send new order push notification.', error)
+      })
+
+      return order
     }),
 
   // Отримання всіх замовлень

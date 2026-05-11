@@ -17,6 +17,7 @@ import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { RiCloseLine, RiMenu3Line } from 'react-icons/ri'
 import useSWR from 'swr'
+import { AdminPushNotifications } from './AdminPushNotifications'
 import { useAdminRealtime } from '../hooks/useAdminRealtime'
 
 type NavbarBadges = {
@@ -116,7 +117,8 @@ export const AdminNavbar = ({ className, activeTab }: AdminNavbarProps) => {
 				</nav>
 
 				{/* Right side — desktop */}
-				<div className="hidden lg:flex items-center gap-2 w-40 justify-end shrink-0">
+				<div className="hidden lg:flex items-center gap-2 w-52 justify-end shrink-0">
+					<AdminPushNotifications />
 					<DropdownMenu modal={false}>
 						<DropdownMenuTrigger asChild>
 							<button className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-secondary text-base font-sans font-semibold hover:opacity-90 transition-opacity focus:outline-none">
@@ -199,13 +201,16 @@ export const AdminNavbar = ({ className, activeTab }: AdminNavbarProps) => {
 						})}
 						<div className="border-t border-white/10 mt-2 pt-2 px-4 flex items-center justify-between">
 							<span className="text-sm font-sans font-light text-white/60">{displayName}</span>
-							<button
-								onClick={() => signOut()}
-								className="flex items-center gap-1.5 text-xs font-sans font-light text-danger hover:text-danger/80"
-							>
-								<LogOut size={14} strokeWidth={1.5} />
-								Wyloguj
-							</button>
+							<div className="flex items-center gap-2">
+								<AdminPushNotifications className="h-9 w-9" />
+								<button
+									onClick={() => signOut()}
+									className="flex items-center gap-1.5 text-xs font-sans font-light text-danger hover:text-danger/80"
+								>
+									<LogOut size={14} strokeWidth={1.5} />
+									Wyloguj
+								</button>
+							</div>
 						</div>
 					</nav>
 				</div>

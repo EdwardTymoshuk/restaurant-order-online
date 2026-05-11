@@ -1,5 +1,5 @@
 import { Analytics } from '@vercel/analytics/react'
-import { Metadata } from 'next'
+import { Metadata, Viewport } from 'next'
 import { Roboto } from 'next/font/google'
 import Script from 'next/script'
 import ClientRoutingHandler from './components/ClientRoutingHandler'
@@ -10,9 +10,24 @@ import './globals.css'
 const roboto = Roboto({ weight: '400', subsets: ['latin'] })
 
 export const metadata: Metadata = {
+  applicationName: 'Spoko Admin',
   title: 'Zamówienia | Spoko Sopot',
   description:
     'Zamów online swoje ulubione dania z dostawą do domu lub odbiorem osobistym w Spoko Sopot. Szybko, wygodnie i smacznie!',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Spoko Admin',
+  },
+  icons: {
+    icon: [
+      { url: '/icons/cleaned.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/icons/cleaned.png', sizes: '512x512', type: 'image/png' },
+    ],
+  },
   openGraph: {
     title: 'Zamówienia | Spoko Sopot',
     description:
@@ -31,6 +46,13 @@ export const metadata: Metadata = {
     locale: 'pl_PL',
     type: 'website',
   },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#173a8a',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 }
 
 function RootLayout({ children }: { children: React.ReactNode }) {

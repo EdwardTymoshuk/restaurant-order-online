@@ -11,12 +11,14 @@ import { CheckoutProvider } from '@/app/context/CheckoutContext'
 import { MenuProvider } from '@/app/context/MenuContext'
 import { OrderProvider } from '@/app/context/OrderContext'
 import Noop from './Noop' // <- Імпорт Noop-компонента, обгорнутого у withTRPC
+import PwaRegistrar from './PwaRegistrar'
 
 export default function Providers({ children }: { children: ReactNode }) {
 	const [queryClient] = useState(() => new QueryClient())
 
 	return (
 		<QueryClientProvider client={queryClient}>
+			<PwaRegistrar />
 			<SessionProvider>
 				<Noop> {/* Тут підключається весь tRPC-клієнт */}
 					<CartProvider>

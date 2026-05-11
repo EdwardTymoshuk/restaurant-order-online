@@ -1,4 +1,5 @@
 import { protectedProcedure, publicProcedure, router } from '@/server/trpc'
+import { notifyNewReservation } from '@/lib/pushNotifications'
 import { EventType, PackageCode, ReservationExtraType, ReservationStatus } from '@prisma/client'
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
@@ -35,7 +36,19 @@ export const reservationsRouter = router({
   createFromDraft: publicProcedure
     .input(createReservationInput)
     .mutation(async ({ ctx, input }) => {
-      return createReservationFromDraft(ctx.prisma, input)
+      const reservation = await createReservationFromDraft(ctx.prisma, input)
+
+      await notifyNewReservation({
+        id: reservation.id,
+        name: input.contact.name,
+        eventDate: reservation.eventDate,
+        startTime: reservation.startTime,
+        guests: input.draft.adultsCount + (input.draft.childrenCount ?? 0),
+      }).catch((error) => {
+        console.error('Failed to send new reservation push notification.', error)
+      })
+
+      return reservation
     }),
 
   getReservationsList: protectedProcedure
@@ -79,7 +92,7 @@ export const reservationsRouter = router({
   createReservation: protectedProcedure
     .input(reservationUpsertInput)
     .mutation(async ({ ctx, input }) => {
-      return ctx.prisma.reservation.create({
+      const reservation = await ctx.prisma.reservation.create({
         data: {
           eventDate: new Date(input.eventDate),
           startTime: input.startTime ?? null,
@@ -123,6 +136,18 @@ export const reservationsRouter = router({
           contact: { select: { name: true, phone: true } },
         },
       })
+
+      await notifyNewReservation({
+        id: reservation.id,
+        name: reservation.contact?.name ?? input.contact.name,
+        eventDate: reservation.eventDate,
+        startTime: reservation.startTime,
+        guests: reservation.adultsCount + (reservation.childrenCount ?? 0),
+      }).catch((error) => {
+        console.error('Failed to send new reservation push notification.', error)
+      })
+
+      return reservation
     }),
 
   updateReservation: protectedProcedure
