@@ -14,6 +14,64 @@ export const menuRouter = router({
     return items
   }),
 
+  getBestsellers: publicProcedure.query(async () => {
+    const topSold = await prisma.orderItem.groupBy({
+      by: ['menuItemId'],
+      where: {
+        order: {
+          status: {
+            not: 'CANCELLED',
+          },
+        },
+      },
+      _sum: {
+        quantity: true,
+      },
+      orderBy: {
+        _sum: {
+          quantity: 'desc',
+        },
+      },
+      take: 12,
+    })
+
+    const soldIds = topSold.map((item) => item.menuItemId)
+    const soldQuantities = new Map(topSold.map((item) => [item.menuItemId, item._sum.quantity ?? 0]))
+
+    const [soldItems, recommendedItems] = await Promise.all([
+      soldIds.length > 0
+        ? prisma.menuItem.findMany({
+            where: {
+              id: { in: soldIds },
+              isOrderable: true,
+              isActive: true,
+            },
+          })
+        : Promise.resolve([]),
+      prisma.menuItem.findMany({
+        where: {
+          isOrderable: true,
+          isActive: true,
+          isRecommended: true,
+        },
+      }),
+    ])
+
+    const merged = new Map<string, (typeof soldItems)[number]>()
+    ;[...soldItems, ...recommendedItems].forEach((item) => {
+      merged.set(item.id, item)
+    })
+
+    return Array.from(merged.values())
+      .sort((a, b) => {
+        const salesDiff = (soldQuantities.get(b.id) ?? 0) - (soldQuantities.get(a.id) ?? 0)
+        if (salesDiff !== 0) return salesDiff
+        if (a.isRecommended !== b.isRecommended) return a.isRecommended ? -1 : 1
+        return a.name.localeCompare(b.name, 'pl')
+      })
+      .slice(0, 12)
+  }),
+
   getAllMenuItems: publicProcedure.query(async () => {
     const items = await prisma.menuItem.findMany()
     return items

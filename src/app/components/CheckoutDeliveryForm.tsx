@@ -434,10 +434,15 @@ export default function CheckoutDeliveryForm({
 		<form
 			id="deliveryForm"
 			onSubmit={handleSubmit(onDeliverySubmit, onInvalid)}
-			className="space-y-8"
+			className="space-y-5"
 		>
-			<div className="space-y-2">
-				<h3 className="text-xl text-secondary font-semibold">Czas dostawy</h3>
+			<section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+				<div>
+					<span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+						Termin
+					</span>
+					<h3 className="font-serif text-2xl font-bold text-secondary">Czas dostawy</h3>
+				</div>
 				<TimeDeliverySwitcher
 					isBreakfast={isBreakfast}
 					onTimeChange={handleTimeChange}
@@ -445,12 +450,17 @@ export default function CheckoutDeliveryForm({
 					orderWaitTime={settingsData?.orderWaitTime || 30}
 					cartItems={state.items}
 				/>
-			</div>
+			</section>
 
-			<div className="space-y-2">
-				<h3 className="text-xl text-secondary font-semibold">Dane do dostawy</h3>
+			<section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+				<div>
+					<span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+						Adres
+					</span>
+					<h3 className="font-serif text-2xl font-bold text-secondary">Dane do dostawy</h3>
+				</div>
 				<div className="flex flex-col gap-4 w-full">
-					<div className="flex w-full gap-4 items-start">
+					<div className="grid w-full gap-4 md:grid-cols-2">
 						<div className="w-full flex flex-col">
 							<label htmlFor="name" className="text-sm font-medium text-text-secondary mt-2">
 								Imię <span className="text-danger">*</span>
@@ -459,7 +469,7 @@ export default function CheckoutDeliveryForm({
 								id="name"
 								placeholder="Imię"
 								{...register("name")}
-								className={`mt-1 ${errors.name ? "border-danger" : ""}`}
+								className={`mt-1 h-12 rounded-xl border-slate-200 bg-slate-50/70 ${errors.name ? "border-danger" : ""}`}
 							/>
 							{errors.name && (
 								<p className="text-danger text-sm pt-1">{errors.name.message}</p>
@@ -474,7 +484,7 @@ export default function CheckoutDeliveryForm({
 								id="phone"
 								placeholder="Numer telefonu"
 								{...register("phone")}
-								className={`mt-1 ${errors.phone ? "border-danger" : ""}`}
+								className={`mt-1 h-12 rounded-xl border-slate-200 bg-slate-50/70 ${errors.phone ? "border-danger" : ""}`}
 							/>
 							{errors.phone && (
 								<p className="text-danger text-sm pt-1">{errors.phone.message}</p>
@@ -482,7 +492,7 @@ export default function CheckoutDeliveryForm({
 						</div>
 					</div>
 
-					<div className="flex w-full gap-4 items-start">
+					<div className="grid w-full gap-4 md:grid-cols-2">
 						<div className="w-full flex flex-col">
 							<label htmlFor="city" className="block text-sm font-medium text-text-secondary mt-2">
 								Miasto <span className="text-danger">*</span>
@@ -491,7 +501,7 @@ export default function CheckoutDeliveryForm({
 								id="city"
 								placeholder="Miasto"
 								{...register("city", { onChange: handleAddressChange })}
-								className={`mt-1 ${errors.city ? "border-danger" : ""}`}
+								className={`mt-1 h-12 rounded-xl border-slate-200 bg-slate-50/70 ${errors.city ? "border-danger" : ""}`}
 							/>
 							{errors.city && (
 								<p className="text-danger text-sm pt-1">{errors.city.message}</p>
@@ -509,7 +519,7 @@ export default function CheckoutDeliveryForm({
 								id="postalCode"
 								placeholder="00-000"
 								{...register("postalCode", { onChange: handleAddressChange })}
-								className={`mt-1 ${errors.postalCode ? "border-danger" : ""}`}
+								className={`mt-1 h-12 rounded-xl border-slate-200 bg-slate-50/70 ${errors.postalCode ? "border-danger" : ""}`}
 							/>
 							{errors.postalCode && (
 								<p className="text-danger text-sm pt-1">{errors.postalCode.message}</p>
@@ -525,18 +535,18 @@ export default function CheckoutDeliveryForm({
 							id="street"
 							placeholder="Ulica"
 							{...register("street", { onChange: handleAddressChange })}
-							className={`mt-1 w-full ${errors.street ? "border-danger" : ""}`}
+							className={`mt-1 h-12 w-full rounded-xl border-slate-200 bg-slate-50/70 ${errors.street ? "border-danger" : ""}`}
 						/>
 						{errors.street && (
 							<p className="text-danger text-sm pt-1">{errors.street.message}</p>
 						)}
 					</div>
 
-					<div className="flex w-full gap-4">
+					<div className="grid w-full gap-4 md:grid-cols-2">
 						<div className="w-full flex flex-col">
 							<label
 								htmlFor="buildingNumber"
-								className="text-sm font-medium text-text-secondary mt-2 min-h-[48px] flex items-end"
+								className="mt-2 text-sm font-medium text-text-secondary"
 							>
 								Nr budynku <span className="text-danger">*</span>
 							</label>
@@ -545,7 +555,7 @@ export default function CheckoutDeliveryForm({
 								placeholder="Nr budynku"
 								type="string"
 								{...register("buildingNumber", { onChange: handleAddressChange })}
-								className={`mt-1 ${errors.buildingNumber ? "border-danger" : ""}`}
+								className={`mt-1 h-12 rounded-xl border-slate-200 bg-slate-50/70 ${errors.buildingNumber ? "border-danger" : ""}`}
 							/>
 							{errors.buildingNumber && (
 								<p className="text-danger text-sm pt-1">{errors.buildingNumber.message}</p>
@@ -555,7 +565,7 @@ export default function CheckoutDeliveryForm({
 						<div className="w-full flex flex-col">
 							<label
 								htmlFor="apartment"
-								className="text-sm font-medium text-text-secondary mt-2 min-h-[48px] flex items-end"
+								className="mt-2 text-sm font-medium text-text-secondary"
 							>
 								Nr mieszkania (opcjonalnie)
 							</label>
@@ -567,7 +577,7 @@ export default function CheckoutDeliveryForm({
 									valueAsNumber: true,
 									onChange: handleAddressChange,
 								})}
-								className="mt-1 w-full"
+								className="mt-1 h-12 w-full rounded-xl border-slate-200 bg-slate-50/70"
 							/>
 							{errors.apartment && (
 								<p className="text-danger text-sm pt-1">{errors.apartment.message}</p>
@@ -575,7 +585,7 @@ export default function CheckoutDeliveryForm({
 						</div>
 					</div>
 
-					<div className="w-full h-96">
+					<div className="h-80 w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 xl:h-96">
 						<LoadScriptNext
 							googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""}
 							libraries={["places"]}
@@ -605,8 +615,10 @@ export default function CheckoutDeliveryForm({
 
 					<div className="w-full flex flex-col">
 						<Button
-							variant="secondary"
+							type="button"
+							variant="ghost"
 							onClick={handleCheckDeliveryAddress}
+							className="h-12 rounded-xl bg-secondary font-bold text-white hover:bg-secondary/90"
 							disabled={
 								!getValues("city") ||
 								!getValues("postalCode") ||
@@ -618,20 +630,25 @@ export default function CheckoutDeliveryForm({
 						</Button>
 					</div>
 				</div>
-			</div>
+			</section>
 
-			<div className="space-y-2">
-				<h3 className="text-xl text-secondary font-semibold">Komentarz do zamówienia</h3>
+			<section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+				<div>
+					<span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+						Uwagi
+					</span>
+					<h3 className="font-serif text-2xl font-bold text-secondary">Komentarz do zamówienia</h3>
+				</div>
 				<Textarea
 					id="comment"
 					placeholder="Komentarz do zamówienia"
 					{...register("comment")}
-					className={`mt-1 ${errors.comment ? "border-danger" : ""}`}
+					className={`min-h-28 rounded-xl border-slate-200 bg-slate-50/70 ${errors.comment ? "border-danger" : ""}`}
 				/>
 				{errors.comment && (
 					<p className="text-danger text-sm pt-1">{errors.comment.message}</p>
 				)}
-			</div>
+			</section>
 
 			<CheckoutPromoCodeSection<DeliveryFormData>
 				form={form}

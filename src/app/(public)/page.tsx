@@ -10,9 +10,12 @@ import { type DeliveryZone } from '../types/types'
 import { trpc } from '@/utils/trpc'
 import { LoadScriptNext } from '@react-google-maps/api'
 import Image from 'next/image'
-import { Bike, Info, Mail, Phone, Store } from 'lucide-react'
+import { Bike, Info, Loader2, Mail, Phone, Store } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState, useTransition } from 'react'
+
+const FORCE_ORDERING_OPEN_FOR_TEST =
+  process.env.NEXT_PUBLIC_FORCE_ORDERING_OPEN === 'true'
 
 const Home = () => {
   const [activeTab, setActiveTab] = useState('delivery')
@@ -21,6 +24,7 @@ const Home = () => {
   const { data: settingsData, isLoading: isSettingsLoading } = trpc.settings.getSettings.useQuery()
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const isOrderingOpen = FORCE_ORDERING_OPEN_FOR_TEST || settingsData?.isOrderingOpen
 
   const deliveryZones: DeliveryZone[] = useMemo(() => {
     if (!Array.isArray(settingsData?.deliveryZones)) return []
@@ -71,7 +75,7 @@ const Home = () => {
 
               {isSettingsLoading ? (
                 <Skeleton className="mt-4 h-11 w-full rounded-xl" />
-              ) : !settingsData?.isOrderingOpen ? (
+              ) : !isOrderingOpen ? (
                 <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
                   <Info size={17} className="mt-0.5 shrink-0 text-amber-600" />
                   <span>Zamawianie online jest chwilowo niedostępne. Skontaktuj się z restauracją albo odwiedź nas osobiście.</span>
@@ -166,6 +170,14 @@ const Home = () => {
                 <LoadScriptNext
                   googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
                   libraries={['geometry']}
+                  loadingElement={
+                    <div className="flex h-full min-h-[280px] w-full items-center justify-center bg-secondary/10">
+                      <div className="flex flex-col items-center gap-3 text-primary">
+                        <Loader2 size={28} className="animate-spin" />
+                        <span className="text-sm font-semibold">Ładowanie mapy</span>
+                      </div>
+                    </div>
+                  }
                 >
                   <div className="h-full w-full">
                     <RestaurantMap

@@ -266,10 +266,15 @@ export default function CheckoutTakeOutForm({
 		<form
 			id="takeOutForm"
 			onSubmit={handleSubmit(onTakeOutSubmit, onInvalid)}
-			className="space-y-8"
+			className="space-y-5"
 		>
-			<div className="space-y-2">
-				<h3 className="text-xl text-secondary font-semibold">Czas dostawy</h3>
+			<section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+				<div>
+					<span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+						Termin
+					</span>
+					<h3 className="font-serif text-2xl font-bold text-secondary">Czas odbioru</h3>
+				</div>
 				<TimeDeliverySwitcher
 					isBreakfast={isBreakfast}
 					onTimeChange={handleTimeChange}
@@ -277,11 +282,16 @@ export default function CheckoutTakeOutForm({
 					orderWaitTime={30}
 					cartItems={state.items}
 				/>
-			</div>
+			</section>
 
-			<div className="space-y-2">
-				<h3 className="text-xl text-secondary font-semibold">Dane do dostawy</h3>
-				<div className="flex gap-4 w-full">
+			<section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+				<div>
+					<span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+						Kontakt
+					</span>
+					<h3 className="font-serif text-2xl font-bold text-secondary">Dane do odbioru</h3>
+				</div>
+				<div className="grid w-full gap-4 md:grid-cols-2">
 					<div className="w-full">
 						<label htmlFor="name" className="block text-sm font-medium text-text-secondary">
 							Imię <span className="text-danger">*</span>
@@ -290,7 +300,7 @@ export default function CheckoutTakeOutForm({
 							id="name"
 							placeholder="Imię"
 							{...register("name")}
-							className={`flex-1 mt-1 ${errors.name ? "border-danger" : ""}`}
+							className={`mt-1 h-12 rounded-xl border-slate-200 bg-slate-50/70 ${errors.name ? "border-danger" : ""}`}
 						/>
 						{errors.name && (
 							<p className="text-danger text-sm pt-1">{errors.name.message}</p>
@@ -305,27 +315,32 @@ export default function CheckoutTakeOutForm({
 							id="phone"
 							placeholder="Numer telefonu"
 							{...register("phone")}
-							className={`flex-1 mt-1 ${errors.phone ? "border-danger" : ""}`}
+							className={`mt-1 h-12 rounded-xl border-slate-200 bg-slate-50/70 ${errors.phone ? "border-danger" : ""}`}
 						/>
 						{errors.phone && (
 							<p className="text-danger text-sm pt-1">{errors.phone.message}</p>
 						)}
 					</div>
 				</div>
-			</div>
+			</section>
 
-			<div className="space-y-2">
-				<h3 className="text-xl text-secondary font-semibold">Komentarz do zamówienia</h3>
+			<section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+				<div>
+					<span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+						Uwagi
+					</span>
+					<h3 className="font-serif text-2xl font-bold text-secondary">Komentarz do zamówienia</h3>
+				</div>
 				<Textarea
 					id="comment"
 					placeholder="Komentarz do zamówienia"
 					{...register("comment")}
-					className={`mt-1 ${errors.comment ? "border-danger" : ""}`}
+					className={`min-h-28 rounded-xl border-slate-200 bg-slate-50/70 ${errors.comment ? "border-danger" : ""}`}
 				/>
 				{errors.comment && (
 					<p className="text-danger text-sm pt-1">{errors.comment.message}</p>
 				)}
-			</div>
+			</section>
 
 			<CheckoutPromoCodeSection<TakeOutFormData>
 				form={form}

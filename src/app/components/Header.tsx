@@ -53,9 +53,13 @@ const Header = () => {
 				<div className="flex items-center gap-2">
 
 					{!currentPath.includes('/checkout') && !currentPath.includes('/thank-you') && (
-						<Button onClick={handleOrderTrackingOpen} className="h-9 gap-2 rounded-lg bg-primary px-3 text-xs font-semibold text-secondary hover:bg-primary/90 md:px-4">
+						<Button
+							onClick={handleOrderTrackingOpen}
+							variant="ghost"
+							className="h-9 gap-2 rounded-lg border border-white/20 bg-white/10 px-3 text-xs font-semibold text-white hover:bg-white/15 hover:text-white md:px-4"
+						>
 							<Search size={16} />
-							<span className="hidden sm:inline">Śledź zamówienie</span>
+							<span>Śledź zamówienie</span>
 						</Button>
 					)}
 					{currentPath.includes('/order') && (

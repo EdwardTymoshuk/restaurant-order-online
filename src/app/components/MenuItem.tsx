@@ -35,8 +35,10 @@ const MenuItem: React.FC<MenuItemProps> = ({
   isPizzaAvailable,
 }) => {
   const [addedToCart, setAddedToCart] = useState(false)
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
   const { state, dispatch } = useCart()
   const isVertical = orientation === 'vertical'
+  const canExpandDescription = Boolean(description && description.length > 90)
 
   const existingItem = state.items.find((item) => item.id === id)
   const itemQuantity = existingItem ? existingItem.quantity : 0
@@ -90,7 +92,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
   return (
     <article
       className={cn(
-        'group flex w-full overflow-hidden rounded-2xl border border-border bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-secondary/20 hover:shadow-md',
+        'group flex w-full overflow-hidden rounded-2xl border border-border bg-white shadow-sm transition-colors hover:border-secondary/20',
         isVertical ? 'flex-col' : 'min-h-[156px] flex-row',
         isDisabled && 'opacity-70',
         className
@@ -132,13 +134,32 @@ const MenuItem: React.FC<MenuItemProps> = ({
           </div>
 
           {description && (
-            <p className="line-clamp-3 text-sm leading-6 text-slate-500">{description}</p>
+            <div>
+              <p
+                title={description}
+                className={cn(
+                  'text-sm leading-6 text-slate-500',
+                  !isDescriptionExpanded && 'line-clamp-3'
+                )}
+              >
+                {description}
+              </p>
+              {canExpandDescription && (
+                <button
+                  type="button"
+                  onClick={() => setIsDescriptionExpanded((current) => !current)}
+                  className="mt-1 text-xs font-semibold text-secondary transition hover:text-secondary/80"
+                >
+                  {isDescriptionExpanded ? 'Zwiń opis' : 'Czytaj więcej'}
+                </button>
+              )}
+            </div>
           )}
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-3">
           {itemQuantity > 0 && !addedToCart ? (
-            <div className="flex items-center rounded-full border border-border bg-muted/40 p-1">
+            <div className="ml-auto flex items-center rounded-full border border-border bg-muted/40 p-1">
               <button
                 type="button"
                 onClick={decrementQuantity}
@@ -165,7 +186,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
               onClick={addToCart}
               disabled={isDisabled}
               className={cn(
-                'h-10 rounded-full px-4 text-xs font-semibold',
+                'ml-auto inline-flex h-10 items-center justify-center gap-1.5 rounded-full px-4 text-xs font-semibold',
                 addedToCart ? 'bg-emerald-600 text-white hover:bg-emerald-600' : 'bg-secondary text-white hover:bg-secondary/90'
               )}
             >

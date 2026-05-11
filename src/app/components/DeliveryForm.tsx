@@ -16,7 +16,8 @@ import {
 } from '@/utils/deliveryUtils'
 import { trpc } from '@/utils/trpc'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMemo, useState } from 'react'
+import { Loader2, MapPin } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -28,6 +29,13 @@ const formSchema = z.object({
 })
 
 type FormData = z.infer<typeof formSchema>
+
+type AddressSuggestion = {
+  placeId: string
+  description: string
+  mainText: string
+  secondaryText: string
+}
 
 interface DeliveryFormProps {
   formData: FormData
@@ -46,6 +54,10 @@ export default function DeliveryForm({
 }: DeliveryFormProps) {
   const [addressValid, setAddressValid] = useState(true)
   const [loading, setLoading] = useState(false)
+  const [addressQuery, setAddressQuery] = useState(formData.address)
+  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([])
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false)
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false)
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -65,6 +77,56 @@ export default function DeliveryForm({
       return []
     }
   }, [settingsData])
+
+  useEffect(() => {
+    const input = addressQuery.trim()
+
+    if (input.length < 2) {
+      setSuggestions([])
+      setSuggestionsOpen(false)
+      setSuggestionsLoading(false)
+      return
+    }
+
+    const controller = new AbortController()
+    const timeout = window.setTimeout(async () => {
+      setSuggestionsLoading(true)
+
+      try {
+        const response = await fetch(`/api/address-suggestions?input=${encodeURIComponent(input)}`, {
+          signal: controller.signal,
+        })
+
+        if (!response.ok) {
+          setSuggestions([])
+          setSuggestionsOpen(false)
+          return
+        }
+
+        const data = await response.json()
+        const nextSuggestions = Array.isArray(data.suggestions)
+          ? (data.suggestions as AddressSuggestion[])
+          : []
+
+        setSuggestions(nextSuggestions)
+        setSuggestionsOpen(nextSuggestions.length > 0)
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setSuggestions([])
+          setSuggestionsOpen(false)
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setSuggestionsLoading(false)
+        }
+      }
+    }, 250)
+
+    return () => {
+      controller.abort()
+      window.clearTimeout(timeout)
+    }
+  }, [addressQuery])
 
   const onSubmit = async (values: FormData) => {
     setLoading(true)
@@ -112,20 +174,73 @@ export default function DeliveryForm({
             render={({ field, fieldState }) => (
               <FormItem>
                 <FormControl>
-                  <Input
-                    {...field}
-                    onChange={(event) => {
-                      field.onChange(event)
-                      onFormDataChange({ address: event.target.value })
-                      setAddressValid(true)
-                    }}
-                    className={`${
-                      fieldState.invalid || !addressValid
-                        ? 'border-danger'
-                        : ''
-                    } h-12 rounded-xl bg-white px-4 text-sm`}
-                    placeholder="Wprowadź adres dostawy"
-                  />
+                  <div className="relative">
+                    <Input
+                      {...field}
+                      autoComplete="off"
+                      onBlur={() => {
+                        window.setTimeout(() => setSuggestionsOpen(false), 150)
+                      }}
+                      onChange={(event) => {
+                        const value = event.target.value
+                        field.onChange(value)
+                        onFormDataChange({ address: value })
+                        setAddressQuery(value)
+                        setAddressValid(true)
+                        setAddressVerified(false)
+                      }}
+                      onFocus={() => {
+                        if (suggestions.length > 0) setSuggestionsOpen(true)
+                      }}
+                      className={`${
+                        fieldState.invalid || !addressValid
+                          ? 'border-danger'
+                          : ''
+                      } h-12 rounded-xl bg-white px-4 pr-10 text-sm`}
+                      placeholder="Wprowadź adres dostawy"
+                    />
+
+                    {suggestionsLoading && (
+                      <Loader2
+                        size={17}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-primary"
+                      />
+                    )}
+
+                    {suggestionsOpen && (
+                      <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl shadow-secondary/20">
+                        {suggestions.map((suggestion) => (
+                          <button
+                            key={suggestion.placeId}
+                            type="button"
+                            className="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-primary/10"
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => {
+                              form.setValue('address', suggestion.description, { shouldValidate: true })
+                              onFormDataChange({ address: suggestion.description })
+                              setAddressQuery(suggestion.description)
+                              setSuggestions([])
+                              setSuggestionsOpen(false)
+                              setAddressValid(true)
+                              setAddressVerified(false)
+                            }}
+                          >
+                            <MapPin size={17} className="mt-0.5 shrink-0 text-primary" />
+                            <span className="min-w-0">
+                              <span className="block truncate text-sm font-semibold text-slate-900">
+                                {suggestion.mainText}
+                              </span>
+                              {suggestion.secondaryText && (
+                                <span className="mt-0.5 block truncate text-xs text-slate-500">
+                                  {suggestion.secondaryText}
+                                </span>
+                              )}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>

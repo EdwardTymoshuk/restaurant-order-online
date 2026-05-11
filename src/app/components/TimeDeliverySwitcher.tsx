@@ -235,8 +235,19 @@ const TimeDeliverySwitcher = ({
 	
 
 	const options = [
-		{ value: 'asap', label: 'Jak najszybciej', icon: <BsLightning />, disabled: isValentinesItemInCart || (cartItems.every(item => item.category === 'Śniadania' || item.category === 'Napoje bezalkoholowe') && new Date().getHours() >= BREAKFAST_END_HOUR) },
-		{ value: 'choose-time', label: 'Wybierz godzinę', icon: <BsClockHistory /> },
+		{
+			value: 'asap',
+			label: 'Jak najszybciej',
+			description: isDelivery ? 'Dostawa możliwie szybko' : 'Odbiór możliwie szybko',
+			icon: <BsLightning />,
+			disabled: isValentinesItemInCart || (cartItems.every(item => item.category === 'Śniadania' || item.category === 'Napoje bezalkoholowe') && new Date().getHours() >= BREAKFAST_END_HOUR)
+		},
+		{
+			value: 'choose-time',
+			label: 'Wybierz godzinę',
+			description: 'Ustal konkretny termin',
+			icon: <BsClockHistory />
+		},
 	];
 	
 
@@ -248,7 +259,7 @@ const TimeDeliverySwitcher = ({
 	
 
 	return (
-		<div className="container mx-auto">
+		<div className="w-full">
 			{/* Switcher to toggle between ASAP and choose-time options */}
 			<Switcher
 				options={options}
@@ -258,45 +269,47 @@ const TimeDeliverySwitcher = ({
 					setSelectedOption(val as 'asap' | 'choose-time')}
 				}
 			/>
-			<div className="w-full text-center py-2">
+			<div className="w-full text-center py-3">
 				{/* Displaying the estimated waiting time including delivery time if applicable */}
-				<span className="italic text-primary">
+				<span className="text-sm font-semibold italic text-primary">
 					Przewidywany czas oczekiwania: {orderWaitTime + deliveryTime} min
 				</span>
 			</div>
 
 			{/* Displaying a message if the restaurant is currently closed */}
 			{isRestaurantClosed && (
-				<div className="mt-4 p-2 bg-red-100 text-danger text-center rounded-md">
+				<div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-medium text-danger">
 					Restauracja jest zamknięta. Zamówienia są realizowane od godziny {OPENING_HOUR}:00 do {CLOSING_HOUR}:00.
 				</div>
 			)}
 
 			{/* Displaying a warning message if it's approaching closing time */}
 			{isClosingSoon && timeLeftToOrder !== '0:00' && (
-				<div className="mt-4 p-2 bg-yellow-100 text-yellow-800 text-center rounded-md">
+				<div className="mt-4 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-center text-sm font-medium text-yellow-800">
 					Uwaga! Restauracja zamknie się wkrótce. Zamówienia można składać jeszcze przez {timeLeftToOrder}.
 				</div>
 			)}
 
 			{/* Displaying a message if no more orders can be placed today */}
 			{isClosingSoon && timeLeftToOrder === '0:00' && (
-				<div className="mt-4 p-2 bg-red-100 text-danger text-center rounded-md">
+				<div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-medium text-danger">
 					Zamówienia na dzisiaj są już niedostępne. Zapraszamy jutro od godziny {OPENING_HOUR}:00.
 				</div>
 			)}
 
 			{/* Time selector visible when the user chooses to pick a specific time */}
 			{selectedOption === 'choose-time' && (
-				<TimeSelector
-					selectedTime={selectedTime}
-					onTimeChange={handleTimeChange}
-					setNearestHour={() => {
-						const now = new Date()
-						return getNearestAvailableTime(now)
-					}}
-					filterTime={filterTime}
-				/>
+				<div className="mt-4">
+					<TimeSelector
+						selectedTime={selectedTime}
+						onTimeChange={handleTimeChange}
+						setNearestHour={() => {
+							const now = new Date()
+							return getNearestAvailableTime(now)
+						}}
+						filterTime={filterTime}
+					/>
+				</div>
 			)}
 		</div>
 	)

@@ -27,10 +27,15 @@ export default function CheckoutNipSection<T extends { nip?: string } & FieldVal
 	} = form
 
 	return (
-		<div className="space-y-2">
-			<h3 className="text-xl text-secondary font-semibold">Dane do faktury</h3>
+		<section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+			<div>
+				<span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+					Faktura
+				</span>
+				<h3 className="font-serif text-2xl font-bold text-secondary">Dane do faktury</h3>
+			</div>
 
-			<div className="flex items-center space-x-2">
+			<div className="flex items-center gap-3 rounded-xl bg-slate-50 p-4">
 				<Checkbox
 					id="nipCheckbox"
 					checked={isNipRequired}
@@ -47,20 +52,20 @@ export default function CheckoutNipSection<T extends { nip?: string } & FieldVal
 			{isNipRequired && (
 				<div className="mt-4">
 					<label htmlFor="nip" className="text-sm font-medium text-text-secondary mt-2">
-						Numer NIP
-					</label>
+					Numer NIP
+				</label>
 					<Input
 						id="nip"
 						placeholder="NIP"
 						type="string"
 						{...register("nip" as Path<T>)} // Використовуємо "as Path<T>" для явного вказівки типу
-						className={`mt-1 ${errors.nip ? "border-danger" : ""}`}
+						className={`mt-1 h-12 rounded-xl border-slate-200 bg-slate-50/70 ${errors.nip ? "border-danger" : ""}`}
 					/>
 					{errors.nip && (
 						<p className="text-danger text-sm pt-1">{errors.nip?.message as string}</p>
 					)}
 				</div>
 			)}
-		</div>
+		</section>
 	)
 }
