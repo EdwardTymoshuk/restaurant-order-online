@@ -44,7 +44,7 @@ const EditMenuItemPage = ({ params }: { params: { id: string } }) => {
 		return (
 			<div className="min-h-screen bg-muted/40 pt-14">
 				<AdminNavbar activeTab="menu" />
-				<div className="mx-auto max-w-7xl space-y-5 px-4 py-6 md:px-6">
+				<div className="space-y-5 px-4 py-6 md:px-6 lg:px-8">
 					<Skeleton className="h-24 w-full rounded-2xl" />
 					<div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
 						<Skeleton className="h-[420px] rounded-2xl" />
@@ -62,7 +62,7 @@ const EditMenuItemPage = ({ params }: { params: { id: string } }) => {
 		<div className="min-h-screen bg-muted/40 pt-14">
 			<AdminNavbar activeTab="menu" />
 			<header className="border-b border-border bg-white">
-				<div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-5 md:px-6">
+				<div className="flex items-center justify-between gap-4 px-4 py-5 md:px-6 lg:px-8">
 					<div className="min-w-0">
 						<Button
 							variant="ghost"
@@ -83,7 +83,7 @@ const EditMenuItemPage = ({ params }: { params: { id: string } }) => {
 				</div>
 			</header>
 
-			<main className="mx-auto max-w-7xl px-4 py-6 md:px-6">
+			<main className="px-4 py-6 md:px-6 lg:px-8">
 				<MenuItemForm
 					initialValues={{
 						name: menuItem.name,

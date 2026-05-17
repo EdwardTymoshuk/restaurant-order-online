@@ -25,8 +25,9 @@ import { trpc } from '@/utils/trpc'
 import { cn } from '@/utils/utils'
 import { OrderStatus, Prisma } from '@prisma/client'
 import orderBy from 'lodash/orderBy'
-import { ArrowRight, Bell, Check, ChevronDown, Package, Pencil, Trash2, Truck } from 'lucide-react'
-import { useState } from 'react'
+import { Bell, Check, CheckCircle2, ChevronDown, Package, Pencil, Trash2, Truck } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import DeliveryTimeManager from '../components/DeliveryTimeManager'
 import { FilterButton } from '../components/FilterButton'
 import { PageHeader } from '../components/PageHeader'
@@ -88,9 +89,9 @@ const TABS = [
 ]
 
 const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
-  <div>
+  <div className="min-w-0">
     <p className="text-xs font-sans font-normal uppercase tracking-widest text-muted-foreground mb-1">{label}</p>
-    <p className="text-base font-sans font-normal text-dark-gray">{value || '—'}</p>
+    <p className="break-words text-base font-sans font-normal text-dark-gray">{value || '—'}</p>
   </div>
 )
 
@@ -102,6 +103,9 @@ const Orders = () => {
   const [isEditingStatus, setIsEditingStatus]           = useState<{ [key: string]: boolean }>({})
   const [isDeleteDialogOpen, setIsDeleteDialogOpen]     = useState(false)
   const [orderToDelete, setOrderToDelete]               = useState<string | null>(null)
+  const [openOrderId, setOpenOrderId]                   = useState<string | undefined>()
+  const searchParams = useSearchParams()
+  const targetOrderId = searchParams.get('orderId')
 
   const {
     allOrders,
@@ -109,8 +113,13 @@ const Orders = () => {
     isDialogOpen,
     handleCloseDialog,
     newOrderCount,
+    refreshOrders,
     setAllOrders,
   } = useOrders()
+
+  useEffect(() => {
+    void refreshOrders({ full: true })
+  }, [refreshOrders])
 
   const updateStatus = trpc.order.updateStatus.useMutation({
     onSuccess: (_, variables) => {
@@ -153,6 +162,15 @@ const Orders = () => {
     filteredOrders.filter((o) => tab.statuses.includes(o.status))
 
   const currentTab = TABS.find((t) => t.value === activeTab)!
+
+  useEffect(() => {
+    if (!targetOrderId || !allOrders?.length) return
+    const target = allOrders.find((order) => order.id === targetOrderId)
+    if (!target) return
+    const matchingTab = TABS.find((tab) => tab.statuses.includes(target.status))
+    if (matchingTab) setActiveTab(matchingTab.value)
+    setOpenOrderId(target.id)
+  }, [allOrders, targetOrderId])
 
   const confirmStatusChange = (orderId: string, e: React.MouseEvent, next: OrderStatus | null) => {
     e.stopPropagation()
@@ -240,12 +258,12 @@ const Orders = () => {
   // ── Loading skeleton ───────────────────────────────────────────────────────
   if (!allOrders) {
     return (
-      <>
-        <div className="sticky top-14 z-20 bg-white border-b border-border h-12" />
-        <div className="p-4 md:p-6 lg:p-8 space-y-3">
+      <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
+        <PageHeader title="Zamówienia" tabs={tabsNode} toolbar={toolbarNode} />
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 md:p-6 lg:p-8">
           {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
         </div>
-      </>
+      </div>
     )
   }
 
@@ -253,21 +271,27 @@ const Orders = () => {
   const orders = tabOrders(currentTab)
 
   return (
-    <>
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
       <PageHeader
         title="Zamówienia"
         tabs={tabsNode}
         toolbar={toolbarNode}
       />
 
-      <div className="flex-1 overflow-y-auto min-h-0 p-4 md:p-6 lg:p-8">
+      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6 lg:p-8">
         {orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
             <Package size={40} strokeWidth={1} className="mb-3 opacity-30" />
             <p className="text-sm font-sans font-normal">Brak zamówień</p>
           </div>
         ) : (
-          <Accordion type="single" collapsible className="space-y-2">
+          <Accordion
+            type="single"
+            collapsible
+            value={openOrderId}
+            onValueChange={(value) => setOpenOrderId(value || undefined)}
+            className="space-y-2"
+          >
             {orders.map((order, index) => {
               const { relativeTime, fullDate, fullTime } = formatTimeAgo(new Date(order.createdAt))
               const btn = statusButtonMap(order.deliveryMethod, order.status)
@@ -280,12 +304,12 @@ const Orders = () => {
                   key={order.id}
                   value={order.id}
                   className={cn(
-                    'bg-white rounded-xl border border-border overflow-hidden',
+                    'overflow-hidden rounded-xl border border-border bg-white',
                     isHighlighted && 'border-success ring-1 ring-success/30'
                   )}
                 >
-                  <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/40 transition-colors [&>svg]:hidden">
-                    <div className="flex items-center gap-4 w-full text-left">
+                  <AccordionTrigger className="px-4 py-4 transition-colors hover:bg-muted/40 hover:no-underline md:px-5 [&>svg]:hidden">
+                    <div className="grid w-full min-w-0 grid-cols-[1fr_auto] gap-3 text-left md:flex md:items-center md:gap-4">
                       {/* Index */}
                       <span className="hidden md:block text-sm font-sans font-normal text-muted-foreground w-6 shrink-0 tabular-nums">
                         {index + 1}
@@ -304,11 +328,27 @@ const Orders = () => {
                       </span>
 
                       {/* Customer + items */}
-                      <div className="flex-1 min-w-0">
+                      <div className="min-w-0 md:flex-1">
                         <p className="text-base font-sans font-normal text-dark-gray truncate">{order.name}</p>
                         <p className="text-sm font-sans font-normal text-muted-foreground truncate">
-                          {itemsPreview}{itemsMore > 0 ? ` +${itemsMore}` : ''}
+                          <span className="font-mono text-[12px] text-secondary">{order.orderNumber ?? order.id.slice(0, 8)}</span>
+                          {itemsPreview ? ` · ${itemsPreview}${itemsMore > 0 ? ` +${itemsMore}` : ''}` : ''}
                         </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground md:hidden">
+                          <span className={cn(
+                            'inline-flex items-center gap-1 rounded-full px-2 py-0.5',
+                            order.deliveryMethod === 'DELIVERY'
+                              ? 'bg-secondary/10 text-secondary'
+                              : 'bg-muted text-dark-gray'
+                          )}>
+                            {order.deliveryMethod === 'DELIVERY' ? <Truck size={11} /> : <Package size={11} />}
+                            {order.deliveryMethod === 'DELIVERY' ? 'Dostawa' : 'Odbiór'}
+                          </span>
+                          <span>{relativeTime || `${fullDate} ${fullTime}`}</span>
+                          <span>
+                            {new Date(order.deliveryTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
                       </div>
 
                       {/* Time */}
@@ -322,14 +362,14 @@ const Orders = () => {
                       </div>
 
                       {/* Status (click to edit) */}
-                      <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex shrink-0 items-center justify-end gap-2 md:justify-start" onClick={(e) => e.stopPropagation()}>
                         {isEditingStatus[order.id] ? (
                           <div className="flex items-center gap-1.5">
                             <Select
                               value={selectedStatus[order.id]}
                               onValueChange={(v) => setSelectedStatus((prev) => ({ ...prev, [order.id]: v as OrderStatus }))}
                             >
-                              <SelectTrigger className="h-7 text-xs w-36">
+                              <SelectTrigger className="h-8 w-32 text-xs sm:w-36">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -349,26 +389,26 @@ const Orders = () => {
                           <button
                             onClick={(e) => toggleStatusEdit(order.id, e)}
                             className={cn(
-                              'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-sans font-normal transition-opacity hover:opacity-80',
+                              'inline-flex max-w-[132px] items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-sans font-normal transition-opacity hover:opacity-80 sm:max-w-none sm:px-3 sm:text-sm',
                               statusBadgeMap[order.status]
                             )}
                           >
-                            {statusLabelMap[order.status]}
+                            <span className="truncate">{statusLabelMap[order.status]}</span>
                             <Pencil size={10} strokeWidth={2} />
                           </button>
                         )}
                       </div>
 
                       {/* Action button */}
-                      <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <div className="col-span-2 flex shrink-0 justify-end md:col-span-1" onClick={(e) => e.stopPropagation()}>
                         {btn?.nextStatus ? (
                           <Button
                             size="sm"
-                            className="h-8 text-xs font-sans font-normal gap-1.5"
+                            className="h-9 w-full gap-1.5 rounded-xl bg-primary px-3 text-xs font-sans font-semibold text-white shadow-sm shadow-primary/20 hover:bg-primary/90 sm:w-auto"
                             onClick={(e) => confirmStatusChange(order.id, e, btn.nextStatus)}
                           >
                             {btn.label}
-                            <ArrowRight size={13} strokeWidth={2} />
+                            <CheckCircle2 size={13} strokeWidth={2.2} />
                           </Button>
                         ) : (
                           <span className="text-xs font-sans text-muted-foreground italic">—</span>
@@ -376,20 +416,20 @@ const Orders = () => {
                       </div>
 
                       {/* Chevron */}
-                      <ChevronDown size={15} strokeWidth={1.5} className="shrink-0 text-muted-foreground transition-transform duration-200 [[data-state=open]_&]:rotate-180" />
+                      <ChevronDown size={15} strokeWidth={1.5} className="hidden shrink-0 text-muted-foreground transition-transform duration-200 md:block [[data-state=open]_&]:rotate-180" />
                     </div>
                   </AccordionTrigger>
 
                   <AccordionContent className="border-t border-border">
                     <div className="p-5 space-y-5">
                       {/* Details grid */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
+                      <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 md:grid-cols-4">
                         <DetailRow label="Klient" value={order.name} />
                         <DetailRow label="Telefon" value={order.phone} />
                         <DetailRow label="Płatność" value={
                           order.paymentMethod === 'cash_offline' ? 'Gotówka przy odbiorze' : 'Karta przy odbiorze'
                         } />
-                        <DetailRow label="Nr zamówienia" value={<span className="font-mono text-xs">{order.id.slice(0, 8)}…</span>} />
+                        <DetailRow label="Nr zamówienia" value={<span className="font-mono text-sm">{order.orderNumber ?? order.id.slice(0, 8)}</span>} />
                         {order.nip && <DetailRow label="NIP" value={order.nip} />}
                         {order.comment && <DetailRow label="Komentarz" value={order.comment} />}
                       </div>
@@ -494,7 +534,7 @@ const Orders = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   )
 }
 

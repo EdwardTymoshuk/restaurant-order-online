@@ -44,8 +44,8 @@ export const FilterButton = ({ filters, activeCount = 0, onClear, className }: F
       <PopoverTrigger asChild>
         <button
           className={cn(
-            'relative flex items-center gap-2 h-8 px-3.5 rounded-lg text-sm font-sans font-normal transition-all duration-150 focus:outline-none',
-            open ? 'bg-secondary/80 text-white' : 'bg-secondary text-white hover:bg-secondary/85',
+            'relative flex h-9 items-center gap-2 rounded-xl px-4 text-sm font-semibold shadow-sm shadow-secondary/20 transition-all duration-150 focus:outline-none active:scale-[0.98]',
+            open ? 'bg-secondary/85 text-white' : 'bg-secondary text-white hover:bg-secondary/90 hover:shadow-md',
             className
           )}
         >

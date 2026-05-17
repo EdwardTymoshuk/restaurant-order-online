@@ -22,6 +22,7 @@ type OrdersContextType = {
   isDialogOpen: boolean
   handleCloseDialog: () => void
   newOrderCount: number
+  refreshOrders: (options?: { full?: boolean }) => Promise<void>
   setAllOrders: Dispatch<SetStateAction<OrderWithItems[]>>
 }
 
@@ -53,9 +54,10 @@ export const OrdersProvider = ({ children }: { children: ReactNode }) => {
     audio.play().catch((err) => console.error('Audio play failed:', err))
   })
 
-  const fetchOrders = useCallback(async () => {
+  const fetchOrders = useCallback(async (options?: { full?: boolean }) => {
     try {
-      const query = lastUpdatedAtRef.current
+      const isFullRefresh = options?.full ?? false
+      const query = !isFullRefresh && lastUpdatedAtRef.current
         ? `?lastUpdatedAt=${encodeURIComponent(lastUpdatedAtRef.current)}`
         : ''
       const response = await fetch(`/api/orders/stream${query}`)
@@ -63,7 +65,7 @@ export const OrdersProvider = ({ children }: { children: ReactNode }) => {
       const orders: OrderWithItems[] = await response.json()
 
       setAllOrders((prevOrders) => {
-        let updatedOrders = [...prevOrders]
+        let updatedOrders = isFullRefresh ? [] : [...prevOrders]
 
         if (orders.length > 0) {
           const latestOrderUpdatedAt = orders[orders.length - 1].updatedAt
@@ -96,6 +98,8 @@ export const OrdersProvider = ({ children }: { children: ReactNode }) => {
               audioIntervalRef.current = setInterval(playNotificationSoundRef.current, 15000)
             }
           }
+        } else if (isFullRefresh) {
+          lastUpdatedAtRef.current = null
         }
 
         const now = new Date()
@@ -114,6 +118,7 @@ export const OrdersProvider = ({ children }: { children: ReactNode }) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   orderId: order.id,
+                  orderNumber: order.orderNumber,
                   phone: order.phone,
                   name: order.name,
                   finalAmount: order.finalAmount
@@ -148,12 +153,12 @@ export const OrdersProvider = ({ children }: { children: ReactNode }) => {
   }, []) // Без залежностей
 
   useEffect(() => {
-    fetchOrders()
+    void fetchOrders({ full: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Запускаємо тільки один раз
 
   useAdminRealtime({
-    onOrdersChanged: fetchOrders,
+    onOrdersChanged: () => void fetchOrders(),
   })
 
   useEffect(() => {
@@ -179,6 +184,7 @@ export const OrdersProvider = ({ children }: { children: ReactNode }) => {
         isDialogOpen,
         handleCloseDialog,
         newOrderCount,
+        refreshOrders: fetchOrders,
         setAllOrders,
       }}
     >

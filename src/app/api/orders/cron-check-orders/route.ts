@@ -49,12 +49,13 @@ export async function GET(request: Request) {
 		// For each delayed order, send an email notification.
 		// The email content is in Polish, as requested.
 		for (const order of delayedOrders) {
+			const displayNumber = order.orderNumber ?? order.id
 
 			await transporter.sendMail({
 				from: `Spoko Sopot <${process.env.EMAIL_USER}>`,
 				to: process.env.RECIPIENT_EMAIL,
-				subject: `Niepodjęte zamówienie #${order.id}`,
-				text: `Zamówienie #${order.id} nie zostało podjęte już od ponad 10 minut.\nInformacja:\n- Imię: ${order.name}\n- Telefon: ${order.phone}\n- Wartość zamówienia: ${order.finalAmount} PLN`,
+				subject: `Niepodjęte zamówienie ${displayNumber}`,
+				text: `Zamówienie ${displayNumber} nie zostało podjęte już od ponad 10 minut.\nInformacja:\n- Imię: ${order.name}\n- Telefon: ${order.phone}\n- Wartość zamówienia: ${order.finalAmount} PLN`,
 			})
 		}
 

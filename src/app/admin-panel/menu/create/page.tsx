@@ -40,7 +40,7 @@ const CreateMenuItemPage = () => {
 		<div className="min-h-screen bg-muted/40 pt-14">
 			<AdminNavbar activeTab="menu" />
 			<header className="border-b border-border bg-white">
-				<div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-5 md:px-6">
+				<div className="flex items-center justify-between gap-4 px-4 py-5 md:px-6 lg:px-8">
 					<div className="min-w-0">
 						<Button
 							variant="ghost"
@@ -61,7 +61,7 @@ const CreateMenuItemPage = () => {
 				</div>
 			</header>
 
-			<main className="mx-auto max-w-7xl px-4 py-6 md:px-6">
+			<main className="px-4 py-6 md:px-6 lg:px-8">
 				<MenuItemForm
 					initialValues={{
 						name: '',

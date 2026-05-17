@@ -20,6 +20,7 @@ import {
   Image as ImageIcon,
   Newspaper,
   Pizza,
+  BellRing,
   Settings2,
   ShoppingBag,
   Timer,
@@ -30,6 +31,7 @@ import MainPageBannerSettings from '../components/MainPageBannerSettings'
 import { PageHeader } from '../components/PageHeader'
 import PizzaSettings from '../components/PizzaSettings'
 import PromoCodeSettings from '../components/PromoCodeSettings'
+import { PushNotificationsSettings } from '../components/PushNotificationsSettings'
 import UserList from '../components/UserList'
 
 const SettingsModule = ({
@@ -143,6 +145,21 @@ const Settings = () => {
                   }}
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border shadow-sm">
+            <CardContent className="p-5">
+              <div className="mb-4 flex items-start gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <BellRing size={20} />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-slate-950">Powiadomienia</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">Alerty o nowych zamówieniach i rezerwacjach na tym urządzeniu.</p>
+                </div>
+              </div>
+              <PushNotificationsSettings />
             </CardContent>
           </Card>
 

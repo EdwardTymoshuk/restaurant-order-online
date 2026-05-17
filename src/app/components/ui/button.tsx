@@ -5,22 +5,22 @@ import * as React from 'react'
 import { cn } from '@/utils/utils'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold ring-offset-background transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-text-primary hover:bg-primary/85',
+        default: 'bg-primary text-white shadow-sm shadow-primary/20 hover:bg-primary/90 hover:shadow-md hover:shadow-primary/25 active:scale-[0.98]',
         destructive:
-          'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+          'bg-destructive text-destructive-foreground shadow-sm shadow-destructive/20 hover:bg-destructive/90 hover:shadow-md active:scale-[0.98]',
         outline:
-          'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-        secondary: 'bg-secondary text-text-primary hover:bg-secondary/80',
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
+          'border border-input bg-background text-slate-700 hover:border-secondary/25 hover:bg-secondary/5 hover:text-secondary active:scale-[0.98]',
+        secondary: 'bg-secondary text-text-primary shadow-sm shadow-secondary/20 hover:bg-secondary/90 hover:shadow-md active:scale-[0.98]',
+        ghost: 'rounded-xl hover:bg-accent hover:text-accent-foreground active:scale-[0.98]',
         link: 'text-primary hover:brightness-105',
         icon: 'bg-transparent hover:bg-transparent p-0 m-0 hover:text-secondary',
-        success: 'bg-success text-text-primary hover:bg-success/80',
-        warning: 'bg-succwarningeess text-text-primary hover:bg-warning/80',
-        danger: 'bg-danger text-text-primary hover:bg-danger/80',
+        success: 'bg-success text-text-primary shadow-sm shadow-success/20 hover:bg-success/85 hover:shadow-md active:scale-[0.98]',
+        warning: 'bg-warning text-secondary shadow-sm shadow-warning/20 hover:bg-warning/85 hover:shadow-md active:scale-[0.98]',
+        danger: 'bg-danger text-text-primary shadow-sm shadow-danger/20 hover:bg-danger/85 hover:shadow-md active:scale-[0.98]',
       },
       size: {
         default: 'h-10 px-4 py-2',

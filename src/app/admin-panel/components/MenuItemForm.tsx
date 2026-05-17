@@ -103,7 +103,7 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+    <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
       <Card className="space-y-5 p-5 md:p-6">
         <div>
           <h2 className="text-base font-semibold text-slate-900">Dane pozycji</h2>
@@ -255,7 +255,7 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
         </Card>
 
         <div className="flex justify-end">
-          <LoadingButton isLoading={isLoading} onClick={handleSubmit} className="min-w-[140px]">
+          <LoadingButton isLoading={isLoading} onClick={handleSubmit} className="min-w-[150px] text-white">
             Zapisz pozycję
           </LoadingButton>
         </div>

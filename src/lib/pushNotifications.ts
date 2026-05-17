@@ -63,22 +63,25 @@ export const sendAdminPushNotification = async (payload: PushPayload) => {
 
 export const notifyNewOrder = async ({
   id,
+  orderNumber,
   name,
   finalAmount,
   deliveryMethod,
 }: {
   id: string
+  orderNumber?: string | null
   name: string
   finalAmount: number | null
   deliveryMethod: 'DELIVERY' | 'TAKE_OUT'
 }) => {
   const amount = typeof finalAmount === 'number' ? `${finalAmount.toFixed(2)} zł` : 'bez kwoty'
   const method = deliveryMethod === 'DELIVERY' ? 'dostawa' : 'odbiór'
+  const displayNumber = orderNumber ?? id.slice(0, 8)
 
   await sendAdminPushNotification({
-    title: 'Nowe zamówienie',
+    title: `Nowe zamówienie ${displayNumber}`,
     body: `${name} · ${amount} · ${method}`,
-    url: '/admin-panel?tab=orders',
+    url: `/admin-panel?tab=orders&orderId=${id}`,
     tag: `order-${id}`,
   })
 }

@@ -2,11 +2,12 @@ import { ReactNode, createContext, useContext, useState } from 'react'
 
 interface OrderContextType {
 	orderId: string | null
+	orderNumber: string | null
 	phoneNumber: string | null
 	clientName: string | null
 	deliveryMethod: 'DELIVERY' | 'TAKE_OUT' | null
 	deliveryTime: string | null
-	setOrderData: (id: string, phone: string, name: string, method: 'DELIVERY' | 'TAKE_OUT', time: string) => void
+	setOrderData: (id: string, phone: string, name: string, method: 'DELIVERY' | 'TAKE_OUT', time: string, orderNumber?: string | null) => void
 	clearOrderData: () => void
 }
 
@@ -22,13 +23,15 @@ export const useOrder = () => {
 
 export const OrderProvider = ({ children }: { children: ReactNode }) => {
 	const [orderId, setOrderId] = useState<string | null>(null)
+	const [orderNumber, setOrderNumber] = useState<string | null>(null)
 	const [phoneNumber, setPhoneNumber] = useState<string | null>(null)
 	const [clientName, setClientName] = useState<string | null>(null)
 	const [deliveryMethod, setDeliveryMethod] = useState<'DELIVERY' | 'TAKE_OUT' | null>(null)
 	const [deliveryTime, setDeliveryTime] = useState<string | null>(null)
 
-	const setOrderData = (id: string, phone: string, name: string, method: 'DELIVERY' | 'TAKE_OUT', time: string) => {
+	const setOrderData = (id: string, phone: string, name: string, method: 'DELIVERY' | 'TAKE_OUT', time: string, orderNumber?: string | null) => {
 		setOrderId(id)
+		setOrderNumber(orderNumber ?? id)
 		setPhoneNumber(phone)
 		setClientName(name)
 		setDeliveryMethod(method)
@@ -37,6 +40,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
 
 	const clearOrderData = () => {
 		setOrderId(null)
+		setOrderNumber(null)
 		setPhoneNumber(null)
 		setClientName(null)
 		setDeliveryMethod(null)
@@ -44,7 +48,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
 	}
 
 	return (
-		<OrderContext.Provider value={{ orderId, phoneNumber, clientName, deliveryMethod, deliveryTime, setOrderData, clearOrderData }}>
+		<OrderContext.Provider value={{ orderId, orderNumber, phoneNumber, clientName, deliveryMethod, deliveryTime, setOrderData, clearOrderData }}>
 			{children}
 		</OrderContext.Provider>
 	)

@@ -22,15 +22,15 @@ import type { ReactNode } from 'react'
 
 const ThankYouPage = () => {
   const router = useRouter()
-  const { orderId, phoneNumber, clientName, deliveryMethod, deliveryTime } =
+  const { orderId, orderNumber, phoneNumber, clientName, deliveryMethod, deliveryTime } =
     useOrder()
   const [isOrderTrackingOpen, setIsOrderTrackingOpen] = useState(false)
 
   const displayOrderId = useMemo(() => {
-    if (!orderId) return 'Brak numeru'
-    if (orderId.length <= 18) return orderId
-    return `${orderId.slice(0, 8)}...${orderId.slice(-6)}`
-  }, [orderId])
+    if (!orderNumber) return 'Brak numeru'
+    if (orderNumber.length <= 18) return orderNumber
+    return `${orderNumber.slice(0, 8)}...${orderNumber.slice(-6)}`
+  }, [orderNumber])
 
   const methodLabel =
     deliveryMethod === 'DELIVERY'
@@ -93,7 +93,7 @@ const ThankYouPage = () => {
             <InfoTile
               icon={<ShoppingBag size={20} />}
               label="Numer zamówienia"
-              value={orderId || 'Brak danych zamówienia'}
+              value={orderNumber || orderId || 'Brak danych zamówienia'}
               mono
             />
             <InfoTile

@@ -202,10 +202,10 @@ const MenuTable = () => {
   )
 
   return (
-    <>
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
       <PageHeader title="Menu" actions={actionsNode} toolbar={toolbarNode} />
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0 p-4 md:p-6 lg:p-8">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6 lg:p-8">
         {isLoading ? (
           <div className="space-y-2">
             {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
@@ -240,14 +240,14 @@ const MenuTable = () => {
               <div className="space-y-5">
                 {groupedItems.map((group) => (
                   <section key={group.category} className="overflow-hidden rounded-2xl border border-border bg-white">
-                    <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/35 px-5 py-3">
-                      <div>
-                        <h2 className="text-sm font-semibold text-slate-900">{group.category}</h2>
+                    <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/35 px-4 py-3 sm:px-5">
+                      <div className="min-w-0">
+                        <h2 className="truncate text-sm font-semibold text-slate-900">{group.category}</h2>
                         <p className="text-xs text-muted-foreground">
                           {group.items.length} {group.items.length === 1 ? 'pozycja' : 'pozycji'}
                         </p>
                       </div>
-                      <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-sm">
+                      <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-sm">
                         {group.items.filter((item) => item.isActive).length} aktywne
                       </span>
                     </div>
@@ -275,74 +275,126 @@ const MenuTable = () => {
                       {group.items.map((item, index) => (
                         <div
                           key={item.id}
-                          className="grid grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3.5 transition-colors hover:bg-muted/30 group lg:grid-cols-[auto_1fr_auto_auto_auto_auto] lg:gap-4 lg:px-5"
+                          className="group border-b border-border/60 bg-white px-4 py-4 transition-colors last:border-b-0 hover:bg-muted/20 lg:grid lg:grid-cols-[auto_1fr_auto_auto_auto_auto] lg:items-center lg:gap-4 lg:px-5 lg:py-3.5"
                         >
                           <span className="hidden w-6 text-sm font-sans font-normal text-muted-foreground tabular-nums lg:block">
                             {index + 1}
                           </span>
 
-                          <div className="flex min-w-0 items-center gap-3">
-                            <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-muted">
+                          <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 lg:flex lg:items-center lg:gap-3">
+                            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-muted lg:h-11 lg:w-11">
                               <ImageWithFallback
                                 key={item.image}
                                 src={item.image || ''}
                                 alt={item.name}
-                                width={44}
-                                height={44}
-                                className="h-11 w-11 object-cover"
-                                containerClassName="h-11 w-11"
+                                width={56}
+                                height={56}
+                                className="h-14 w-14 object-cover lg:h-11 lg:w-11"
+                                containerClassName="h-14 w-14 lg:h-11 lg:w-11"
                               />
                             </div>
                             <div className="min-w-0">
                               <button
                                 onClick={() => router.push(`/admin-panel/menu/edit/${item.id}`)}
-                                className="block truncate text-left text-base font-sans font-normal text-dark-gray transition-colors hover:text-secondary"
+                                className="block truncate text-left text-[15px] font-sans font-medium text-slate-900 transition-colors hover:text-secondary"
                               >
                                 {item.name}
                               </button>
-                              <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground lg:hidden">
-                                <span>{item.price} zł</span>
-                                <span>{item.isActive ? 'Widoczna' : 'Ukryta'}</span>
-                                <span>{item.isOrderable ? 'Zamówienia online' : 'Bez zamówień online'}</span>
+                              <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground lg:hidden">
+                                <span className="rounded-full bg-muted/50 px-2 py-0.5 font-medium text-slate-600">{item.price} zł</span>
+                                <span className={cn('rounded-full px-2 py-0.5 font-medium', item.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500')}>
+                                  {item.isActive ? 'Widoczna' : 'Ukryta'}
+                                </span>
+                                <span className={cn('rounded-full px-2 py-0.5 font-medium', item.isOrderable ? 'bg-sky-50 text-sky-700' : 'bg-slate-100 text-slate-500')}>
+                                  {item.isOrderable ? 'Online' : 'Bez online'}
+                                </span>
                               </div>
+                              <p className="mt-1.5 line-clamp-1 text-[11px] leading-5 text-muted-foreground lg:hidden">
+                                {item.description || 'Brak opisu'}
+                              </p>
+                            </div>
+
+                            <div className="flex items-start gap-1 pt-0.5 lg:hidden">
+                              <button
+                                onClick={() => router.push(`/admin-panel/menu/edit/${item.id}`)}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:bg-secondary/10 hover:text-secondary"
+                                aria-label={`Edytuj ${item.name}`}
+                              >
+                                <Pencil size={15} strokeWidth={2} />
+                              </button>
+                              <button
+                                onClick={() => { setMenuItemToDelete(item.id); setIsDeleteDialogOpen(true) }}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
+                                aria-label={`Usuń ${item.name}`}
+                              >
+                                <Trash2 size={15} strokeWidth={2} />
+                              </button>
                             </div>
                           </div>
 
-                          <span className="w-20 text-right text-base font-sans font-normal text-dark-gray tabular-nums">
-                            {item.price} zł
-                          </span>
+                          <div className="mt-3 grid gap-2 lg:hidden">
+                            <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-slate-50 px-3 py-2">
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium text-slate-700">Widoczność</p>
+                                <p className="text-[11px] text-muted-foreground">{item.isActive ? 'Pokazywana klientom' : 'Ukryta przed klientami'}</p>
+                              </div>
+                              <Switch
+                                checked={item.isActive}
+                                aria-label={`Widoczność pozycji ${item.name}`}
+                                onCheckedChange={(v) => updateMenuItemWithoutJump({ id: item.id, isActive: v })}
+                              />
+                            </div>
 
-                          <div className="hidden w-20 justify-center lg:flex">
-                            <Switch
-                              checked={item.isActive}
-                              aria-label={`Widoczność pozycji ${item.name}`}
-                              onCheckedChange={(v) => updateMenuItemWithoutJump({ id: item.id, isActive: v })}
-                            />
+                            <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-slate-50 px-3 py-2">
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium text-slate-700">Zamówienia online</p>
+                                <p className="text-[11px] text-muted-foreground">{item.isOrderable ? 'Dodawana do koszyka' : 'Wyłączona z zamówień'}</p>
+                              </div>
+                              <Switch
+                                checked={item.isOrderable}
+                                aria-label={`Dostępność do zamówienia pozycji ${item.name}`}
+                                onCheckedChange={(v) => updateMenuItemWithoutJump({ id: item.id, isOrderable: v })}
+                              />
+                            </div>
                           </div>
 
-                          <div className="hidden w-24 justify-center lg:flex">
-                            <Switch
-                              checked={item.isOrderable}
-                              aria-label={`Dostępność do zamówienia pozycji ${item.name}`}
-                              onCheckedChange={(v) => updateMenuItemWithoutJump({ id: item.id, isOrderable: v })}
-                            />
-                          </div>
+                          <div className="hidden lg:flex lg:items-center lg:justify-end lg:gap-4">
+                            <div className="hidden w-20 justify-center lg:flex">
+                              <Switch
+                                checked={item.isActive}
+                                aria-label={`Widoczność pozycji ${item.name}`}
+                                onCheckedChange={(v) => updateMenuItemWithoutJump({ id: item.id, isActive: v })}
+                              />
+                            </div>
 
-                          <div className="flex w-20 items-center justify-end gap-1 lg:w-24">
-                            <button
-                              onClick={() => router.push(`/admin-panel/menu/edit/${item.id}`)}
-                              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary/10 hover:text-secondary"
-                              aria-label={`Edytuj ${item.name}`}
-                            >
-                              <Pencil size={15} strokeWidth={2} />
-                            </button>
-                            <button
-                              onClick={() => { setMenuItemToDelete(item.id); setIsDeleteDialogOpen(true) }}
-                              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
-                              aria-label={`Usuń ${item.name}`}
-                            >
-                              <Trash2 size={15} strokeWidth={2} />
-                            </button>
+                            <div className="hidden w-24 justify-center lg:flex">
+                              <Switch
+                                checked={item.isOrderable}
+                                aria-label={`Dostępność do zamówienia pozycji ${item.name}`}
+                                onCheckedChange={(v) => updateMenuItemWithoutJump({ id: item.id, isOrderable: v })}
+                              />
+                            </div>
+
+                            <span className="w-20 text-right text-base font-sans font-normal text-dark-gray tabular-nums">
+                              {item.price} zł
+                            </span>
+
+                            <div className="flex w-20 items-center justify-end gap-1 lg:w-24">
+                              <button
+                                onClick={() => router.push(`/admin-panel/menu/edit/${item.id}`)}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary/10 hover:text-secondary"
+                                aria-label={`Edytuj ${item.name}`}
+                              >
+                                <Pencil size={15} strokeWidth={2} />
+                              </button>
+                              <button
+                                onClick={() => { setMenuItemToDelete(item.id); setIsDeleteDialogOpen(true) }}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
+                                aria-label={`Usuń ${item.name}`}
+                              >
+                                <Trash2 size={15} strokeWidth={2} />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -378,7 +430,7 @@ const MenuTable = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   )
 }
 

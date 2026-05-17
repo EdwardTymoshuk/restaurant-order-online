@@ -69,6 +69,7 @@ export const reservationsRouter = router({
         include: {
           offerSnapshot: { select: { total: true, packageCode: true } },
           contact: { select: { name: true, phone: true } },
+          createdBy: { select: { username: true, name: true, email: true } },
         },
       })
     }),
@@ -83,6 +84,7 @@ export const reservationsRouter = router({
           extras: true,
           contact: true,
           summaryPdf: { select: { filename: true, createdAt: true } },
+          createdBy: { select: { username: true, name: true, email: true } },
         },
       })
       if (!reservation) throw new TRPCError({ code: 'NOT_FOUND', message: 'Reservation not found' })
@@ -92,8 +94,17 @@ export const reservationsRouter = router({
   createReservation: protectedProcedure
     .input(reservationUpsertInput)
     .mutation(async ({ ctx, input }) => {
+      const creator = ctx.user?.id
+        ? await ctx.prisma.user.findUnique({
+            where: { id: ctx.user.id },
+            select: { id: true, username: true, name: true, email: true },
+          })
+        : null
       const reservation = await ctx.prisma.reservation.create({
         data: {
+          source: 'MANUAL',
+          createdById: creator?.id ?? null,
+          createdByName: creator?.name ?? creator?.username ?? creator?.email ?? null,
           eventDate: new Date(input.eventDate),
           startTime: input.startTime ?? null,
           endTime: input.endTime ?? null,
@@ -134,6 +145,7 @@ export const reservationsRouter = router({
         include: {
           offerSnapshot: { select: { total: true, packageCode: true } },
           contact: { select: { name: true, phone: true } },
+          createdBy: { select: { username: true, name: true, email: true } },
         },
       })
 
@@ -175,6 +187,7 @@ export const reservationsRouter = router({
         include: {
           offerSnapshot: { select: { total: true, packageCode: true } },
           contact: { select: { name: true, phone: true } },
+          createdBy: { select: { username: true, name: true, email: true } },
         },
       })
     }),

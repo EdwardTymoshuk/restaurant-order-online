@@ -114,6 +114,9 @@ const OrderTrackingDialog: React.FC<OrderTrackingDialogProps> = ({ isOpen, onOpe
 						{activeOrder ? (
 							<>
 								<OrderStatusTracker status={activeOrder.status} deliveryMethod={activeOrder.deliveryMethod} />
+								<p className="self-center rounded-full bg-secondary/5 px-3 py-1 font-mono text-sm font-semibold text-secondary">
+									{activeOrder.orderNumber ?? activeOrder.id}
+								</p>
 								<p className="text-base lg:text-lg font-semibold text-secondary mt-2">
 									Przybliony czas dostawy/odbioru:
 									<span className='text-primary uppercase'>
@@ -124,6 +127,11 @@ const OrderTrackingDialog: React.FC<OrderTrackingDialogProps> = ({ isOpen, onOpe
 						) : (
 							<>
 								<OrderStatusTracker status={completedOrder?.status || ''} deliveryMethod={completedOrder?.deliveryMethod || 'TAKE_OUT'} />
+								{completedOrder && (
+									<p className="self-center rounded-full bg-secondary/5 px-3 py-1 font-mono text-sm font-semibold text-secondary">
+										{completedOrder.orderNumber ?? completedOrder.id}
+									</p>
+								)}
 								<p className="text-base lg:text-lg font-semibold text-secondary text-center self-center mt-2">
 									Dziękujemy za zamówienie!
 								</p>

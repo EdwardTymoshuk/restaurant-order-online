@@ -1,7 +1,8 @@
 'use client'
 
+import { Switch } from '@/app/components/ui/switch'
 import { cn } from '@/utils/utils'
-import { Bell, BellOff, BellRing, Loader2 } from 'lucide-react'
+import { BellOff, BellRing, Loader2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
 type PushState = 'checking' | 'unsupported' | 'not-configured' | 'blocked' | 'off' | 'on'
@@ -26,12 +27,20 @@ const saveSubscription = async (subscription: PushSubscription) => {
     body: JSON.stringify(subscription.toJSON()),
   })
 
-  if (!response.ok) {
-    throw new Error('Nie udało się zapisać powiadomień.')
-  }
+  if (!response.ok) throw new Error('Nie udało się zapisać powiadomień.')
 }
 
-export const AdminPushNotifications = ({ className }: { className?: string }) => {
+const deleteSubscription = async (subscription: PushSubscription) => {
+  const response = await fetch('/api/push/subscribe', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ endpoint: subscription.endpoint }),
+  })
+
+  if (!response.ok) throw new Error('Nie udało się usunąć powiadomień.')
+}
+
+export const PushNotificationsSettings = () => {
   const [state, setState] = useState<PushState>('checking')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -46,6 +55,11 @@ export const AdminPushNotifications = ({ className }: { className?: string }) =>
     const data = await response.json() as { publicKey?: string }
     return data.publicKey || null
   }, [])
+
+  const getExistingSubscription = async () => {
+    const registration = await navigator.serviceWorker.ready
+    return registration.pushManager.getSubscription()
+  }
 
   useEffect(() => {
     let ignore = false
@@ -69,9 +83,7 @@ export const AdminPushNotifications = ({ className }: { className?: string }) =>
       const publicKey = await getPublicKey()
       if (!publicKey || ignore) return
 
-      const registration = await navigator.serviceWorker.ready
-      const subscription = await registration.pushManager.getSubscription()
-
+      const subscription = await getExistingSubscription()
       if (ignore) return
 
       if (subscription) {
@@ -92,8 +104,6 @@ export const AdminPushNotifications = ({ className }: { className?: string }) =>
   }, [getPublicKey])
 
   const enableNotifications = async () => {
-    if (isLoading || state === 'on' || state === 'blocked' || state === 'unsupported') return
-
     setIsLoading(true)
 
     try {
@@ -129,40 +139,72 @@ export const AdminPushNotifications = ({ className }: { className?: string }) =>
     }
   }
 
-  if (state === 'unsupported' || state === 'not-configured') return null
+  const disableNotifications = async () => {
+    setIsLoading(true)
 
-  const isOn = state === 'on'
-  const isBlocked = state === 'blocked'
-  const title = isOn
-    ? 'Powiadomienia push są włączone'
-    : isBlocked
-      ? 'Powiadomienia są zablokowane w ustawieniach przeglądarki'
-      : 'Włącz powiadomienia o nowych zamówieniach i rezerwacjach'
+    try {
+      const subscription = await getExistingSubscription()
+      if (subscription) {
+        await deleteSubscription(subscription).catch(() => undefined)
+        await subscription.unsubscribe()
+      }
+      setState('off')
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleToggle = (checked: boolean) => {
+    if (isLoading || state === 'checking') return
+    if (checked) {
+      void enableNotifications()
+    } else {
+      void disableNotifications()
+    }
+  }
+
+  const disabled = isLoading || state === 'checking' || state === 'unsupported' || state === 'not-configured' || state === 'blocked'
+  const statusText =
+    state === 'on'
+      ? 'Włączone dla tej przeglądarki'
+      : state === 'blocked'
+        ? 'Zablokowane w ustawieniach przeglądarki'
+        : state === 'unsupported'
+          ? 'Niedostępne w tej przeglądarce'
+          : state === 'not-configured'
+            ? 'Brak konfiguracji push'
+            : 'Wyłączone'
 
   return (
-    <button
-      type="button"
-      title={title}
-      aria-label={title}
-      onClick={enableNotifications}
-      disabled={isLoading || isOn || isBlocked || state === 'checking'}
-      className={cn(
-        'relative flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/70 transition-colors',
-        'hover:border-primary/70 hover:text-primary disabled:cursor-default disabled:hover:border-white/15',
-        isOn && 'border-primary/50 bg-primary/10 text-primary',
-        isBlocked && 'text-white/40',
-        className
-      )}
-    >
-      {isLoading || state === 'checking' ? (
-        <Loader2 size={17} className="animate-spin" />
-      ) : isBlocked ? (
-        <BellOff size={17} />
-      ) : isOn ? (
-        <BellRing size={17} />
-      ) : (
-        <Bell size={17} />
-      )}
-    </button>
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/30 px-4 py-3">
+      <div className="flex min-w-0 items-center gap-3">
+        <div
+          className={cn(
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+            state === 'on' ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-500'
+          )}
+        >
+          {isLoading || state === 'checking' ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : state === 'on' ? (
+            <BellRing size={18} />
+          ) : (
+            <BellOff size={18} />
+          )}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-slate-900">Powiadomienia push</p>
+          <p className="text-xs text-muted-foreground">{statusText}</p>
+        </div>
+      </div>
+      <Switch
+        checked={state === 'on'}
+        disabled={disabled}
+        onCheckedChange={handleToggle}
+        aria-label="Powiadomienia push"
+      />
+    </div>
   )
 }

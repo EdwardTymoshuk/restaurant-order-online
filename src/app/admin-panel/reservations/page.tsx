@@ -33,6 +33,7 @@ import {
 import { pl } from 'date-fns/locale'
 import {
   Calendar,
+  CalendarPlus,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -49,6 +50,7 @@ import {
   X,
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
+import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useAdminRealtime } from '../hooks/useAdminRealtime'
 import { PageHeader } from '../components/PageHeader'
@@ -59,6 +61,7 @@ type ReservationListItem = Prisma.ReservationGetPayload<{
   include: {
     offerSnapshot: { select: { total: true; packageCode: true } }
     contact: { select: { name: true; phone: true } }
+    createdBy: { select: { username: true; name: true; email: true } }
   }
 }>
 
@@ -68,6 +71,7 @@ type ReservationDetail = Prisma.ReservationGetPayload<{
     extras: true
     contact: true
     summaryPdf: { select: { filename: true; createdAt: true } }
+    createdBy: { select: { username: true; name: true; email: true } }
   }
 }>
 
@@ -205,6 +209,15 @@ const DOT_COLOR: Record<ReservationStatus, string> = {
 const toDateKey = (date: Date) => format(date, 'yyyy-MM-dd')
 const formatDate = (date: Date | string) =>
   new Date(date).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+const formatDateTime = (date: Date | string) =>
+  new Date(date).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+
+const getReservationCreatorName = (reservation: Pick<ReservationListItem, 'createdByName' | 'createdBy'>) =>
+  reservation.createdByName ||
+  reservation.createdBy?.name ||
+  reservation.createdBy?.username ||
+  reservation.createdBy?.email ||
+  'administrator'
 
 const Counter = ({
   label, value, onChange, min = 0,
@@ -917,7 +930,7 @@ const MainCalendar = ({
   }, [month])
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col lg:flex-1 lg:min-h-0">
+    <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:min-h-0 lg:flex-1">
       {/* Month header */}
       <div className="grid grid-cols-[40px_1fr_40px] items-center px-7 pt-7 pb-6">
         <button
@@ -940,7 +953,7 @@ const MainCalendar = ({
       </div>
 
       {/* Weekday labels */}
-      <div className="grid grid-cols-7 px-5 pb-3">
+      <div className="grid grid-cols-7 border-y border-slate-100 bg-slate-50/60 px-5 py-2">
         {WEEKDAYS_FULL.map((d) => (
           <div key={d} className="text-center text-[11px] font-semibold text-slate-500 uppercase tracking-[0.14em] py-1">
             {d}
@@ -949,7 +962,7 @@ const MainCalendar = ({
       </div>
 
       {/* Days grid */}
-      <div className="grid grid-cols-7 px-5 pb-5 auto-rows-[72px] gap-y-1 lg:flex-1 lg:auto-rows-fr">
+      <div className="grid grid-cols-7 gap-y-1 px-5 pb-5 auto-rows-[78px] lg:flex-1 lg:auto-rows-[minmax(96px,1fr)]">
         {days.map((date) => {
           const key = toDateKey(date)
           const blocked = blockedByDate.get(key)
@@ -973,68 +986,73 @@ const MainCalendar = ({
               type="button"
               onClick={() => onDayClick(date)}
               className={cn(
-                'relative flex flex-col items-center p-1.5 gap-1 rounded-2xl transition-colors text-center min-h-[72px]',
-                isSelected ? 'bg-slate-100 ring-1 ring-inset ring-slate-200' : 'hover:bg-slate-50',
-                !isCurMonth && 'opacity-30',
+                'relative flex min-h-[78px] flex-col items-center gap-1 rounded-xl border border-transparent p-1.5 text-center transition-colors lg:min-h-[96px]',
+                isSelected
+                  ? 'border-secondary/35 bg-secondary/[0.03] shadow-[inset_0_0_0_1px_rgba(18,48,128,0.12)]'
+                  : 'hover:border-slate-200 hover:bg-slate-50/80',
+                _isToday && !isSelected && 'bg-primary/[0.04]',
+                !isCurMonth && 'opacity-35',
               )}
             >
               {/* Day number */}
               <span className={cn(
                 'flex items-center justify-center h-7 w-7 rounded-full text-sm font-medium shrink-0',
                 isSelected
-                  ? 'bg-slate-900 text-white'
+                  ? 'bg-secondary text-white'
                   : _isToday
-                    ? 'bg-slate-800 text-white'
+                    ? 'bg-primary/15 text-secondary ring-1 ring-primary/30'
                     : blocked
                       ? 'text-red-400'
                       : 'text-slate-700',
               )}>
                 {date.getDate()}
               </span>
-
-              {/* LARGE screens: event pills with time */}
-              {!blocked && (
-                <div className="hidden lg:flex flex-col gap-1 w-full">
-                  {active.slice(0, 3).map((r) => (
-                    <span key={r.id} className={cn(
-                      'w-full truncate rounded-md px-1.5 py-1 text-[10px] font-semibold leading-tight',
-                      isSelected
-                        ? r.status === 'SENT' ? 'bg-amber-100 text-amber-900'
-                          : r.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-900'
-                          : 'bg-slate-200 text-slate-600'
-                        : pillBg[r.status],
-                    )}>
-                      {(r.startTime || r.endTime) && (
-                        <span className="opacity-70 mr-0.5">
-                          {r.startTime && r.endTime
-                            ? `${r.startTime}-${r.endTime}`
-                            : r.startTime ?? r.endTime}
-                        </span>
-                      )}
-                      {r.contact?.name ?? '—'}
-                    </span>
-                  ))}
-                  {active.length > 3 && (
-                    <span className="text-[9px] text-slate-400 px-1">+{active.length - 3}</span>
-                  )}
-                </div>
-              )}
-              {blocked && (
-                <span className="hidden lg:block w-full truncate rounded-md px-1.5 py-1 text-[10px] font-semibold bg-red-100 text-red-500 leading-tight">
-                  Zablokowane
+              {_isToday && (
+                <span className="absolute right-2 top-2 hidden rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary lg:block">
+                  Dziś
                 </span>
               )}
 
+              {/* LARGE screens: block marker plus event pills */}
+              <div className="hidden lg:flex flex-col gap-1 w-full">
+                {blocked && (
+                  <span className="w-full truncate rounded-md bg-red-100 px-1.5 py-1 text-[10px] font-semibold leading-tight text-red-500">
+                    Zablokowane
+                  </span>
+                )}
+                {active.slice(0, blocked ? 2 : 3).map((r) => (
+                  <span key={r.id} className={cn(
+                    'w-full truncate rounded-md px-1.5 py-1 text-[10px] font-semibold leading-tight',
+                    isSelected
+                      ? r.status === 'SENT' ? 'bg-amber-100 text-amber-900'
+                        : r.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-900'
+                        : 'bg-slate-200 text-slate-600'
+                      : pillBg[r.status],
+                  )}>
+                    {(r.startTime || r.endTime) && (
+                      <span className="opacity-70 mr-0.5">
+                        {r.startTime && r.endTime
+                          ? `${r.startTime}-${r.endTime}`
+                          : r.startTime ?? r.endTime}
+                      </span>
+                    )}
+                    {r.contact?.name ?? '—'}
+                  </span>
+                ))}
+                {active.length > (blocked ? 2 : 3) && (
+                  <span className="text-[9px] text-slate-400 px-1">+{active.length - (blocked ? 2 : 3)}</span>
+                )}
+              </div>
+
               {/* SMALL screens: dots only */}
               <div className="flex lg:hidden justify-center gap-[3px] px-0.5">
-                {blocked ? (
+                {blocked && (
                   <span className="h-1.5 w-1.5 rounded-full bg-red-300" />
-                ) : (
-                  active.slice(0, 4).map((r) => (
-                    <span key={r.id} className={cn('h-1.5 w-1.5 rounded-full shrink-0', DOT_COLOR[r.status])} />
-                  ))
                 )}
-                {!blocked && active.length > 4 && (
+                {active.slice(0, blocked ? 3 : 4).map((r) => (
+                  <span key={r.id} className={cn('h-1.5 w-1.5 rounded-full shrink-0', DOT_COLOR[r.status])} />
+                ))}
+                {active.length > (blocked ? 3 : 4) && (
                   <span className="h-1.5 w-1.5 rounded-full shrink-0 bg-slate-200" />
                 )}
               </div>
@@ -1088,6 +1106,10 @@ const ReservationCard = ({
     ?.filter((extra) => extra.type === 'SPECIAL_DIET' && extra.label.startsWith('Dieta specjalna'))
     .map((extra) => extra.label.replace(/^Dieta specjalna(?: - szczegóły)?:\s*/i, '').trim())
     .filter(Boolean) ?? []
+  const sourceLabel = res.source === 'MANUAL' ? 'Ręcznie' : 'Formularz'
+  const sourceMeta = res.source === 'MANUAL'
+    ? `${getReservationCreatorName(res)} · ${formatDateTime(res.createdAt)}`
+    : formatDateTime(res.createdAt)
 
   return (
     <div className={cn('rounded-xl border overflow-hidden transition-shadow', statusBg[res.status], isExpanded && 'shadow-sm')}>
@@ -1095,7 +1117,7 @@ const ReservationCard = ({
       <button
         type="button"
         onClick={onExpand}
-        className="w-full flex items-start gap-2 px-3 py-3 text-left hover:brightness-95 transition-all sm:gap-3 sm:px-4"
+        className="w-full flex items-start gap-2 px-3 py-3 text-left transition-shadow hover:shadow-sm sm:gap-3 sm:px-4"
       >
         {/* Status dot */}
         <span className={cn('h-2.5 w-2.5 rounded-full mt-1 shrink-0', DOT_COLOR[res.status])} />
@@ -1105,6 +1127,17 @@ const ReservationCard = ({
             <p className="min-w-0 truncate text-sm font-semibold text-slate-800">{res.contact?.name ?? '—'}</p>
             <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full border', statusBadgeMap[res.status])}>
               {statusLabelMap[res.status]}
+            </span>
+            <span
+              title={res.source === 'MANUAL' ? `Dodane ręcznie: ${sourceMeta}` : `Z formularza: ${sourceMeta}`}
+              className={cn(
+                'rounded-full border px-2 py-0.5 text-[10px] font-medium',
+                res.source === 'MANUAL'
+                  ? 'border-sky-200 bg-sky-50 text-sky-700'
+                  : 'border-violet-200 bg-violet-50 text-violet-700'
+              )}
+            >
+              {sourceLabel}
             </span>
           </div>
           <div className="flex items-center gap-x-3 gap-y-1 mt-0.5 flex-wrap">
@@ -1122,6 +1155,14 @@ const ReservationCard = ({
               <Users size={10} className="shrink-0" />
               {res.adultsCount}{res.childrenCount ? ` + ${res.childrenCount}` : ''}
             </span>
+            <span className="text-xs text-slate-400">
+              Dodano: {formatDateTime(res.createdAt)}
+            </span>
+            {res.source === 'MANUAL' && (
+              <span className="text-xs text-slate-400">
+                Dodał: {getReservationCreatorName(res)}
+              </span>
+            )}
           </div>
         </div>
 
@@ -1307,7 +1348,9 @@ const ReservationCard = ({
 
 const Reservations = () => {
   const { status: sessionStatus } = useSession()
+  const searchParams = useSearchParams()
   const enabled = sessionStatus === 'authenticated'
+  const targetReservationId = searchParams.get('reservationId')
 
   const [calendarMonth, setCalendarMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -1316,6 +1359,7 @@ const Reservations = () => {
   const [addOpen, setAddOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [confirmDialog, setConfirmDialog] = useState<{ id: string; action: 'confirm' | 'cancel' } | null>(null)
+  const [blockConfirmDate, setBlockConfirmDate] = useState<Date | null>(null)
 
   const { data: reservations, isLoading, refetch } = trpc.reservations.getReservationsList.useQuery({}, { enabled })
   const { data: blockedDates, refetch: refetchBlocked } = trpc.reservations.getBlockedDates.useQuery(undefined, { enabled })
@@ -1380,6 +1424,10 @@ const Reservations = () => {
   }, [reservationsByDate])
 
   const selectedBlocked = selectedDate ? blockedByDate.get(toDateKey(selectedDate)) : undefined
+  const selectedActiveReservations = useMemo(() => {
+    if (!selectedDate) return []
+    return (reservationsByDate.get(toDateKey(selectedDate)) ?? []).filter((r) => r.status === 'SENT' || r.status === 'CONFIRMED')
+  }, [reservationsByDate, selectedDate])
 
   // Filtered list for right panel
   const currentTab = TABS.find((t) => t.value === activeTab)!
@@ -1402,6 +1450,31 @@ const Reservations = () => {
   const handleDayClick = (date: Date) => {
     setSelectedDate((prev) => prev && isSameDay(prev, date) ? null : date)
     setExpandedId(null)
+  }
+
+  useEffect(() => {
+    if (!targetReservationId || !reservations?.length) return
+    const target = reservations.find((reservation) => reservation.id === targetReservationId)
+    if (!target) return
+    const eventDate = new Date(target.eventDate)
+    const matchingTab = TABS.find((tab) => tab.statuses.includes(target.status))
+    setSelectedDate(eventDate)
+    setCalendarMonth(eventDate)
+    setExpandedId(target.id)
+    if (matchingTab) setActiveTab(matchingTab.value)
+  }, [reservations, targetReservationId])
+
+  const blockDate = (date: Date) => {
+    upsertBlocked.mutate({ date: toDateKey(date), isBlocked: true, notes: 'Termin zajęty' })
+  }
+
+  const handleBlockSelectedDate = () => {
+    if (!selectedDate) return
+    if (selectedActiveReservations.length > 0) {
+      setBlockConfirmDate(selectedDate)
+      return
+    }
+    blockDate(selectedDate)
   }
 
   const handleAddSave = (f: AddForm) => {
@@ -1427,8 +1500,8 @@ const Reservations = () => {
   }
 
   const actionsNode = (
-    <Button size="sm" onClick={() => setAddOpen(true)} className="h-8 gap-1.5">
-      <Plus size={13} /> Dodaj rezerwację
+    <Button size="sm" onClick={() => setAddOpen(true)} className="h-9 gap-2 rounded-xl px-4 text-white">
+      <CalendarPlus size={14} /> Dodaj rezerwację
     </Button>
   )
 
@@ -1473,10 +1546,10 @@ const Reservations = () => {
                   <div className="flex flex-col gap-2 lg:flex-1 lg:flex-row lg:items-center lg:justify-end">
                     <Button
                       size="sm"
-                      className="w-full h-8 gap-1.5 text-xs lg:w-auto lg:min-w-[220px]"
+                      className="h-9 w-full gap-2 rounded-xl text-xs text-white lg:w-auto lg:min-w-[230px]"
                       onClick={() => setAddOpen(true)}
                     >
-                      <Plus size={12} /> Dodaj rezerwację na ten dzień
+                      <CalendarPlus size={13} /> Dodaj rezerwację na ten dzień
                     </Button>
 
                     {/* Block / unblock */}
@@ -1498,7 +1571,7 @@ const Reservations = () => {
                       </div>
                     ) : (
                       <button
-                        onClick={() => upsertBlocked.mutate({ date: toDateKey(selectedDate), isBlocked: true, notes: 'Termin zajęty' })}
+                        onClick={handleBlockSelectedDate}
                         className="w-full flex items-center justify-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 border border-dashed border-border rounded-lg px-3 py-2 transition-colors lg:w-auto lg:min-w-[180px]"
                       >
                         <Lock size={11} /> Zablokuj ten dzień
@@ -1614,7 +1687,7 @@ const Reservations = () => {
             <DialogDescription className="text-slate-500">Operacja jest nieodwracalna.</DialogDescription>
           </ConfirmDialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setDeleteId(null)}>Wróć</Button>
+            <Button variant="outline" size="sm" onClick={() => setDeleteId(null)}>Wróć</Button>
             <Button variant="destructive" size="sm" disabled={deleteReservation.isLoading}
               onClick={() => deleteId && deleteReservation.mutate({ id: deleteId })}>
               {deleteReservation.isLoading ? 'Usuwanie…' : 'Usuń'}
@@ -1637,7 +1710,7 @@ const Reservations = () => {
             </DialogDescription>
           </ConfirmDialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setConfirmDialog(null)}>Wróć</Button>
+            <Button variant="outline" size="sm" onClick={() => setConfirmDialog(null)}>Wróć</Button>
             <Button
               variant={confirmDialog?.action === 'cancel' ? 'destructive' : 'default'}
               size="sm"
@@ -1650,6 +1723,47 @@ const Reservations = () => {
               {updateStatus.isLoading
                 ? 'Zapisywanie…'
                 : confirmDialog?.action === 'confirm' ? 'Potwierdź' : 'Anuluj'}
+            </Button>
+          </DialogFooter>
+        </ConfirmDialogContent>
+      </ConfirmDialog>
+
+      {/* Block date confirm */}
+      <ConfirmDialog open={!!blockConfirmDate} onOpenChange={(o) => !o && setBlockConfirmDate(null)}>
+        <ConfirmDialogContent className="rounded-2xl">
+          <ConfirmDialogHeader>
+            <ConfirmDialogTitle className="font-semibold text-slate-800">Zablokować dzień z rezerwacjami?</ConfirmDialogTitle>
+            <DialogDescription className="text-slate-500">
+              Na ten dzień są już rezerwacje. Blokada nie usunie wydarzeń, ale oznaczy dzień jako niedostępny dla kolejnych terminów.
+            </DialogDescription>
+          </ConfirmDialogHeader>
+          <div className="space-y-2 rounded-xl border border-amber-100 bg-amber-50/60 p-3">
+            {(blockConfirmDate ? reservationsByDate.get(toDateKey(blockConfirmDate)) ?? [] : [])
+              .filter((reservation) => reservation.status === 'SENT' || reservation.status === 'CONFIRMED')
+              .map((reservation) => (
+                <div key={reservation.id} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="min-w-0 truncate font-medium text-slate-800">
+                    {reservation.contact?.name ?? 'Bez nazwy'}
+                  </span>
+                  <span className="shrink-0 text-xs text-slate-500">
+                    {reservation.startTime ?? '—'}{reservation.endTime ? `-${reservation.endTime}` : ''}
+                  </span>
+                </div>
+              ))}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" size="sm" onClick={() => setBlockConfirmDate(null)}>Wróć</Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={upsertBlocked.isLoading}
+              onClick={() => {
+                if (!blockConfirmDate) return
+                blockDate(blockConfirmDate)
+                setBlockConfirmDate(null)
+              }}
+            >
+              {upsertBlocked.isLoading ? 'Blokowanie…' : 'Zablokuj dzień'}
             </Button>
           </DialogFooter>
         </ConfirmDialogContent>

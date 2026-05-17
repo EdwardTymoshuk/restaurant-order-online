@@ -5,7 +5,6 @@ import {
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuLabel,
-	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/app/components/ui/dropdown-menu'
 import { cn } from '@/utils/utils'
@@ -17,7 +16,6 @@ import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { RiCloseLine, RiMenu3Line } from 'react-icons/ri'
 import useSWR from 'swr'
-import { AdminPushNotifications } from './AdminPushNotifications'
 import { useAdminRealtime } from '../hooks/useAdminRealtime'
 
 type NavbarBadges = {
@@ -36,6 +34,7 @@ const navItems = [
 	{ label: 'Zamówienia', key: 'orders', icon: ClipboardList },
 	{ label: 'Rezerwacje', key: 'reservations', icon: CalendarDays },
 	{ label: 'Menu', key: 'menu', icon: ChefHat },
+	{ label: 'Ustawienia', key: 'settings', icon: Settings },
 ]
 
 interface AdminNavbarProps {
@@ -118,7 +117,6 @@ export const AdminNavbar = ({ className, activeTab }: AdminNavbarProps) => {
 
 				{/* Right side — desktop */}
 				<div className="hidden lg:flex items-center gap-2 w-52 justify-end shrink-0">
-					<AdminPushNotifications />
 					<DropdownMenu modal={false}>
 						<DropdownMenuTrigger asChild>
 							<button className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-secondary text-base font-sans font-semibold hover:opacity-90 transition-opacity focus:outline-none">
@@ -139,15 +137,6 @@ export const AdminNavbar = ({ className, activeTab }: AdminNavbarProps) => {
 							</DropdownMenuLabel>
 
 							<div className="py-1.5">
-								<DropdownMenuItem className="gap-3 font-sans font-normal text-sm py-2.5 px-4 cursor-pointer rounded-none text-dark-gray" asChild>
-									<Link href="/admin-panel?tab=settings">
-										<Settings size={17} strokeWidth={2} className="text-dark-gray shrink-0" />
-										Ustawienia
-									</Link>
-								</DropdownMenuItem>
-
-								<DropdownMenuSeparator />
-
 								<DropdownMenuItem
 									className="gap-3 font-sans font-normal text-sm py-2.5 px-4 rounded-none text-danger focus:text-danger focus:bg-danger/10 cursor-pointer"
 									onClick={() => signOut()}
@@ -160,11 +149,12 @@ export const AdminNavbar = ({ className, activeTab }: AdminNavbarProps) => {
 					</DropdownMenu>
 				</div>
 
-				{/* Mobile: spacer + hamburger */}
+				{/* Mobile: spacer + header actions */}
 				<div className="flex-1 lg:hidden" />
 				<button
 					onClick={() => setMobileOpen(!mobileOpen)}
-					className="lg:hidden text-white/70 hover:text-white"
+					className="flex h-9 w-9 items-center justify-center rounded-full text-white/75 transition-colors hover:bg-white/10 hover:text-white lg:hidden"
+					aria-label={mobileOpen ? 'Zamknij menu' : 'Otwórz menu'}
 				>
 					{mobileOpen ? <RiCloseLine size={22} /> : <RiMenu3Line size={22} />}
 				</button>
@@ -172,8 +162,8 @@ export const AdminNavbar = ({ className, activeTab }: AdminNavbarProps) => {
 
 			{/* Mobile dropdown */}
 			{mobileOpen && (
-				<div className="fixed top-14 left-0 right-0 z-20 bg-secondary border-t border-white/10 shadow-md lg:hidden">
-					<nav className="flex flex-col p-3 gap-1">
+				<div className="fixed left-0 right-0 top-14 z-50 border-t border-white/5 bg-secondary shadow-xl shadow-slate-950/20 lg:hidden">
+					<nav className="flex flex-col gap-1 px-3 py-3">
 						{navItems.map(({ label, key, icon: Icon }) => {
 							const badgeCount = getBadgeCount(key)
 
@@ -183,13 +173,13 @@ export const AdminNavbar = ({ className, activeTab }: AdminNavbarProps) => {
 									href={`/admin-panel?tab=${key}`}
 									onClick={() => setMobileOpen(false)}
 									className={cn(
-										'flex items-center gap-3 px-4 py-2.5 rounded-md text-sm font-sans font-light transition-all',
+										'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-sans font-medium transition-colors',
 										currentTab === key
-											? 'bg-white/15 text-white'
-											: 'text-white/60 hover:text-white hover:bg-white/10'
+											? 'bg-white/10 text-white'
+											: 'text-white/65 hover:bg-white/7 hover:text-white'
 									)}
 								>
-									<Icon size={16} strokeWidth={1.5} />
+									<Icon size={16} strokeWidth={1.8} />
 									<span className="flex-1">{label}</span>
 									{badgeCount > 0 && (
 										<span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold leading-none text-secondary">
@@ -199,18 +189,18 @@ export const AdminNavbar = ({ className, activeTab }: AdminNavbarProps) => {
 								</Link>
 							)
 						})}
-						<div className="border-t border-white/10 mt-2 pt-2 px-4 flex items-center justify-between">
-							<span className="text-sm font-sans font-light text-white/60">{displayName}</span>
-							<div className="flex items-center gap-2">
-								<AdminPushNotifications className="h-9 w-9" />
-								<button
-									onClick={() => signOut()}
-									className="flex items-center gap-1.5 text-xs font-sans font-light text-danger hover:text-danger/80"
-								>
-									<LogOut size={14} strokeWidth={1.5} />
-									Wyloguj
-								</button>
+						<div className="mt-2 flex items-center justify-between rounded-xl bg-white/[0.06] px-4 py-3">
+							<div className="min-w-0">
+								<p className="truncate text-sm font-medium text-white/80">{displayName}</p>
+								<p className="text-[10px] uppercase tracking-[0.16em] text-white/35">{role}</p>
 							</div>
+							<button
+								onClick={() => signOut()}
+								className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-red-200 transition-colors hover:bg-red-500/10 hover:text-red-100"
+							>
+								<LogOut size={14} strokeWidth={1.8} />
+								Wyloguj
+							</button>
 						</div>
 					</nav>
 				</div>

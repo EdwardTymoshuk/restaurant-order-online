@@ -15,6 +15,8 @@ model User {
   password  String
   role      String   @default("user")
   createdAt DateTime @default(now())
+
+  createdReservations Reservation[] @relation("ReservationCreatedBy")
 }
 
 model PushSubscription {
@@ -49,6 +51,7 @@ model MenuItem {
 
 model Order {
   id              String         @id @default(uuid())
+  orderNumber     String?        @unique
   name            String
   phone           String
   city            String?
@@ -145,6 +148,9 @@ model News {
 model Reservation {
   id             String            @id @default(uuid())
   status         ReservationStatus @default(SENT)
+  source         ReservationSource @default(ONLINE)
+  createdById    String?
+  createdByName  String?
 
   eventDate      DateTime
   startTime      String?
@@ -159,6 +165,7 @@ model Reservation {
   updatedAt      DateTime          @updatedAt
 
   /// Relations
+  createdBy      User?             @relation("ReservationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   offerSnapshot  ReservationOfferSnapshot?
   extras         ReservationExtra[]
   contact        ReservationContact?
@@ -276,6 +283,11 @@ enum ReservationStatus {
   SENT
   CONFIRMED
   CANCELLED
+}
+
+enum ReservationSource {
+  ONLINE
+  MANUAL
 }
 
 enum EventType {

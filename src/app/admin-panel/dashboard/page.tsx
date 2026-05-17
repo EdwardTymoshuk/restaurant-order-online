@@ -16,6 +16,7 @@ import {
   Clock,
   CreditCard,
   Crown,
+  ChevronRight,
   PackageCheck,
   ShoppingBag,
   TrendingDown,
@@ -24,6 +25,7 @@ import {
   WalletCards,
 } from 'lucide-react'
 import { useState } from 'react'
+import Link from 'next/link'
 import useSWR from 'swr'
 import { PageHeader } from '../components/PageHeader'
 
@@ -61,6 +63,7 @@ type DashboardData = {
   operations: {
     activeOrders: Array<{
       id: string
+      orderNumber: string | null
       name: string
       phone: string
       status: string
@@ -81,6 +84,7 @@ type DashboardData = {
     }>
     latestOrders: Array<{
       id: string
+      orderNumber: string | null
       name: string
       status: string
       amount: number
@@ -248,6 +252,70 @@ const EmptyState = ({ text }: { text: string }) => (
   </div>
 )
 
+const PriorityCard = ({
+  eyebrow,
+  title,
+  description,
+  meta,
+  href,
+  icon: Icon,
+  tone,
+  emptyText,
+}: {
+  eyebrow: string
+  title?: string
+  description?: string
+  meta?: string
+  href: string
+  icon: React.ElementType
+  tone: 'reservation' | 'order'
+  emptyText: string
+}) => {
+  const hasContent = Boolean(title)
+
+  return (
+    <Card
+      className={cn(
+        'overflow-hidden border-border shadow-sm',
+        tone === 'reservation' && 'bg-gradient-to-br from-primary/10 via-white to-white',
+        tone === 'order' && 'bg-gradient-to-br from-amber-50 via-white to-white'
+      )}
+    >
+      <CardContent className="flex min-h-[172px] flex-col justify-between gap-5 p-5 md:p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{eyebrow}</p>
+            <h3 className="mt-3 truncate text-2xl font-semibold text-slate-950">
+              {hasContent ? title : emptyText}
+            </h3>
+            {description && <p className="mt-2 text-sm font-medium text-slate-700">{description}</p>}
+          </div>
+          <div
+            className={cn(
+              'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl',
+              tone === 'reservation' && 'bg-primary/10 text-primary',
+              tone === 'order' && 'bg-amber-100 text-amber-700'
+            )}
+          >
+            <Icon size={23} />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted-foreground">{meta ?? 'Brak elementów wymagających pilnej obsługi.'}</p>
+          <Link
+            href={href}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-secondary/90"
+          >
+            Przejdź
+            <ChevronRight size={16} />
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export default function DashboardPage() {
   const [range, setRange] = useState<Range>('week')
   const [selectedMonth, setSelectedMonth] = useState(currentMonth)
@@ -260,9 +328,10 @@ export default function DashboardPage() {
   const setMonthForYear = (year: number, monthIndex: number) => {
     setSelectedMonth(`${year}-${String(monthIndex + 1).padStart(2, '0')}`)
   }
-  const datePickerSlot = (
-    <div className="flex h-9 w-[150px] shrink-0 justify-end">
-      {range === 'month' && (
+  const datePickerSlot = range === 'month' || range === 'year'
+    ? (
+      <div className={cn('flex h-9 shrink-0 justify-end', range === 'month' ? 'w-[150px]' : 'w-[116px]')}>
+        {range === 'month' && (
         <Popover>
           <PopoverTrigger asChild>
             <button
@@ -314,9 +383,9 @@ export default function DashboardPage() {
             </div>
           </PopoverContent>
         </Popover>
-      )}
+        )}
 
-      {range === 'year' && (
+        {range === 'year' && (
         <Popover>
           <PopoverTrigger asChild>
             <button
@@ -348,14 +417,15 @@ export default function DashboardPage() {
             </div>
           </PopoverContent>
         </Popover>
-      )}
-    </div>
-  )
+        )}
+      </div>
+    )
+    : null
   const rangeTabs = (
-    <div className="flex flex-wrap items-center justify-end gap-2">
+    <div className="flex flex-nowrap items-center gap-2">
       {datePickerSlot}
 
-      <div className="grid h-9 grid-cols-5 rounded-lg border border-border bg-muted p-1">
+      <div className="grid h-9 shrink-0 grid-cols-5 rounded-lg border border-border bg-muted p-1">
         {[
           { value: 'day', label: 'Dzisiaj' },
           { value: 'week', label: '7 dni' },
@@ -383,7 +453,7 @@ export default function DashboardPage() {
 
   if (!data && !error) {
     return (
-      <>
+      <div className="w-full min-w-0 max-w-full overflow-x-hidden">
         <PageHeader title="Pulpit" toolbar={rangeTabs} />
         <div className="space-y-5 p-4 md:p-6 lg:p-8">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -396,38 +466,81 @@ export default function DashboardPage() {
             <Skeleton className="h-96 rounded-2xl" />
           </div>
         </div>
-      </>
+      </div>
     )
   }
 
   if (error || !data) {
     return (
-      <>
+      <div className="w-full min-w-0 max-w-full overflow-x-hidden">
         <PageHeader title="Pulpit" toolbar={rangeTabs} />
         <div className="p-4 md:p-6 lg:p-8">
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             Nie udało się pobrać danych pulpitu.
           </div>
         </div>
-      </>
+      </div>
     )
   }
 
   const maxTopItemQty = Math.max(...data.menu.topItems.map((item) => item.quantity), 0)
   const maxWeakItemQty = Math.max(...data.menu.weakestItems.map((item) => item.quantity), 0)
   const totalRevenue = data.orders.revenue + data.reservations.revenue
+  const nextReservation = data.operations.upcomingReservations[0]
+  const nextOrder = data.operations.activeOrders[0]
 
   return (
-    <>
+    <div className="w-full min-w-0 max-w-full overflow-x-hidden">
       <PageHeader title="Pulpit" toolbar={rangeTabs} />
 
       <div className="space-y-7 p-4 md:p-6 lg:p-8">
-        <div className="flex flex-col gap-1">
-          <p className="text-sm text-muted-foreground">Dane za {rangeLabel[range]}</p>
-          <p className="text-xs text-muted-foreground">
-            Ostatnia aktualizacja: {formatDate(data.generatedAt)}, {formatTime(data.generatedAt)}
-          </p>
-        </div>
+        <section>
+          <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <SectionTitle title="Teraz najważniejsze" description="Pierwsze rzeczy do sprawdzenia po wejściu do panelu." />
+            </div>
+            <div className="text-sm text-muted-foreground md:text-right">
+              <p>Dane za {rangeLabel[range]}</p>
+              <p className="text-xs">Aktualizacja: {formatDate(data.generatedAt)}, {formatTime(data.generatedAt)}</p>
+            </div>
+          </div>
+
+          <div className="grid gap-5 xl:grid-cols-2">
+            <PriorityCard
+              eyebrow="Najbliższe wydarzenie"
+              title={nextReservation?.name}
+              description={
+                nextReservation
+                  ? `${formatDate(nextReservation.eventDate)} · ${nextReservation.startTime ?? '—'}-${nextReservation.endTime ?? '—'} · ${nextReservation.guests} os.`
+                  : undefined
+              }
+              meta={
+                nextReservation
+                  ? `${statusLabel[nextReservation.status] ?? nextReservation.status}${nextReservation.total ? ` · ${money(nextReservation.total)}` : ''}`
+                  : undefined
+              }
+              href={nextReservation ? `/admin-panel?tab=reservations&reservationId=${nextReservation.id}` : '/admin-panel?tab=reservations'}
+              icon={CalendarCheck}
+              tone="reservation"
+              emptyText="Brak nadchodzących rezerwacji"
+            />
+
+            <PriorityCard
+              eyebrow="Aktywne zamówienie"
+              title={nextOrder?.name}
+              description={
+                nextOrder
+                  ? `${nextOrder.deliveryMethod === 'DELIVERY' ? 'Dostawa' : 'Odbiór'} · ${formatTime(nextOrder.deliveryTime)} · ${money(nextOrder.amount)}`
+                  : undefined
+              }
+              meta={nextOrder ? statusLabel[nextOrder.status] ?? nextOrder.status : undefined}
+              href={nextOrder ? `/admin-panel?tab=orders&orderId=${nextOrder.id}` : '/admin-panel?tab=orders'}
+              icon={ShoppingBag}
+              tone="order"
+              emptyText="Brak aktywnych zamówień"
+            />
+          </div>
+        </section>
 
         <section>
           <SectionTitle title="Finanse" description="Łączna wartość sprzedaży i rezerwacji w wybranym okresie." />
@@ -637,6 +750,6 @@ export default function DashboardPage() {
       </div>
     </section>
     </div>
-    </>
+    </div>
   )
 }

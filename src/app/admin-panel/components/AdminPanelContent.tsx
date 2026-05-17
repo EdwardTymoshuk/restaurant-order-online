@@ -2,7 +2,7 @@
 
 import LoadingScreen from '@/app/components/LoadingScreen'
 import { useSearchParams } from 'next/navigation'
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import Dashboard from '../dashboard/page'
 import MenuTable from '../menu/page'
 import Orders from '../orders/page'
@@ -13,7 +13,7 @@ import { AdminNavbar } from './AdminNavbar'
 // Orders and Menu handle their own scroll container (below PageHeader).
 // Other pages are wrapped in a generic scroll div.
 const withScroll = (children: React.ReactNode) => (
-	<div className="flex-1 overflow-y-auto min-h-0">{children}</div>
+	<div className="min-h-0 w-full min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto">{children}</div>
 )
 
 const renderTabContent = (tab: string) => {
@@ -33,11 +33,23 @@ const AdminPanelContent = () => {
 	const validTabs = ['dashboard', 'orders', 'reservations', 'menu', 'settings']
 	const tab = tabParam && validTabs.includes(tabParam) ? tabParam : 'dashboard'
 
+	useEffect(() => {
+		document.documentElement.classList.add('admin-panel-document')
+		document.body.classList.add('admin-panel-document')
+		document.documentElement.scrollLeft = 0
+		document.body.scrollLeft = 0
+
+		return () => {
+			document.documentElement.classList.remove('admin-panel-document')
+			document.body.classList.remove('admin-panel-document')
+		}
+	}, [])
+
 	return (
-		<div className="h-screen flex flex-col bg-muted pt-14">
+		<div className="admin-panel-shell flex h-dvh w-full min-w-0 max-w-full flex-col overflow-x-hidden bg-muted pt-14">
 			<AdminNavbar />
 
-			<main className="flex-1 flex flex-col overflow-hidden min-h-0">
+			<main className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
 				<Suspense fallback={<LoadingScreen fullScreen />}>
 					{renderTabContent(tab)}
 				</Suspense>

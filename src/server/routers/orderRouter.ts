@@ -5,6 +5,38 @@ import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { publicProcedure, router } from '../trpc'
 
+const getOrderDayRange = (date: Date) => {
+  const start = new Date(date)
+  start.setHours(0, 0, 0, 0)
+  const end = new Date(start)
+  end.setDate(end.getDate() + 1)
+  return { start, end }
+}
+
+const formatOrderNumber = (date: Date, sequence: number) => {
+  const year = String(date.getFullYear()).slice(-2)
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `SPK-${year}${month}${day}-${String(sequence).padStart(3, '0')}`
+}
+
+const createOrderNumber = async (tx: Prisma.TransactionClient, date: Date) => {
+  const { start, end } = getOrderDayRange(date)
+  const count = await tx.order.count({
+    where: {
+      createdAt: { gte: start, lt: end },
+    },
+  })
+
+  for (let sequence = count + 1; sequence <= count + 50; sequence += 1) {
+    const orderNumber = formatOrderNumber(date, sequence)
+    const existing = await tx.order.findUnique({ where: { orderNumber }, select: { id: true } })
+    if (!existing) return orderNumber
+  }
+
+  return `SPK-${Date.now()}`
+}
+
 export const orderRouter = router({
   // Створення замовлення
   create: publicProcedure
@@ -35,7 +67,8 @@ export const orderRouter = router({
       }),
     )
     .mutation(async ({ input }) => {
-      const orderData = {
+      const now = new Date()
+      const orderData: Prisma.OrderCreateInput = {
         name: input.name,
         phone: input.phone,
         paymentMethod: input.paymentMethod,
@@ -70,12 +103,19 @@ export const orderRouter = router({
         })
       }
 
-      const order = await prisma.order.create({
-        data: orderData,
+      const order = await prisma.$transaction(async (tx) => {
+        const orderNumber = await createOrderNumber(tx, now)
+        return tx.order.create({
+          data: {
+            ...orderData,
+            orderNumber,
+          },
+        })
       })
 
       await notifyNewOrder({
         id: order.id,
+        orderNumber: order.orderNumber,
         name: order.name,
         finalAmount: order.finalAmount,
         deliveryMethod: order.deliveryMethod,
@@ -130,6 +170,7 @@ export const orderRouter = router({
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
+          orderNumber: true,
           status: true,
           deliveryMethod: true,
           deliveryTime: true,

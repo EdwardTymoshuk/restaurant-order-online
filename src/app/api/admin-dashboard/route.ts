@@ -276,6 +276,7 @@ export async function GET(request: Request) {
     operations: {
       activeOrders: activeOrders.map((order) => ({
         id: order.id,
+        orderNumber: order.orderNumber,
         name: order.name,
         phone: order.phone,
         status: order.status,
@@ -296,6 +297,7 @@ export async function GET(request: Request) {
       })),
       latestOrders: latestOrders.map((order) => ({
         id: order.id,
+        orderNumber: order.orderNumber,
         name: order.name,
         status: order.status,
         amount: money(order.finalAmount ?? order.totalAmount),

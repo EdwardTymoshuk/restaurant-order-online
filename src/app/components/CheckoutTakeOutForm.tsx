@@ -156,8 +156,8 @@ export default function CheckoutTakeOutForm({
 				nip: data.nip,
 			})
 
-			const { id, phone, name, deliveryMethod, deliveryTime } = order
-			setOrderData(id, phone, name, deliveryMethod, deliveryTime.toISOString())
+			const { id, orderNumber, phone, name, deliveryMethod, deliveryTime } = order
+			setOrderData(id, phone, name, deliveryMethod, deliveryTime.toISOString(), orderNumber)
 
 			if (promoCode) {
 				await markPromoCodeAsUsed.mutateAsync({ promoCode })

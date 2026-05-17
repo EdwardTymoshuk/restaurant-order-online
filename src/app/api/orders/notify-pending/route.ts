@@ -3,11 +3,13 @@ import { NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
 
 export async function POST(req: Request) {
-	const { orderId, phone, finalAmount, name } = await req.json()
+	const { orderId, orderNumber, phone, finalAmount, name } = await req.json()
 
 	if (!orderId || !phone) {
 		return NextResponse.json({ error: 'Invalid data' }, { status: 400 })
 	}
+
+	const displayNumber = orderNumber ?? orderId
 
 	try {
 		const transporter = nodemailer.createTransport({
@@ -23,8 +25,8 @@ export async function POST(req: Request) {
 		await transporter.sendMail({
 			from: `Spoko Sopot <${process.env.EMAIL_USER}>`,
 			to: process.env.RECIPIENT_EMAIL,
-			subject: `Niepodjęte zamówienie #${orderId}`,
-			text: `Zamówienie #${orderId} nie zostało podjęte już od ponad 10 minut.\n\Informacja:\n- Imie: ${name}\n- Telefon: ${phone}\n- Wartość zamówienia: ${finalAmount} PLN`,
+			subject: `Niepodjęte zamówienie ${displayNumber}`,
+			text: `Zamówienie ${displayNumber} nie zostało podjęte już od ponad 10 minut.\n\Informacja:\n- Imie: ${name}\n- Telefon: ${phone}\n- Wartość zamówienia: ${finalAmount} PLN`,
 		})
 
 		return NextResponse.json({ success: true })
