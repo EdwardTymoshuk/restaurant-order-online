@@ -188,3 +188,12 @@ export interface DeliveryZone {
 	maxRadius: number
 	price: number
 }
+
+export interface MenuDownloadDocument {
+	id: string
+	title: string
+	url: string
+	type: 'menu' | 'drinks' | 'other'
+	sortOrder: number
+	isActive: boolean
+}

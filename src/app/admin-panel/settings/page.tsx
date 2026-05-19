@@ -117,8 +117,8 @@ const Settings = () => {
     <>
       <PageHeader title="Ustawienia" />
 
-      <div className="space-y-6 p-4 md:p-6 lg:p-8">
-        <section className="grid gap-5 xl:grid-cols-2">
+      <div className="space-y-5 p-4 md:p-6 lg:p-8">
+        <section className="grid gap-5 xl:grid-cols-3">
           <Card className="border-border shadow-sm">
             <CardContent className="p-5">
               <div className="mb-4 flex items-start gap-3">
@@ -198,54 +198,56 @@ const Settings = () => {
           </Card>
         </section>
 
-        <div className="grid gap-5 xl:grid-cols-2">
+        <section>
           <SettingsModule title="Strefy dostaw" description="Promienie i ceny dostawy dla zamówień online." icon={Bike} count={deliveryZones.length}>
-          <DeliveryZonesSettings
-            deliveryZones={deliveryZones}
-            onUpdateZones={updateDeliveryZonePrices.mutate}
-          />
+            <DeliveryZonesSettings
+              deliveryZones={deliveryZones}
+              onUpdateZones={updateDeliveryZonePrices.mutate}
+            />
           </SettingsModule>
+        </section>
 
+        <section className="grid gap-5 xl:grid-cols-2">
           <SettingsModule title="Pizza" description="Dostępność kategorii pizzy oraz harmonogram sprzedaży." icon={Pizza} count={settingsData?.pizzaAvailability && Array.isArray(settingsData.pizzaAvailability) ? settingsData.pizzaAvailability.length : 0}>
-          <PizzaSettings
-            settingsData={{
-              pizzaCategoryEnabled: settingsData?.pizzaCategoryEnabled ?? false,
-              pizzaAvailability: Array.isArray(settingsData?.pizzaAvailability)
-                ? (settingsData?.pizzaAvailability as {
-                    day: number
-                    startHour: number
-                    endHour: number
-                  }[])
-                : [],
-            }}
-            refetchSettings={refetchSettings}
-          />
+            <PizzaSettings
+              settingsData={{
+                pizzaCategoryEnabled: settingsData?.pizzaCategoryEnabled ?? false,
+                pizzaAvailability: Array.isArray(settingsData?.pizzaAvailability)
+                  ? (settingsData?.pizzaAvailability as {
+                      day: number
+                      startHour: number
+                      endHour: number
+                    }[])
+                  : [],
+              }}
+              refetchSettings={refetchSettings}
+            />
           </SettingsModule>
-        </div>
 
-        <div className="grid gap-5 xl:grid-cols-2">
           <SettingsModule title="Kody promocyjne" description="Rabaty, daty ważności i jednorazowe kody." icon={BadgePercent} count={promoCodesData.length}>
-          <PromoCodeSettings />
+            <PromoCodeSettings />
           </SettingsModule>
+        </section>
 
+        <section className="grid gap-5 xl:grid-cols-2">
           <SettingsModule title="Banery order.spokosopot.pl" description="Banery reklamowe widoczne w systemie zamówień." icon={ImageIcon} count={orderBannersData.length}>
-          <BannerSettings />
+            <BannerSettings />
           </SettingsModule>
 
           <SettingsModule title="Banery spokosopot.pl" description="Banery strony głównej restauracji." icon={ImageIcon} count={mainBannersData.length}>
-          <MainPageBannerSettings />
+            <MainPageBannerSettings />
           </SettingsModule>
 
-          <SettingsModule title="Wydarzenia" description="Aktualności i wydarzenia widoczne na stronie." icon={Newspaper} count={eventsData.length}>
-          <EventSettings />
+          <SettingsModule title="Wydarzenia" description="Aktualności widoczne na stronie." icon={Newspaper} count={eventsData.length}>
+            <EventSettings />
           </SettingsModule>
-        </div>
 
-        {isAdmin && (
-          <SettingsModule title="Użytkownicy" description="Konta administratorów i operatorów panelu." icon={Settings2} count={usersData.length}>
-            <UserList />
-          </SettingsModule>
-        )}
+          {isAdmin && (
+            <SettingsModule title="Użytkownicy" description="Konta panelu." icon={Settings2} count={usersData.length}>
+              <UserList />
+            </SettingsModule>
+          )}
+        </section>
       </div>
     </>
   )

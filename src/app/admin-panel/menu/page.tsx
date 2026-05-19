@@ -12,8 +12,8 @@ import {
 } from '@/app/components/ui/dialog'
 import { Skeleton } from '@/app/components/ui/skeleton'
 import { Switch } from '@/app/components/ui/switch'
-import { MenuItemCategory } from '@/app/types/types'
-import { menuItemCategories } from '@/config'
+import { MenuDownloadDocument, MenuItemCategory } from '@/app/types/types'
+import { drinkMenuItemCategories, menuItemCategories } from '@/config'
 import { trpc } from '@/utils/trpc'
 import { cn } from '@/utils/utils'
 import { MenuItem } from '@prisma/client'
@@ -23,6 +23,7 @@ import { ArrowUpDown, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useMemo, useRef, useState } from 'react'
 import { FilterButton } from '../components/FilterButton'
+import MenuPdfSettings from '../components/MenuPdfSettings'
 import { PageHeader } from '../components/PageHeader'
 
 type SortOption = 'default' | 'name_asc' | 'name_desc' | 'price_asc' | 'price_desc' | 'date_asc' | 'date_desc'
@@ -37,6 +38,14 @@ const SORT_OPTIONS = [
   { value: 'date_desc',  label: 'Najnowsze' },
 ]
 
+const getCategorySortIndex = (category: MenuItemCategory) => {
+  const index = menuItemCategories.indexOf(category)
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index
+}
+
+const isDrinkCategory = (category: MenuItemCategory) =>
+  drinkMenuItemCategories.includes(category)
+
 const MenuTable = () => {
   const [sortOption, setSortOption]               = useState<SortOption>('default')
   const [categoryFilter, setCategoryFilter]       = useState<MenuItemCategory | 'ALL'>('ALL')
@@ -47,9 +56,13 @@ const MenuTable = () => {
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const { data: menuItems = [], isLoading } = trpc.menu.getAllMenuItems.useQuery()
+  const { data: settingsData } = trpc.settings.getSettings.useQuery()
   const queryClient = useQueryClient()
   const router = useRouter()
   const queryKey = getQueryKey(trpc.menu.getAllMenuItems)
+  const menuDocuments = Array.isArray(settingsData?.menuDocuments)
+    ? (settingsData.menuDocuments as unknown as MenuDownloadDocument[])
+    : []
 
   const { mutateAsync: updateMenuItem } = trpc.menu.updateMenuItem.useMutation({
     onMutate: async (updatedItem) => {
@@ -73,7 +86,13 @@ const MenuTable = () => {
     })
 
   const categories = useMemo(
-    () => Array.from(new Set(menuItems.map((i) => i.category as MenuItemCategory))),
+    () => Array.from(new Set(menuItems.map((i) => i.category as MenuItemCategory)))
+      .sort((a, b) => {
+        const aIndex = getCategorySortIndex(a)
+        const bIndex = getCategorySortIndex(b)
+        if (aIndex !== bIndex) return aIndex - bIndex
+        return a.localeCompare(b, 'pl')
+      }),
     [menuItems]
   )
 
@@ -81,7 +100,6 @@ const MenuTable = () => {
     categoryFilter !== 'ALL',
     isActiveFilter !== 'ALL',
     isOrderableFilter !== 'ALL',
-    sortOption !== 'default',
   ].filter(Boolean).length
 
   const sortedItems = useMemo(() => {
@@ -115,14 +133,39 @@ const MenuTable = () => {
     return Array.from(groups.entries())
       .map(([category, items]) => ({ category, items }))
       .sort((a, b) => {
-        const aIndex = menuItemCategories.indexOf(a.category)
-        const bIndex = menuItemCategories.indexOf(b.category)
-        if (aIndex === -1 && bIndex === -1) return a.category.localeCompare(b.category)
-        if (aIndex === -1) return 1
-        if (bIndex === -1) return -1
+        const aIndex = getCategorySortIndex(a.category)
+        const bIndex = getCategorySortIndex(b.category)
+        if (aIndex === Number.MAX_SAFE_INTEGER && bIndex === Number.MAX_SAFE_INTEGER) {
+          return a.category.localeCompare(b.category, 'pl')
+        }
         return aIndex - bIndex
       })
   }, [sortedItems])
+
+  const groupedSections = useMemo(() => {
+    const sections: Array<{
+      key: 'food' | 'drinks' | 'other'
+      title: string
+      description: string
+      groups: typeof groupedItems
+    }> = [
+      { key: 'food', title: 'Dania', description: 'Pozycje kuchni ułożone od śniadań do deserów.', groups: [] },
+      { key: 'drinks', title: 'Napoje', description: 'Napoje, alkohole, kawa i herbata.', groups: [] },
+      { key: 'other', title: 'Pozostałe', description: 'Oferty specjalne i inne pozycje.', groups: [] },
+    ]
+
+    groupedItems.forEach((group) => {
+      if (isDrinkCategory(group.category)) {
+        sections[1].groups.push(group)
+      } else if (group.category === 'Oferta Specjalna' || group.category === 'Oferta Walentynkowa' || group.category === 'Inne') {
+        sections[2].groups.push(group)
+      } else {
+        sections[0].groups.push(group)
+      }
+    })
+
+    return sections.filter((section) => section.groups.length > 0)
+  }, [groupedItems])
 
   const updateMenuItemWithoutJump = async (payload: { id: string; isActive?: boolean; isOrderable?: boolean }) => {
     const scrollTop = scrollRef.current?.scrollTop ?? 0
@@ -133,7 +176,6 @@ const MenuTable = () => {
   }
 
   const clearFilters = () => {
-    setSortOption('default')
     setCategoryFilter('ALL')
     setIsActiveFilter('ALL')
     setIsOrderableFilter('ALL')
@@ -170,13 +212,6 @@ const MenuTable = () => {
       onClear={clearFilters}
       filters={[
         {
-          label: 'Sortowanie',
-          value: sortOption,
-          onChange: (v) => setSortOption(v as SortOption),
-          options: SORT_OPTIONS.filter((o) => o.value !== 'default'),
-          allLabel: 'Domyślnie',
-        },
-        {
           label: 'Kategoria',
           value: categoryFilter,
           onChange: (v) => setCategoryFilter(v as MenuItemCategory | 'ALL'),
@@ -212,6 +247,10 @@ const MenuTable = () => {
           </div>
         ) : (
           <>
+            <div className="mb-5">
+              <MenuPdfSettings menuDocuments={menuDocuments} />
+            </div>
+
             <div className="mb-4 flex items-center justify-between gap-3">
               <p className="text-sm font-sans font-normal text-muted-foreground">
                 {sortedItems.length} {sortedItems.length === 1 ? 'pozycja' : 'pozycji'}
@@ -237,9 +276,22 @@ const MenuTable = () => {
                 <p className="text-sm font-sans font-normal">Brak pozycji</p>
               </div>
             ) : (
-              <div className="space-y-5">
-                {groupedItems.map((group) => (
-                  <section key={group.category} className="overflow-hidden rounded-2xl border border-border bg-white">
+              <div className="space-y-8">
+                {groupedSections.map((section) => (
+                  <div key={section.key} className="space-y-4">
+                    <div className="flex flex-wrap items-end justify-between gap-3 px-1">
+                      <div>
+                        <h2 className="font-serif text-xl font-semibold text-dark-gray">{section.title}</h2>
+                        <p className="mt-1 text-sm text-muted-foreground">{section.description}</p>
+                      </div>
+                      <span className="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm">
+                        {section.groups.reduce((total, group) => total + group.items.length, 0)} pozycji
+                      </span>
+                    </div>
+
+                    <div className="space-y-5">
+                      {section.groups.map((group) => (
+                        <section key={group.category} className="overflow-hidden rounded-2xl border border-border bg-white">
                     <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/35 px-4 py-3 sm:px-5">
                       <div className="min-w-0">
                         <h2 className="truncate text-sm font-semibold text-slate-900">{group.category}</h2>
@@ -300,6 +352,9 @@ const MenuTable = () => {
                               >
                                 {item.name}
                               </button>
+                              <p className="mt-1 hidden max-w-3xl truncate text-xs leading-5 text-muted-foreground lg:block">
+                                {item.description || 'Brak opisu'}
+                              </p>
                               <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground lg:hidden">
                                 <span className="rounded-full bg-muted/50 px-2 py-0.5 font-medium text-slate-600">{item.price} zł</span>
                                 <span className={cn('rounded-full px-2 py-0.5 font-medium', item.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500')}>
@@ -399,7 +454,10 @@ const MenuTable = () => {
                         </div>
                       ))}
                     </div>
-                  </section>
+                        </section>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             )}

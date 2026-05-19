@@ -2,6 +2,8 @@
 import { sanitizeImageFilename } from '@/utils/sanitizeImageFilename'
 import { uploadToR2 } from '@/utils/uploadToR2'
 import { NextRequest, NextResponse } from 'next/server'
+import { mkdir, writeFile } from 'node:fs/promises'
+import path from 'node:path'
 
 export const runtime = 'nodejs'
 
@@ -23,8 +25,21 @@ export async function POST(request: NextRequest) {
 		const sanitizedFilename = sanitizeImageFilename(originalFilename)
 		const contentType = file.type || 'application/octet-stream'
 
-		// Завантажуємо до R2
-		const imageUrl = await uploadToR2(buffer, sanitizedFilename, contentType)
+		let imageUrl: string
+		const hasR2Config =
+			Boolean(process.env.CLOUDFLARE_R2_ACCESS_KEY_ID) &&
+			Boolean(process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY) &&
+			Boolean(process.env.CLOUDFLARE_R2_PUBLIC_URL)
+
+		if (hasR2Config) {
+			imageUrl = await uploadToR2(buffer, sanitizedFilename, contentType)
+		} else {
+			const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+			await mkdir(uploadsDir, { recursive: true })
+			const localFilename = `${Date.now()}-${sanitizedFilename}`
+			await writeFile(path.join(uploadsDir, localFilename), buffer)
+			imageUrl = `/uploads/${localFilename}`
+		}
 
 		return NextResponse.json({ imageUrl })
 	} catch (error) {

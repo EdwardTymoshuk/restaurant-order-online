@@ -1,5 +1,6 @@
 'use client'
 
+import { Button } from '@/app/components/ui/button'
 import {
   Popover,
   PopoverContent,
@@ -42,12 +43,11 @@ export const FilterButton = ({ filters, activeCount = 0, onClear, className }: F
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          className={cn(
-            'relative flex h-9 items-center gap-2 rounded-xl px-4 text-sm font-semibold shadow-sm shadow-secondary/20 transition-all duration-150 focus:outline-none active:scale-[0.98]',
-            open ? 'bg-secondary/85 text-white' : 'bg-secondary text-white hover:bg-secondary/90 hover:shadow-md',
-            className
-          )}
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          className={cn('relative gap-2', open && 'bg-secondary/85 hover:bg-secondary/85', className)}
         >
           <SlidersHorizontal size={14} strokeWidth={2} />
           Filtruj
@@ -56,7 +56,7 @@ export const FilterButton = ({ filters, activeCount = 0, onClear, className }: F
               {activeCount}
             </span>
           )}
-        </button>
+        </Button>
       </PopoverTrigger>
 
       <PopoverContent className="w-72 p-4 space-y-4">

@@ -114,6 +114,39 @@ export const settingsRouter = router({
         data: { deliveryZones: input }, // Зберігаємо як масив зон
       })
     }),
+  updateMenuDocuments: publicProcedure
+    .input(
+      z.array(
+        z.object({
+          id: z.string(),
+          title: z.string().min(1),
+          url: z.string().min(1).refine(
+            (value) => {
+              if (value.startsWith('/')) return true
+              try {
+                new URL(value)
+                return true
+              } catch {
+                return false
+              }
+            },
+            { message: 'Invalid url' }
+          ),
+          type: z.enum(['menu', 'drinks', 'other']),
+          sortOrder: z.number().int().min(0),
+          isActive: z.boolean(),
+        }),
+      ),
+    )
+    .mutation(async ({ input }) => {
+      const settings = await prisma.settings.findFirst()
+      if (!settings) throw new Error('Settings not found')
+
+      return await prisma.settings.update({
+        where: { id: settings.id },
+        data: { menuDocuments: input },
+      })
+    }),
   updatePizzaAvailability: publicProcedure
     .input(
       z.object({

@@ -141,7 +141,7 @@ export async function GET(request: Request) {
       take: 8,
     }),
     prisma.menuItem.findMany({
-      where: { isActive: true },
+      where: { isActive: true, isArchived: false },
       select: { id: true, name: true, category: true, price: true, isOrderable: true },
     }),
     prisma.order.findMany({
