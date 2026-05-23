@@ -13,13 +13,13 @@ import {
 import { Skeleton } from '@/app/components/ui/skeleton'
 import { Switch } from '@/app/components/ui/switch'
 import { MenuDownloadDocument, MenuItemCategory } from '@/app/types/types'
-import { drinkMenuItemCategories, menuItemCategories } from '@/config'
+import { drinkMenuItemCategories, isAlcoholMenuCategory, menuItemCategories } from '@/config'
 import { trpc } from '@/utils/trpc'
 import { cn } from '@/utils/utils'
 import { MenuItem } from '@prisma/client'
 import { useQueryClient } from '@tanstack/react-query'
 import { getQueryKey } from '@trpc/react-query'
-import { ArrowUpDown, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowUpDown, Eye, Pencil, Plus, ShoppingBag, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useMemo, useRef, useState } from 'react'
 import { FilterButton } from '../components/FilterButton'
@@ -78,6 +78,10 @@ const MenuTable = () => {
     onError: (_, __, context) => {
       if (context?.previousData) queryClient.setQueryData(queryKey, context.previousData)
     },
+  })
+
+  const { mutateAsync: updateMenuCategory } = trpc.menu.updateMenuCategory.useMutation({
+    onSettled: () => queryClient.invalidateQueries(queryKey),
   })
 
   const { mutateAsync: deleteMenuItem, isLoading: isLoadingDelete } =
@@ -170,6 +174,17 @@ const MenuTable = () => {
   const updateMenuItemWithoutJump = async (payload: { id: string; isActive?: boolean; isOrderable?: boolean }) => {
     const scrollTop = scrollRef.current?.scrollTop ?? 0
     await updateMenuItem(payload)
+    requestAnimationFrame(() => {
+      if (scrollRef.current) scrollRef.current.scrollTop = scrollTop
+    })
+  }
+
+  const updateMenuCategoryWithoutJump = async (
+    category: MenuItemCategory,
+    payload: { isActive?: boolean; isOrderable?: boolean }
+  ) => {
+    const scrollTop = scrollRef.current?.scrollTop ?? 0
+    await updateMenuCategory({ category, ...payload })
     requestAnimationFrame(() => {
       if (scrollRef.current) scrollRef.current.scrollTop = scrollTop
     })
@@ -290,18 +305,67 @@ const MenuTable = () => {
                     </div>
 
                     <div className="space-y-5">
-                      {section.groups.map((group) => (
+                      {section.groups.map((group) => {
+                        const activeCount = group.items.filter((item) => item.isActive).length
+                        const orderableCount = group.items.filter((item) => item.isOrderable).length
+                        const isAlcoholCategory = isAlcoholMenuCategory(group.category)
+
+                        return (
                         <section key={group.category} className="overflow-hidden rounded-2xl border border-border bg-white">
-                    <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/35 px-4 py-3 sm:px-5">
-                      <div className="min-w-0">
-                        <h2 className="truncate text-sm font-semibold text-slate-900">{group.category}</h2>
-                        <p className="text-xs text-muted-foreground">
-                          {group.items.length} {group.items.length === 1 ? 'pozycja' : 'pozycji'}
-                        </p>
+                    <div className="border-b border-border bg-white px-4 py-4 sm:px-5">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="truncate text-base font-semibold text-slate-950">{group.category}</h2>
+                            {isAlcoholCategory && (
+                              <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                                Alkohol poza online
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {group.items.length} {group.items.length === 1 ? 'pozycja' : 'pozycji'} · {activeCount} widocznych · {orderableCount} online
+                          </p>
+                        </div>
+
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <label className="flex min-w-[190px] items-center justify-between gap-3 rounded-xl border border-border/80 bg-slate-50 px-3 py-2">
+                            <span className="flex min-w-0 items-center gap-2">
+                              <Eye size={15} className="shrink-0 text-muted-foreground" />
+                              <span className="min-w-0">
+                                <span className="block text-xs font-medium text-slate-800">Widoczna kategoria</span>
+                                <span className="block text-[11px] text-muted-foreground">Pokazuj gościom</span>
+                              </span>
+                            </span>
+                            <Switch
+                              checked={activeCount === group.items.length && group.items.length > 0}
+                              aria-label={`Widoczność kategorii ${group.category}`}
+                              onCheckedChange={(v) => updateMenuCategoryWithoutJump(group.category, { isActive: v })}
+                            />
+                          </label>
+
+                          <label className={cn(
+                            'flex min-w-[190px] items-center justify-between gap-3 rounded-xl border border-border/80 bg-slate-50 px-3 py-2',
+                            isAlcoholCategory && 'opacity-70'
+                          )}>
+                            <span className="flex min-w-0 items-center gap-2">
+                              <ShoppingBag size={15} className="shrink-0 text-muted-foreground" />
+                              <span className="min-w-0">
+                                <span className="block text-xs font-medium text-slate-800">Zamówienia online</span>
+                                <span className="block text-[11px] text-muted-foreground">
+                                  {isAlcoholCategory ? 'Domyślnie wyłączone' : 'Dodawaj do koszyka'}
+                                </span>
+                              </span>
+                            </span>
+                            <Switch
+                              checked={!isAlcoholCategory && orderableCount === group.items.length && group.items.length > 0}
+                              disabled={isAlcoholCategory}
+                              aria-label={`Dostępność online kategorii ${group.category}`}
+                              onCheckedChange={(v) => updateMenuCategoryWithoutJump(group.category, { isOrderable: v })}
+                            />
+                          </label>
+                        </div>
                       </div>
-                      <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-sm">
-                        {group.items.filter((item) => item.isActive).length} aktywne
-                      </span>
                     </div>
 
                     <div className="hidden grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-4 border-b border-border bg-white px-5 py-2.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground lg:grid">
@@ -455,7 +519,8 @@ const MenuTable = () => {
                       ))}
                     </div>
                         </section>
-                      ))}
+                        )
+                      })}
                     </div>
                   </div>
                 ))}

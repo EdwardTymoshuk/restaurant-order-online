@@ -16,6 +16,7 @@ interface ImageUploaderProps {
   multiple?: boolean
   aspectRatio?: number
   currentImages?: string[]
+  skipCrop?: boolean
 }
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({
@@ -24,6 +25,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   multiple = false,
   aspectRatio = 1,
   currentImages = [],
+  skipCrop = false,
 }) => {
   const uniqueId = useId()
 
@@ -45,6 +47,49 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     setCroppedAreaPixels(croppedAreaPixels)
   }
 
+  const uploadOriginalFiles = async (files: File[]) => {
+    if (!files.length) return
+    setUploading(true)
+
+    try {
+      const uploadedUrls: string[] = []
+
+      for (const file of files) {
+        const formData = new FormData()
+        const sanitizedFilename = sanitizeImageFilename(
+          file.name || `image-${Date.now()}.jpg`
+        )
+        formData.append('file', file, sanitizedFilename)
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!response.ok) {
+          throw new Error('Upload failed')
+        }
+
+        const { imageUrl } = await response.json()
+        uploadedUrls.push(imageUrl)
+      }
+
+      const updatedImages = multiple
+        ? [...selectedImages, ...uploadedUrls]
+        : uploadedUrls.slice(0, 1)
+      setSelectedImages(updatedImages)
+      onImageUpload(updatedImages)
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    } catch (error) {
+      console.error('Błąd podczas przesyłania:', error)
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const readImageFile = (file?: File) => {
     if (!file) return
     const reader = new FileReader()
@@ -55,13 +100,23 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    readImageFile(Array.from(e.target.files || [])[0])
+    const files = Array.from(e.target.files || [])
+    if (skipCrop) {
+      void uploadOriginalFiles(multiple ? files : files.slice(0, 1))
+      return
+    }
+    readImageFile(files[0])
   }
 
   const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault()
     setIsDragging(false)
-    readImageFile(Array.from(e.dataTransfer.files || [])[0])
+    const files = Array.from(e.dataTransfer.files || [])
+    if (skipCrop) {
+      void uploadOriginalFiles(multiple ? files : files.slice(0, 1))
+      return
+    }
+    readImageFile(files[0])
   }
 
   const handleCrop = async () => {
@@ -123,6 +178,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         accept="image/*"
         onChange={handleImageChange}
         multiple={multiple}
+        disabled={uploading}
         className="hidden"
       />
 
@@ -166,7 +222,9 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
               {multiple ? 'Dodaj kolejne zdjęcie' : 'Zmień zdjęcie'}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Kliknij albo przeciągnij plik tutaj.
+              {uploading
+                ? 'Optymalizujemy i zapisujemy zdjęcie...'
+                : 'Kliknij albo przeciągnij plik tutaj.'}
             </p>
           </label>
         </div>
@@ -189,7 +247,11 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
             Kliknij, aby dodać zdjęcie albo przeciągnij je tutaj
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Zdjęcie przytniemy do właściwych proporcji przed zapisem.
+            {uploading
+              ? 'Optymalizujemy i zapisujemy zdjęcie...'
+              : skipCrop
+                ? 'Zdjęcie zostanie zachowane w całości i zoptymalizowane przed zapisem.'
+                : 'Zdjęcie przytniemy do właściwych proporcji przed zapisem.'}
           </p>
         </label>
       )}

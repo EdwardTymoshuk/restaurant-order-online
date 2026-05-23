@@ -4,6 +4,7 @@ import { uploadToR2 } from '@/utils/uploadToR2'
 import { NextRequest, NextResponse } from 'next/server'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import sharp from 'sharp'
 
 export const runtime = 'nodejs'
 
@@ -16,14 +17,35 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ error: 'Brak pliku' }, { status: 400 })
 		}
 
-		// Читаємо вміст файлу як Buffer
 		const arrayBuffer = await file.arrayBuffer()
 		const buffer = Buffer.from(arrayBuffer)
 
-		// Отримуємо назву файлу та тип контенту
 		const originalFilename = file.name || 'plik.jpg'
 		const sanitizedFilename = sanitizeImageFilename(originalFilename)
-		const contentType = file.type || 'application/octet-stream'
+		const filenameWithoutExtension =
+			sanitizedFilename.replace(/\.[^/.]+$/, '') || `image-${Date.now()}`
+		const isImage = file.type.startsWith('image/')
+		const isSvg = file.type === 'image/svg+xml'
+		const shouldOptimize = isImage && !isSvg
+
+		const outputBuffer = shouldOptimize
+			? await sharp(buffer)
+					.rotate()
+					.resize({
+						width: 2000,
+						height: 2000,
+						fit: 'inside',
+						withoutEnlargement: true,
+					})
+					.webp({ quality: 82, effort: 4 })
+					.toBuffer()
+			: buffer
+		const outputFilename = shouldOptimize
+			? `${filenameWithoutExtension}.webp`
+			: sanitizedFilename
+		const contentType = shouldOptimize
+			? 'image/webp'
+			: file.type || 'application/octet-stream'
 
 		let imageUrl: string
 		const hasR2Config =
@@ -32,12 +54,12 @@ export async function POST(request: NextRequest) {
 			Boolean(process.env.CLOUDFLARE_R2_PUBLIC_URL)
 
 		if (hasR2Config) {
-			imageUrl = await uploadToR2(buffer, sanitizedFilename, contentType)
+			imageUrl = await uploadToR2(outputBuffer, outputFilename, contentType)
 		} else {
 			const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
 			await mkdir(uploadsDir, { recursive: true })
-			const localFilename = `${Date.now()}-${sanitizedFilename}`
-			await writeFile(path.join(uploadsDir, localFilename), buffer)
+			const localFilename = `${Date.now()}-${outputFilename}`
+			await writeFile(path.join(uploadsDir, localFilename), outputBuffer)
 			imageUrl = `/uploads/${localFilename}`
 		}
 

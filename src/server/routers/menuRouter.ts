@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { drinkMenuItemCategories, foodMenuItemCategories } from '@/config'
+import { drinkMenuItemCategories, foodMenuItemCategories, isAlcoholMenuCategory } from '@/config'
 import { getMenuImportKey, ImportDocumentType, parseMenuDocumentForImport } from '@/server/services/menuDocumentImport'
 import { z } from 'zod'
 import { publicProcedure, router } from '../trpc'
@@ -217,7 +217,7 @@ export const menuRouter = router({
           category: input.category,
           image: input.image,
           isActive: input.isActive,
-          isOrderable: input.isOrderable,
+          isOrderable: isAlcoholMenuCategory(input.category) ? false : input.isOrderable,
           isRecommended: input.isRecommended,
           isOnMainPage: input.isOnMainPage,
           isArchived: false,
@@ -258,6 +258,36 @@ export const menuRouter = router({
         data,
       })
       return updatedItem
+    }),
+
+  updateMenuCategory: publicProcedure
+    .input(
+      z.object({
+        category: z.string(),
+        isActive: z.boolean().optional(),
+        isOrderable: z.boolean().optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { category, isActive, isOrderable } = input
+      const data: { isActive?: boolean; isOrderable?: boolean } = {}
+
+      if (typeof isActive === 'boolean') data.isActive = isActive
+      if (typeof isOrderable === 'boolean') {
+        data.isOrderable = isAlcoholMenuCategory(category) ? false : isOrderable
+      }
+
+      if (Object.keys(data).length === 0) {
+        return { count: 0 }
+      }
+
+      return prisma.menuItem.updateMany({
+        where: {
+          category,
+          isArchived: false,
+        },
+        data,
+      })
     }),
 
   deleteMenuItem: publicProcedure
@@ -327,7 +357,7 @@ export const menuRouter = router({
               price: item.price,
               description: item.description,
               isActive: true,
-              isOrderable: true,
+              isOrderable: !isAlcoholMenuCategory(item.category),
               isArchived: false,
             },
           })
@@ -343,7 +373,7 @@ export const menuRouter = router({
             description: item.description,
             image: null,
             isActive: true,
-            isOrderable: true,
+            isOrderable: !isAlcoholMenuCategory(item.category),
             isRecommended: false,
             isOnMainPage: false,
             isArchived: false,

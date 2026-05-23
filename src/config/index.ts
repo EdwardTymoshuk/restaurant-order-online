@@ -81,6 +81,27 @@ export const drinkMenuItemCategories: MenuItemCategory[] = [
 	'Napoje łekkoprocentowe',
 ]
 
+export const alcoholMenuItemCategories: MenuItemCategory[] = [
+	'Drinki',
+	'Klasyczne koktaile',
+	'Rum',
+	'Gin',
+	'Whisky',
+	'Tequila',
+	'Wódka',
+	'Cognac / Brandy',
+	'Napoje alkoholowe',
+	'Piwo beczkowe',
+	'Piwo butelkowe',
+	'Piwo smakowe',
+	'Wina Białe',
+	'Wina Czerwone',
+	'Wina Musujące',
+]
+
+export const isAlcoholMenuCategory = (category: string) =>
+	alcoholMenuItemCategories.includes(category as MenuItemCategory)
+
 export const specialMenuItemCategories: MenuItemCategory[] = [
 	'Oferta Specjalna',
 	'Oferta Walentynkowa',

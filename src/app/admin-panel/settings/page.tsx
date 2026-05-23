@@ -18,6 +18,7 @@ import {
   BadgePercent,
   Bike,
   Image as ImageIcon,
+  Images,
   Newspaper,
   Pizza,
   BellRing,
@@ -27,6 +28,7 @@ import {
 } from 'lucide-react'
 import BannerSettings from '../components/BannerSettings' // Import the new component
 import EventSettings from '../components/EventSettings'
+import GallerySettings from '../components/GallerySettings'
 import MainPageBannerSettings from '../components/MainPageBannerSettings'
 import { PageHeader } from '../components/PageHeader'
 import PizzaSettings from '../components/PizzaSettings'
@@ -83,6 +85,7 @@ const Settings = () => {
   const { data: orderBannersData = [] } = trpc.banner.getAllBanners.useQuery()
   const { data: mainBannersData = [] } = trpc.mainPageBanner.getAllMainBanners.useQuery()
   const { data: eventsData = [] } = trpc.news.getNews.useQuery()
+  const { data: galleryData = [] } = trpc.gallery.getGalleryImages.useQuery()
   const { data: usersData = [] } = trpc.user.getAllUsers.useQuery(undefined, {
     enabled: isAdmin,
   })
@@ -236,6 +239,10 @@ const Settings = () => {
 
           <SettingsModule title="Banery spokosopot.pl" description="Banery strony głównej restauracji." icon={ImageIcon} count={mainBannersData.length}>
             <MainPageBannerSettings />
+          </SettingsModule>
+
+          <SettingsModule title="Galeria spokosopot.pl" description="Zdjęcia podzielone na kategorie widoczne na stronie restauracji." icon={Images} count={galleryData.length}>
+            <GallerySettings />
           </SettingsModule>
 
           <SettingsModule title="Wydarzenia" description="Aktualności widoczne na stronie." icon={Newspaper} count={eventsData.length}>

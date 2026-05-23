@@ -14,114 +14,186 @@ import {
   DialogTitle,
 } from '@/app/components/ui/dialog'
 import { Input } from '@/app/components/ui/input'
+import { Label } from '@/app/components/ui/label'
+import { Switch } from '@/app/components/ui/switch'
 import { trpc } from '@/utils/trpc'
+import { CalendarDays, Edit3, Image as ImageIcon, Plus, Trash2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
-import { useState } from 'react'
+import Image from 'next/image'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import ImageUploader from './ImageUploader'
 
-// Dynamic import for the rich text editor (SSR disabled)
 const ReactQuill = dynamic(() => import('react-quill'), { ssr: false })
 
-interface Event {
+interface EventFormState {
   id: string
   title: string
   image: string
   description: string
   fullDescription: string
   galleryImages: string[]
+  publishedAt: string
+  eventStartDate: string
+  eventEndDate: string
+  isEnded: boolean
+}
+
+interface EventItem extends Omit<EventFormState, 'publishedAt' | 'eventStartDate' | 'eventEndDate'> {
+  slug?: string | null
+  publishedAt?: string | Date | null
+  eventStartDate?: string | Date | null
+  eventEndDate?: string | Date | null
+  createdAt?: string | Date
+}
+
+const emptyEvent: EventFormState = {
+  id: '',
+  title: '',
+  image: '',
+  description: '',
+  fullDescription: '',
+  galleryImages: [],
+  publishedAt: new Date().toISOString().slice(0, 10),
+  eventStartDate: '',
+  eventEndDate: '',
+  isEnded: false,
 }
 
 const quillModules = {
   toolbar: [
-    [{ header: [1, 2, false] }],
-    ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+    [{ header: [2, 3, false] }],
+    ['bold', 'italic', 'underline', 'blockquote'],
     [{ list: 'ordered' }, { list: 'bullet' }],
-    [{ indent: '-1' }, { indent: '+1' }],
-    [{ align: [] }],
-    [{ color: [] }, { background: [] }],
     ['link'],
     ['clean'],
   ],
 }
 
+const formatDate = (value?: string | Date | null) => {
+  if (!value) return 'Brak daty'
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Brak daty'
+
+  return new Intl.DateTimeFormat('pl-PL', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(date)
+}
+
+const toInputDate = (value?: string | Date | null) => {
+  if (!value) return ''
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toISOString().slice(0, 10)
+}
+
 const EventSettings = () => {
-  const { data: events = [], refetch } = trpc.news.getNews.useQuery()
+  const { data: events = [], refetch, isLoading } = trpc.news.getNews.useQuery()
+
   const createEvent = trpc.news.createNews.useMutation({
     onSuccess: () => {
       refetch()
       resetForm()
-      setIsDialogOpen(false) // Zamknięcie dialogu po dodaniu
+      setIsDialogOpen(false)
+      toast.success('Wydarzenie dodane.')
     },
   })
+
   const updateEvent = trpc.news.updateNews.useMutation({
     onSuccess: () => {
       refetch()
       resetForm()
-      setIsDialogOpen(false) // Zamknięcie dialogu po edycji
+      setIsDialogOpen(false)
+      toast.success('Wydarzenie zapisane.')
     },
   })
+
   const deleteEvent = trpc.news.deleteNews.useMutation({
-    onSuccess: () => refetch(),
+    onSuccess: () => {
+      refetch()
+      toast.success('Wydarzenie usunięte.')
+    },
   })
 
-  const [newEvent, setNewEvent] = useState<Event>({
-    id: '',
-    title: '',
-    image: '',
-    description: '',
-    fullDescription: '',
-    galleryImages: [],
-  })
+  const [form, setForm] = useState<EventFormState>(emptyEvent)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
-  const [galleryAspectRatio, setGalleryAspectRatio] = useState<
-    number | undefined
-  >(undefined)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const sortedEvents = useMemo(
+    () =>
+      [...(events as EventItem[])].sort((a, b) => {
+        const aDate = new Date(a.publishedAt || a.createdAt || 0).getTime()
+        const bDate = new Date(b.publishedAt || b.createdAt || 0).getTime()
+        return bDate - aDate
+      }),
+    [events]
+  )
 
   const resetForm = () => {
-    setNewEvent({
-      id: '',
-      title: '',
-      image: '',
-      description: '',
-      fullDescription: '',
-      galleryImages: [],
-    })
+    setForm(emptyEvent)
     setIsEditMode(false)
   }
 
+  const openEditDialog = (event: EventItem) => {
+    setForm({
+      id: event.id,
+      title: event.title,
+      image: event.image,
+      description: event.description,
+      fullDescription: event.fullDescription || '',
+      galleryImages: event.galleryImages || [],
+      publishedAt: toInputDate(event.publishedAt || event.createdAt),
+      eventStartDate: toInputDate(event.eventStartDate),
+      eventEndDate: toInputDate(event.eventEndDate),
+      isEnded: Boolean(event.isEnded),
+    })
+    setIsEditMode(true)
+    setIsDialogOpen(true)
+  }
+
+  const updateField = <K extends keyof EventFormState>(
+    key: K,
+    value: EventFormState[K]
+  ) => {
+    setForm((current) => ({ ...current, [key]: value }))
+  }
+
   const handleAddOrUpdateEvent = () => {
-    if (!newEvent.title || !newEvent.image || !newEvent.description) {
-      toast.warning('Wszystkie pola muszą być wypełnione.')
+    if (!form.title.trim() || !form.image || !form.description.trim()) {
+      toast.warning('Dodaj tytuł, krótki opis i zdjęcie okładki.')
       return
     }
 
-    if (isEditMode) {
-      updateEvent.mutate({
-        id: newEvent.id,
-        title: newEvent.title,
-        image: newEvent.image,
-        description: newEvent.description,
-        fullDescription: newEvent.fullDescription,
-        galleryImages: newEvent.galleryImages,
-      })
-    } else {
-      createEvent.mutate({
-        title: newEvent.title,
-        image: newEvent.image,
-        description: newEvent.description,
-        fullDescription: newEvent.fullDescription,
-        galleryImages: newEvent.galleryImages,
-      })
+    const payload = {
+      title: form.title.trim(),
+      image: form.image,
+      description: form.description.trim(),
+      fullDescription: form.fullDescription,
+      galleryImages: form.galleryImages,
+      publishedAt: form.publishedAt || null,
+      eventStartDate: form.eventStartDate || null,
+      eventEndDate: form.eventEndDate || null,
+      isEnded: form.isEnded,
     }
+
+    if (isEditMode) {
+      updateEvent.mutate({ id: form.id, ...payload })
+      return
+    }
+
+    createEvent.mutate(payload)
   }
+
+  const isSaving = createEvent.isLoading || updateEvent.isLoading
 
   return (
     <section>
       <Accordion type="single" collapsible>
         <AccordionItem value="events" className="border-0">
-          <AccordionTrigger className="text-left font-semibold text-lg hover:no-underline">
+          <AccordionTrigger className="text-left text-lg font-semibold hover:no-underline">
             <span className="flex w-full items-center justify-between gap-3 pr-3">
               <span>Zarządzanie wydarzeniami</span>
               <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
@@ -131,39 +203,89 @@ const EventSettings = () => {
           </AccordionTrigger>
           <AccordionContent>
             <div className="space-y-4">
-              {events.length > 0 ? (
-                <ul className="space-y-2">
-                  {events.map((event) => (
+              {isLoading ? (
+                <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                  Ładowanie wydarzeń...
+                </p>
+              ) : sortedEvents.length > 0 ? (
+                <ul className="space-y-3">
+                  {sortedEvents.map((event) => (
                     <li
                       key={event.id}
-                      className="flex justify-between items-center bg-gray-100 p-2 rounded-md"
+                      className="grid gap-4 rounded-xl border border-border bg-white p-3 shadow-sm md:grid-cols-[88px_1fr_auto]"
                     >
-                      <h3 className="text-lg font-semibold text-secondary">
-                        {event.title}
-                      </h3>
-                      <div className="space-x-2">
+                      <div className="relative h-20 overflow-hidden rounded-lg bg-muted md:h-full">
+                        {event.image ? (
+                          <Image
+                            src={event.image}
+                            alt={event.title}
+                            fill
+                            sizes="120px"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-muted-foreground">
+                            <ImageIcon size={18} />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="truncate text-base font-semibold text-slate-950">
+                            {event.title}
+                          </h3>
+                          <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold uppercase text-slate-500">
+                            {event.isEnded ? 'Zakończone' : 'Aktualne'}
+                          </span>
+                        </div>
+                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                          {event.description}
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-3 text-xs font-medium text-slate-500">
+                          <span className="inline-flex items-center gap-1.5">
+                            <CalendarDays size={14} className="text-primary" />
+                            {formatDate(event.eventStartDate)}
+                          </span>
+                          <span>Publikacja: {formatDate(event.publishedAt || event.createdAt)}</span>
+                          <span>{event.galleryImages?.length || 0} zdjęć</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 md:justify-end">
                         <Button
-                          variant="success"
-                          onClick={() => {
-                            setNewEvent(event)
-                            setIsEditMode(true)
-                            setIsDialogOpen(true)
-                          }}
+                          variant="outline"
+                          size="sm"
+                          className="gap-2"
+                          onClick={() => openEditDialog(event)}
                         >
+                          <Edit3 size={15} />
                           Edytuj
                         </Button>
                         <Button
-                          variant="danger"
-                          onClick={() => deleteEvent.mutate({ id: event.id })}
+                          variant="ghost"
+                          size="icon"
+                          disabled={deletingId === event.id}
+                          onClick={() => {
+                            setDeletingId(event.id)
+                            deleteEvent.mutate(
+                              { id: event.id },
+                              { onSettled: () => setDeletingId(null) }
+                            )
+                          }}
+                          aria-label="Usuń wydarzenie"
+                          className="text-danger hover:bg-danger/10 hover:text-danger"
                         >
-                          Usuń
+                          <Trash2 size={16} />
                         </Button>
                       </div>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-gray-500">Brak wydarzeń</p>
+                <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                  Nie ma jeszcze wydarzeń. Dodaj pierwszy wpis widoczny na stronie aktualności.
+                </p>
               )}
 
               <Button
@@ -171,9 +293,10 @@ const EventSettings = () => {
                   resetForm()
                   setIsDialogOpen(true)
                 }}
-                className="w-full"
+                className="w-full gap-2"
               >
-                Dodaj nowe wydarzenie
+                <Plus size={16} />
+                Dodaj wydarzenie
               </Button>
             </div>
           </AccordionContent>
@@ -183,83 +306,131 @@ const EventSettings = () => {
       <Dialog
         open={isDialogOpen}
         onOpenChange={(open) => {
-          if (!open) resetForm() // Resetuj formularz przy zamykaniu
+          if (!open) resetForm()
           setIsDialogOpen(open)
         }}
       >
-        <DialogContent className="max-w-xl space-y-4 max-h-[90%] overflow-auto">
+        <DialogContent className="max-h-[92vh] max-w-3xl overflow-auto">
           <DialogHeader>
             <DialogTitle>
               {isEditMode ? 'Edytuj wydarzenie' : 'Dodaj wydarzenie'}
             </DialogTitle>
           </DialogHeader>
-          <Input
-            placeholder="Tytuł wydarzenia"
-            value={newEvent.title}
-            onChange={(e) =>
-              setNewEvent({ ...newEvent, title: e.target.value })
-            }
-          />
-          <Input
-            placeholder="Krótki opis wydarzenia"
-            value={newEvent.description}
-            onChange={(e) =>
-              setNewEvent({ ...newEvent, description: e.target.value })
-            }
-          />
 
-          <ImageUploader
-            label="Zdjęcie okładki (380x250 px)"
-            onImageUpload={(images) =>
-              setNewEvent({ ...newEvent, image: images[0] || '' })
-            }
-            multiple={false}
-            aspectRatio={380 / 250}
-            currentImages={newEvent.image ? [newEvent.image] : []}
-          />
+          <div className="grid gap-5">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2 md:col-span-2">
+                <Label>Tytuł</Label>
+                <Input
+                  placeholder="Np. Wieczór Walentynkowy w Spoko"
+                  value={form.title}
+                  onChange={(event) => updateField('title', event.target.value)}
+                />
+              </div>
 
-          <div className="flex items-center space-x-4">
-            <span className="font-medium">Proporcje zdjęć galerii:</span>
-            <select
-              className="border rounded-md p-1"
-              onChange={(e) =>
-                setGalleryAspectRatio(
-                  e.target.value ? Number(e.target.value) : undefined
-                )
-              }
+              <div className="space-y-2 md:col-span-2">
+                <Label>Krótki opis</Label>
+                <Input
+                  placeholder="Jedno zdanie widoczne na liście i u góry wpisu"
+                  value={form.description}
+                  onChange={(event) =>
+                    updateField('description', event.target.value)
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Data publikacji</Label>
+                <Input
+                  type="date"
+                  value={form.publishedAt}
+                  onChange={(event) =>
+                    updateField('publishedAt', event.target.value)
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Data wydarzenia</Label>
+                <Input
+                  type="date"
+                  value={form.eventStartDate}
+                  onChange={(event) =>
+                    updateField('eventStartDate', event.target.value)
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Data zakończenia</Label>
+                <Input
+                  type="date"
+                  value={form.eventEndDate}
+                  onChange={(event) =>
+                    updateField('eventEndDate', event.target.value)
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/30 px-4 py-3">
+                <div>
+                  <Label>Zakończone</Label>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Oznaczenie widoczne na stronie aktualności.
+                  </p>
+                </div>
+                <Switch
+                  checked={form.isEnded}
+                  onCheckedChange={(checked) => updateField('isEnded', checked)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Zdjęcie okładki</Label>
+              <ImageUploader
+                label="Zdjęcie okładki"
+                onImageUpload={(images) => updateField('image', images[0] || '')}
+                multiple={false}
+                aspectRatio={16 / 9}
+                currentImages={form.image ? [form.image] : []}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Zdjęcia do galerii wpisu</Label>
+              <ImageUploader
+                label="Galeria wydarzenia"
+                onImageUpload={(images) => updateField('galleryImages', images)}
+                multiple
+                skipCrop
+                currentImages={form.galleryImages}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Opis szczegółowy</Label>
+              <div className="overflow-hidden rounded-xl border border-border bg-white">
+                <ReactQuill
+                  theme="snow"
+                  value={form.fullDescription}
+                  modules={quillModules}
+                  onChange={(value) => updateField('fullDescription', value)}
+                  className="min-h-[220px] [&_.ql-container]:min-h-[170px] [&_.ql-container]:border-0 [&_.ql-toolbar]:border-0 [&_.ql-toolbar]:border-b"
+                />
+              </div>
+            </div>
+
+            <Button
+              onClick={handleAddOrUpdateEvent}
+              disabled={isSaving}
+              className="w-full"
             >
-              <option value="">Dowolne</option>
-              <option value="0.700">9:16 (mobilny)</option>
-              <option value="1">1:1 (kwadrat)</option>
-            </select>
-          </div>
-
-          <ImageUploader
-            label="Zdjęcia galerii"
-            onImageUpload={(images) =>
-              setNewEvent((prev) => ({
-                ...prev,
-                galleryImages: images,
-              }))
-            }
-            multiple
-            aspectRatio={galleryAspectRatio}
-            currentImages={newEvent.galleryImages}
-          />
-
-          <ReactQuill
-            theme="snow"
-            value={newEvent.fullDescription}
-            modules={quillModules}
-            onChange={(value) =>
-              setNewEvent({ ...newEvent, fullDescription: value })
-            }
-            className="h-40 pb-8"
-          />
-
-          <div className="pb-3 pt-2">
-            <Button onClick={handleAddOrUpdateEvent} className="w-full">
-              {isEditMode ? 'Zapisz zmiany' : 'Dodaj wydarzenie'}
+              {isSaving
+                ? 'Zapisywanie...'
+                : isEditMode
+                  ? 'Zapisz wydarzenie'
+                  : 'Dodaj wydarzenie'}
             </Button>
           </div>
         </DialogContent>

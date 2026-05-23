@@ -1,7 +1,6 @@
 'use client'
 
 import MenuItem from '@/app/components/MenuItem'
-import { Button } from '@/app/components/ui/button'
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/app/components/ui/carousel'
 import { Input } from '@/app/components/ui/input'
 import {
@@ -12,13 +11,13 @@ import {
   SelectValue,
 } from '@/app/components/ui/select'
 import { Skeleton } from '@/app/components/ui/skeleton'
-import { DeliveryZone, MenuDownloadDocument, MenuItemCategory, MenuItemType } from '@/app/types/types'
+import { DeliveryZone, MenuItemCategory, MenuItemType } from '@/app/types/types'
 import { menuItemCategories } from '@/config'
 import { CLOSING_HOUR, OPENING_HOUR } from '@/config/constants'
 import { trpc } from '@/utils/trpc'
 import { cn } from '@/utils/utils'
 import Autoplay from 'embla-carousel-autoplay'
-import { Bike, Clock, Download, FileText, MapPin, Search, ShoppingBag, Sparkles, Store } from 'lucide-react'
+import { Bike, Clock, MapPin, Search, ShoppingBag, Sparkles, Store } from 'lucide-react'
 import Image from 'next/image'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -65,13 +64,6 @@ const Order = () => {
   const { data: carouselImages = [], isLoading: isLoadingCarouselImages } = trpc.banner.getAllBanners.useQuery()
   const { data: settings, isLoading: isLoadingSettings } = trpc.settings.getSettings.useQuery()
   const isOrderingOpen = FORCE_ORDERING_OPEN_FOR_TEST || settings?.isOrderingOpen
-  const menuDocuments = useMemo(() => {
-    if (!Array.isArray(settings?.menuDocuments)) return []
-    return (settings.menuDocuments as unknown as MenuDownloadDocument[])
-      .filter((document) => document.isActive && document.url)
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-  }, [settings?.menuDocuments])
-
   useEffect(() => {
     const now = new Date()
     const openingTime = new Date()
@@ -318,56 +310,6 @@ const Order = () => {
           </Carousel>
         </div>
       </section>
-
-      {menuDocuments.length > 0 && (
-        <section className="border-b border-border bg-white">
-          <div className="mx-auto w-full max-w-6xl px-4 py-4 lg:px-8">
-            <div className="mb-3 flex items-end justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Menu PDF</p>
-                <h2 className="mt-1 text-lg font-semibold text-slate-950">Pobierz menu w wersji do druku</h2>
-              </div>
-              <p className="hidden text-sm text-slate-500 md:block">
-                Alternatywna wersja dla gości, którzy wolą pobrać plik.
-              </p>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-2">
-              {menuDocuments.map((document) => (
-                <a
-                  key={document.id}
-                  href={document.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group flex items-center justify-between gap-4 rounded-2xl border border-border bg-slate-50 px-4 py-4 transition hover:border-secondary/30 hover:bg-secondary/5"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                      <FileText size={19} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-slate-950">{document.title}</p>
-                      <p className="text-xs text-slate-500">
-                        {document.type === 'menu'
-                          ? 'Menu dań'
-                          : document.type === 'drinks'
-                            ? 'Menu napojów'
-                            : 'Dokument PDF'}
-                      </p>
-                    </div>
-                  </div>
-                  <Button asChild variant="secondary" size="sm" className="shrink-0 gap-2">
-                    <span>
-                      <Download size={14} />
-                      Pobierz
-                    </span>
-                  </Button>
-                </a>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       <section className="sticky top-0 z-20 border-b border-border bg-white/95 backdrop-blur">
         <div className="flex w-full flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:px-8">

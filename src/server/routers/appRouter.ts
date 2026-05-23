@@ -1,6 +1,7 @@
 // src/server/trpc/appRouter.ts
 import { router } from '../trpc'
 import { bannerRouter } from './bannerRouter'
+import { galleryRouter } from './galleryRouter'
 import { imageRouter } from './imageRouter'
 import { mainPageBannerRouter } from './mainPageBannerRouter'
 import { menuRouter } from './menuRouter'
@@ -18,6 +19,7 @@ export const appRouter = router({
   user: userRouter,
   settings: settingsRouter,
   banner: bannerRouter,
+  gallery: galleryRouter,
   promoCode: promoCodeRouter,
   news: newsRouter,
   mainPageBanner: mainPageBannerRouter,
