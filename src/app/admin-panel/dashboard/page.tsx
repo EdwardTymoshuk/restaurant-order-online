@@ -493,7 +493,7 @@ export default function DashboardPage() {
     <div className="w-full min-w-0 max-w-full overflow-x-hidden">
       <PageHeader title="Pulpit" toolbar={rangeTabs} />
 
-      <div className="space-y-7 p-4 md:p-6 lg:p-8">
+      <div className="flex flex-col gap-7 p-4 md:p-6 lg:p-8">
         <section>
           <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
@@ -572,8 +572,8 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section>
-          <SectionTitle title="Popularność menu" description="Najczęściej wybierane pozycje, słabsze dania i najbardziej aktywni klienci." />
+        <section className="order-6">
+          <SectionTitle title="Menu i klienci" description="Popularność pozycji, słabsze pozycje i najbardziej aktywni klienci." />
 
       <div className="grid gap-5 xl:grid-cols-[1.25fr_0.85fr]">
         <Card className="border-border shadow-sm">
@@ -658,8 +658,8 @@ export default function DashboardPage() {
       </div>
     </section>
 
-    <section>
-      <SectionTitle title="Menu i klienci" description="Najbliższe rezerwacje, aktywne zamówienia i ostatnia aktywność klientów." />
+    <section className="order-5">
+      <SectionTitle title="Najbliższe działania" description="Rzeczy, które wymagają uwagi obsługi w pierwszej kolejności." />
       <div className="grid gap-5 xl:grid-cols-2">
         <Card className="border-border shadow-sm xl:col-span-2">
           <CardHeader className="pb-3">

@@ -48,32 +48,69 @@ const LoginPage = () => {
 	}
 
 	return (
-		<div className="flex min-h-dvh items-center justify-center bg-muted px-4 py-8">
-			<div className="w-full max-w-md">
-				<div className="mb-6 flex justify-center">
-					<div className="flex h-16 w-36 items-center justify-center rounded-xl bg-secondary px-5 shadow-sm">
+		<div className="flex min-h-dvh items-center bg-muted px-4 py-8 md:px-8">
+			<div className="mx-auto grid w-full max-w-6xl overflow-hidden rounded-2xl border border-border bg-white shadow-xl lg:grid-cols-[0.95fr_1fr]">
+				<section className="hidden min-h-[580px] flex-col justify-between bg-secondary p-10 text-white lg:flex">
+					<div>
 						<Image
 							src="/img/logo-admin.svg"
 							alt="Spoko"
-							width={120}
-							height={64}
+							width={150}
+							height={79}
 							priority
-							className="h-auto w-full"
+							className="h-auto w-36"
 						/>
-					</div>
-				</div>
-
-				<Card className="overflow-hidden rounded-xl border-border bg-white shadow-sm">
-					<CardHeader className="border-b border-border px-6 pb-5 pt-6">
-						<p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+						<p className="mt-12 text-xs font-semibold uppercase tracking-[0.24em] text-primary">
 							Spoko Sopot
 						</p>
-						<CardTitle className="mt-2 text-2xl font-semibold text-slate-950">Panel administracyjny</CardTitle>
-						<p className="text-sm leading-6 text-slate-500">
-							Zaloguj się, aby zarządzać zamówieniami, rezerwacjami i treściami restauracji.
+						<h1 className="mt-4 max-w-sm text-4xl font-semibold leading-tight">
+							Panel administracyjny restauracji
+						</h1>
+						<p className="mt-5 max-w-md text-sm leading-7 text-white/75">
+							Jedno miejsce do obsługi zamówień, rezerwacji, menu, galerii i treści widocznych dla gości.
 						</p>
-					</CardHeader>
-					<CardContent className="px-6 pb-2 pt-6">
+					</div>
+
+					<div className="grid grid-cols-3 gap-3 border-t border-white/15 pt-6">
+						<div>
+							<p className="text-xs uppercase tracking-[0.16em] text-white/45">Zamówienia</p>
+							<p className="mt-2 text-sm font-semibold text-white">obsługa online</p>
+						</div>
+						<div>
+							<p className="text-xs uppercase tracking-[0.16em] text-white/45">Rezerwacje</p>
+							<p className="mt-2 text-sm font-semibold text-white">kalendarz sali</p>
+						</div>
+						<div>
+							<p className="text-xs uppercase tracking-[0.16em] text-white/45">Strona</p>
+							<p className="mt-2 text-sm font-semibold text-white">menu i treści</p>
+						</div>
+					</div>
+				</section>
+
+				<section className="flex min-h-[580px] items-center justify-center px-5 py-10 sm:px-10">
+					<Card className="w-full max-w-md border-0 bg-transparent shadow-none">
+						<CardHeader className="px-0 pb-7">
+							<div className="mb-8 flex justify-center lg:hidden">
+								<div className="flex h-16 w-36 items-center justify-center rounded-xl bg-secondary px-5 shadow-sm">
+									<Image
+										src="/img/logo-admin.svg"
+										alt="Spoko"
+										width={120}
+										height={64}
+										priority
+										className="h-auto w-full"
+									/>
+								</div>
+							</div>
+							<p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+								Logowanie
+							</p>
+							<CardTitle className="mt-3 text-3xl font-semibold text-slate-950">Wejdź do panelu</CardTitle>
+							<p className="mt-2 text-sm leading-6 text-slate-500">
+								Podaj dane konta z uprawnieniami administracyjnymi.
+							</p>
+						</CardHeader>
+						<CardContent className="px-0 pb-2">
 						<Form {...form}>
 							<form onSubmit={form.handleSubmit(handleLogin)} className="space-y-4">
 								<FormField
@@ -127,11 +164,12 @@ const LoginPage = () => {
 								</LoadingButton>
 							</form>
 						</Form>
-					</CardContent>
-					<CardFooter className="border-t border-border px-6 py-4 text-sm text-slate-500">
-						<p>Dostęp tylko dla kont z uprawnieniami panelu.</p>
-					</CardFooter>
-				</Card>
+						</CardContent>
+						<CardFooter className="px-0 pt-5 text-sm text-slate-500">
+							<p>Dostęp tylko dla osób obsługujących panel Spoko.</p>
+						</CardFooter>
+					</Card>
+				</section>
 			</div>
 		</div>
 	)
