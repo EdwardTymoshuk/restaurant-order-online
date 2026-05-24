@@ -29,7 +29,7 @@ const renderTabContent = (tab: string) => {
 
 const AdminPanelContent = () => {
 	const searchParams = useSearchParams()
-	const tabParam = searchParams.get('tab')
+	const tabParam = searchParams?.get('tab')
 	const validTabs = ['dashboard', 'orders', 'reservations', 'menu', 'settings']
 	const tab = tabParam && validTabs.includes(tabParam) ? tabParam : 'dashboard'
 

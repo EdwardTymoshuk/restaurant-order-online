@@ -10,7 +10,7 @@ const PageLoader = ({ children }: { children: React.ReactNode }) => {
 	const [isLoading, setIsLoading] = useState(true)
 
 	const shouldShowLoadingScreen =
-		pathname === '/' || (pathname === '/admin-panel' && !searchParams.get('tab'))
+		pathname === '/' || (pathname === '/admin-panel' && !searchParams?.get('tab'))
 
 	useEffect(() => {
 		if (shouldShowLoadingScreen) {

@@ -17,6 +17,8 @@ const Header = () => {
 	const { state } = useCart()
 	const currentPath = usePathname()
 	const isHomePage = currentPath === '/'
+	const canTrackOrder = !currentPath?.includes('/checkout') && !currentPath?.includes('/thank-you')
+	const isOrderPage = currentPath?.includes('/order')
 
 	const totalItemsInCart = state.items.reduce((total, item) => total + item.quantity, 0)
 
@@ -52,7 +54,7 @@ const Header = () => {
 
 				<div className="flex items-center gap-2">
 
-					{!currentPath.includes('/checkout') && !currentPath.includes('/thank-you') && (
+					{canTrackOrder && (
 						<Button
 							onClick={handleOrderTrackingOpen}
 							variant="ghost"
@@ -62,7 +64,7 @@ const Header = () => {
 							<span>Śledź zamówienie</span>
 						</Button>
 					)}
-					{currentPath.includes('/order') && (
+					{isOrderPage && (
 
 						<Button onClick={handleCartSheetOpen} variant="ghost" className="h-9 w-9 rounded-lg p-0 text-white hover:bg-white/10 hover:text-white">
 							<div className="relative">

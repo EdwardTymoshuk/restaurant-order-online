@@ -105,7 +105,7 @@ const Orders = () => {
   const [orderToDelete, setOrderToDelete]               = useState<string | null>(null)
   const [openOrderId, setOpenOrderId]                   = useState<string | undefined>()
   const searchParams = useSearchParams()
-  const targetOrderId = searchParams.get('orderId')
+  const targetOrderId = searchParams?.get('orderId')
 
   const {
     allOrders,

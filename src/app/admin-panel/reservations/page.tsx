@@ -1350,7 +1350,7 @@ const Reservations = () => {
   const { status: sessionStatus } = useSession()
   const searchParams = useSearchParams()
   const enabled = sessionStatus === 'authenticated'
-  const targetReservationId = searchParams.get('reservationId')
+  const targetReservationId = searchParams?.get('reservationId')
 
   const [calendarMonth, setCalendarMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)

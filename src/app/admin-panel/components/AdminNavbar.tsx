@@ -45,7 +45,7 @@ interface AdminNavbarProps {
 export const AdminNavbar = ({ className, activeTab }: AdminNavbarProps) => {
 	const { data: session } = useSession()
 	const searchParams = useSearchParams()
-	const currentTab = activeTab || searchParams.get('tab') || 'dashboard'
+	const currentTab = activeTab || searchParams?.get('tab') || 'dashboard'
 	const [mobileOpen, setMobileOpen] = useState(false)
 	const { data: badges, mutate: refreshBadges } = useSWR('/api/admin-navbar-badges', fetcher, {
 		refreshInterval: 0,
