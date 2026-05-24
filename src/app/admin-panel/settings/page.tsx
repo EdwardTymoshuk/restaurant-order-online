@@ -240,21 +240,27 @@ const Settings = () => {
           <SettingsModule title="Banery spokosopot.pl" description="Banery strony głównej restauracji." icon={ImageIcon} count={mainBannersData.length}>
             <MainPageBannerSettings />
           </SettingsModule>
+        </section>
 
+        <section>
           <SettingsModule title="Galeria spokosopot.pl" description="Zdjęcia podzielone na kategorie widoczne na stronie restauracji." icon={Images} count={galleryData.length}>
             <GallerySettings />
           </SettingsModule>
+        </section>
 
+        <section>
           <SettingsModule title="Wydarzenia" description="Aktualności widoczne na stronie." icon={Newspaper} count={eventsData.length}>
             <EventSettings />
           </SettingsModule>
+        </section>
 
-          {isAdmin && (
+        {isAdmin && (
+          <section>
             <SettingsModule title="Użytkownicy" description="Konta panelu." icon={Settings2} count={usersData.length}>
               <UserList />
             </SettingsModule>
-          )}
-        </section>
+          </section>
+        )}
       </div>
     </>
   )
