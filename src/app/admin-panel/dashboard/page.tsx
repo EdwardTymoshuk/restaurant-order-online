@@ -497,7 +497,7 @@ export default function DashboardPage() {
         <section>
           <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
-              <SectionTitle title="Teraz najważniejsze" description="Pierwsze rzeczy do sprawdzenia po wejściu do panelu." />
+              <SectionTitle title="Dzisiaj w panelu" description="Szybki podgląd zamówień, rezerwacji i spraw wymagających obsługi." />
             </div>
             <div className="text-sm text-muted-foreground md:text-right">
               <p>Dane za {rangeLabel[range]}</p>
@@ -573,7 +573,7 @@ export default function DashboardPage() {
         </section>
 
         <section>
-          <SectionTitle title="Menu i klienci" description="Popularność pozycji, słabsze pozycje i najbardziej aktywni klienci." />
+          <SectionTitle title="Popularność menu" description="Najczęściej wybierane pozycje, słabsze dania i najbardziej aktywni klienci." />
 
       <div className="grid gap-5 xl:grid-cols-[1.25fr_0.85fr]">
         <Card className="border-border shadow-sm">
@@ -659,7 +659,7 @@ export default function DashboardPage() {
     </section>
 
     <section>
-      <SectionTitle title="Najbliższe działania" description="Rzeczy, które wymagają uwagi obsługi w pierwszej kolejności." />
+      <SectionTitle title="Menu i klienci" description="Najbliższe rezerwacje, aktywne zamówienia i ostatnia aktywność klientów." />
       <div className="grid gap-5 xl:grid-cols-2">
         <Card className="border-border shadow-sm xl:col-span-2">
           <CardHeader className="pb-3">

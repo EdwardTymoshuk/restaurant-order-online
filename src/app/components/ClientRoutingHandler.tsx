@@ -7,7 +7,7 @@ import Footer from './Footer'
 
 const ClientRoutingHandler: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 	const pathname = usePathname()
-	const isAdminPanel = pathname?.startsWith('/admin-panel')
+	const isAdminPanel = pathname?.startsWith('/admin-panel') || pathname === '/auth/login'
 	const isHomePage = pathname === '/'
 	const isOrderPage = pathname?.startsWith('/order')
 	const isCheckoutPage = pathname?.startsWith('/checkout')

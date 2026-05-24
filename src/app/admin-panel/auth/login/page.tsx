@@ -6,6 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/app/comp
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/app/components/ui/form'
 import { Input } from '@/app/components/ui/input'
 import { zodResolver } from '@hookform/resolvers/zod'
+import Image from 'next/image'
 import { getSession, signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -46,68 +47,60 @@ const LoginPage = () => {
 		}
 	}
 
-
 	return (
-		<div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-10">
-			<div className="pointer-events-none absolute inset-0">
-				<div className="absolute -left-20 top-10 h-72 w-72 rounded-full bg-secondary/35 blur-3xl" />
-				<div className="absolute -right-20 bottom-10 h-72 w-72 rounded-full bg-primary/35 blur-3xl" />
-			</div>
-
-			<div className="relative z-10 grid w-full max-w-5xl grid-cols-1 overflow-hidden rounded-2xl border border-white/15 bg-white/95 shadow-2xl lg:grid-cols-2">
-				<section className="hidden flex-col justify-between bg-slate-900 p-10 text-white lg:flex">
-					<div>
-						<p className="text-xs uppercase tracking-[0.24em] text-slate-300">Spoko Sopot</p>
-						<h1 className="mt-3 text-3xl font-semibold leading-tight">
-							Panel administracyjny
-						</h1>
-						<p className="mt-4 text-sm leading-6 text-slate-300">
-							Zarządzaj zamówieniami, menu i ustawieniami restauracji z jednego miejsca.
-						</p>
+		<div className="flex min-h-dvh items-center justify-center bg-muted px-4 py-8">
+			<div className="w-full max-w-md">
+				<div className="mb-6 flex justify-center">
+					<div className="flex h-16 w-36 items-center justify-center rounded-xl bg-secondary px-5 shadow-sm">
+						<Image
+							src="/img/logo-admin.svg"
+							alt="Spoko"
+							width={120}
+							height={64}
+							priority
+							className="h-auto w-full"
+						/>
 					</div>
-					<p className="text-xs text-slate-400">
-						Bezpieczny dostęp tylko dla kont z uprawnieniami administracyjnymi.
-					</p>
-				</section>
+				</div>
 
-				<Card className="w-full border-0 bg-transparent shadow-none">
-					<CardHeader className="px-6 pb-4 pt-8 sm:px-10">
-						<p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400 lg:hidden">
-							Spoko Admin
+				<Card className="overflow-hidden rounded-xl border-border bg-white shadow-sm">
+					<CardHeader className="border-b border-border px-6 pb-5 pt-6">
+						<p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+							Spoko Sopot
 						</p>
-						<CardTitle className="text-2xl font-semibold text-slate-900">Logowanie</CardTitle>
-						<p className="text-sm text-slate-500">
-							Podaj dane konta administratora, aby przejść do panelu.
+						<CardTitle className="mt-2 text-2xl font-semibold text-slate-950">Panel administracyjny</CardTitle>
+						<p className="text-sm leading-6 text-slate-500">
+							Zaloguj się, aby zarządzać zamówieniami, rezerwacjami i treściami restauracji.
 						</p>
-				</CardHeader>
-					<CardContent className="px-6 pb-2 sm:px-10">
-					<Form {...form}>
-							<form onSubmit={form.handleSubmit(handleLogin)} className="space-y-5">
-							<FormField
-								name="identifier"
-								control={form.control}
-								render={({ field }) => (
-									<FormItem>
+					</CardHeader>
+					<CardContent className="px-6 pb-2 pt-6">
+						<Form {...form}>
+							<form onSubmit={form.handleSubmit(handleLogin)} className="space-y-4">
+								<FormField
+									name="identifier"
+									control={form.control}
+									render={({ field }) => (
+										<FormItem>
 											<FormLabel className="text-slate-700">Nazwa użytkownika lub email</FormLabel>
-										<FormControl>
+											<FormControl>
 												<Input
 													{...field}
 													placeholder="np. admin@spokosopot.pl"
 													autoComplete="username"
 													className="h-11"
 												/>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-							<FormField
-								name="password"
-								control={form.control}
-								render={({ field }) => (
-									<FormItem>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+								<FormField
+									name="password"
+									control={form.control}
+									render={({ field }) => (
+										<FormItem>
 											<FormLabel className="text-slate-700">Hasło</FormLabel>
-										<FormControl>
+											<FormControl>
 												<Input
 													{...field}
 													type="password"
@@ -115,11 +108,11 @@ const LoginPage = () => {
 													autoComplete="current-password"
 													className="h-11"
 												/>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
 								{error && (
 									<p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
 										{error}
@@ -130,15 +123,15 @@ const LoginPage = () => {
 									type="submit"
 									className="mt-2 h-11 w-full rounded-lg"
 								>
-								Zaloguj się
-							</LoadingButton>
-						</form>
-					</Form>
-				</CardContent>
-					<CardFooter className="px-6 pb-8 pt-3 text-sm text-slate-500 sm:px-10">
-						<p>Brak dostępu? Skontaktuj się z właścicielem systemu.</p>
-				</CardFooter>
-			</Card>
+									Zaloguj się
+								</LoadingButton>
+							</form>
+						</Form>
+					</CardContent>
+					<CardFooter className="border-t border-border px-6 py-4 text-sm text-slate-500">
+						<p>Dostęp tylko dla kont z uprawnieniami panelu.</p>
+					</CardFooter>
+				</Card>
 			</div>
 		</div>
 	)
