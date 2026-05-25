@@ -24,7 +24,7 @@ jobs:
 
             echo "➡️ Deploying ORDER app"
 
-            cd ~/apps/restaurant-order-online
+            cd ~/apps/spoko-sopot-app
 
             git fetch origin
             git reset --hard origin/main
