@@ -7,6 +7,7 @@ import {
   AccordionTrigger,
 } from '@/app/components/ui/accordion'
 import { Button } from '@/app/components/ui/button'
+import { Calendar } from '@/app/components/ui/calendar'
 import {
   Dialog,
   DialogContent,
@@ -15,8 +16,16 @@ import {
 } from '@/app/components/ui/dialog'
 import { Input } from '@/app/components/ui/input'
 import { Label } from '@/app/components/ui/label'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/app/components/ui/popover'
 import { Switch } from '@/app/components/ui/switch'
+import { cn } from '@/utils/utils'
 import { trpc } from '@/utils/trpc'
+import { format, parseISO } from 'date-fns'
+import { pl } from 'date-fns/locale'
 import { CalendarDays, Edit3, Image as ImageIcon, Plus, Trash2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
@@ -87,6 +96,52 @@ const toInputDate = (value?: string | Date | null) => {
   const date = value instanceof Date ? value : new Date(value)
   if (Number.isNaN(date.getTime())) return ''
   return date.toISOString().slice(0, 10)
+}
+
+const parseDateField = (value: string): Date | undefined => {
+  if (!value) return undefined
+  const d = parseISO(value)
+  return Number.isNaN(d.getTime()) ? undefined : d
+}
+
+interface DatePickerFieldProps {
+  label: string
+  value: string
+  onChange: (value: string) => void
+}
+
+const DatePickerField = ({ label, value, onChange }: DatePickerFieldProps) => {
+  const selected = parseDateField(value)
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              'w-full justify-start text-left font-normal',
+              !selected && 'text-muted-foreground'
+            )}
+          >
+            <CalendarDays className="mr-2 h-4 w-4 shrink-0" />
+            {selected
+              ? format(selected, 'd MMMM yyyy', { locale: pl })
+              : 'Wybierz datę'}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={selected}
+            onSelect={(date) => onChange(date ? date.toISOString().slice(0, 10) : '')}
+            initialFocus
+            locale={pl}
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  )
 }
 
 const EventSettings = () => {
@@ -339,38 +394,23 @@ const EventSettings = () => {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Data publikacji</Label>
-                <Input
-                  type="date"
-                  value={form.publishedAt}
-                  onChange={(event) =>
-                    updateField('publishedAt', event.target.value)
-                  }
-                />
-              </div>
+              <DatePickerField
+                label="Data publikacji"
+                value={form.publishedAt}
+                onChange={(value) => updateField('publishedAt', value)}
+              />
 
-              <div className="space-y-2">
-                <Label>Data wydarzenia</Label>
-                <Input
-                  type="date"
-                  value={form.eventStartDate}
-                  onChange={(event) =>
-                    updateField('eventStartDate', event.target.value)
-                  }
-                />
-              </div>
+              <DatePickerField
+                label="Data wydarzenia"
+                value={form.eventStartDate}
+                onChange={(value) => updateField('eventStartDate', value)}
+              />
 
-              <div className="space-y-2">
-                <Label>Data zakończenia</Label>
-                <Input
-                  type="date"
-                  value={form.eventEndDate}
-                  onChange={(event) =>
-                    updateField('eventEndDate', event.target.value)
-                  }
-                />
-              </div>
+              <DatePickerField
+                label="Data zakończenia"
+                value={form.eventEndDate}
+                onChange={(value) => updateField('eventEndDate', value)}
+              />
 
               <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/30 px-4 py-3">
                 <div>
