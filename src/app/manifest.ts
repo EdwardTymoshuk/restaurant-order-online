@@ -2,25 +2,31 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Spoko Admin Panel',
-    short_name: 'Spoko Admin',
-    description: 'Panel operacyjny Spoko Sopot do obsługi zamówień i rezerwacji.',
-    start_url: '/admin-panel',
-    scope: '/admin-panel',
+    name: 'Spoko Sopot — Zamów online',
+    short_name: 'Spoko Sopot',
+    description: 'Zamów online ulubione dania z Restauracji Spoko w Sopocie. Dostawa lub odbiór osobisty.',
+    start_url: '/',
+    scope: '/',
     display: 'standalone',
     orientation: 'portrait',
-    background_color: '#f6f7f8',
+    background_color: '#173a8a',
     theme_color: '#173a8a',
-    categories: ['food', 'business', 'productivity'],
+    categories: ['food', 'restaurants', 'lifestyle'],
     icons: [
       {
-        src: '/icons/cleaned.png',
+        src: '/icons/order-icon.png',
+        sizes: '192x192',
+        type: 'image/png',
+        purpose: 'any',
+      },
+      {
+        src: '/icons/order-icon.png',
         sizes: '512x512',
         type: 'image/png',
         purpose: 'any',
       },
       {
-        src: '/icons/cleaned.png',
+        src: '/icons/order-icon.png',
         sizes: '512x512',
         type: 'image/png',
         purpose: 'maskable',
@@ -28,18 +34,11 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     shortcuts: [
       {
-        name: 'Zamówienia',
-        short_name: 'Zamówienia',
-        description: 'Przejdź do obsługi zamówień.',
-        url: '/admin-panel/orders',
-        icons: [{ src: '/icons/cleaned.png', sizes: '512x512' }],
-      },
-      {
-        name: 'Rezerwacje',
-        short_name: 'Rezerwacje',
-        description: 'Przejdź do obsługi rezerwacji.',
-        url: '/admin-panel/reservations',
-        icons: [{ src: '/icons/cleaned.png', sizes: '512x512' }],
+        name: 'Złóż zamówienie',
+        short_name: 'Zamów',
+        description: 'Przejdź bezpośrednio do menu i złóż zamówienie.',
+        url: '/',
+        icons: [{ src: '/icons/order-icon.png', sizes: '512x512' }],
       },
     ],
   }
