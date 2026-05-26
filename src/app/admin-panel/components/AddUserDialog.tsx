@@ -17,7 +17,7 @@ const userSchema = z.object({
 	username: z.string().min(2, 'Wymagana nazwa użytkownika'),
 	password: z.string().min(6, 'Wymagane hasło o długości co najmniej 6 znaków'),
 	name: z.string().optional(),
-	role: z.enum(['user', 'admin'], { required_error: 'Wymagana rola' }),
+	role: z.enum(['user', 'manager', 'admin'], { required_error: 'Wymagana rola' }),
 })
 
 type UserFormData = z.infer<typeof userSchema>
@@ -103,7 +103,8 @@ const AddUserDialog = ({ onSuccess }: AddUserDialogProps) => {
 										<SelectValue placeholder="Wybierz rolę" />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="user">Pracownik</SelectItem>
+										<SelectItem value="user">Kelner</SelectItem>
+										<SelectItem value="manager">Manager</SelectItem>
 										<SelectItem value="admin">Administrator</SelectItem>
 									</SelectContent>
 								</Select>

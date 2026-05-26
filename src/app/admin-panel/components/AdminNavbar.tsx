@@ -8,6 +8,7 @@ import {
 	DropdownMenuTrigger,
 } from '@/app/components/ui/dropdown-menu'
 import { cn } from '@/utils/utils'
+import { canAccessMenu, ROLE_LABELS } from '@/lib/roles'
 import { CalendarDays, ChefHat, ClipboardList, LayoutDashboard, LogOut, Settings } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import Image from 'next/image'
@@ -54,7 +55,9 @@ export const AdminNavbar = ({ className, activeTab }: AdminNavbarProps) => {
 
 	const displayName = session?.user?.name || session?.user?.email || 'Admin'
 	const email = session?.user?.email || ''
-	const role = (session?.user?.role as string | undefined) || 'Admin'
+	const rawRole = session?.user?.role as string | undefined
+	const role = ROLE_LABELS[rawRole ?? ''] ?? 'Admin'
+	const visibleNavItems = navItems.filter(({ key }) => key !== 'menu' || canAccessMenu(rawRole))
 	const initial = displayName.charAt(0).toUpperCase()
 	const getBadgeCount = (key: string) => {
 		if (key === 'orders') return badges?.orders ?? 0
@@ -89,7 +92,7 @@ export const AdminNavbar = ({ className, activeTab }: AdminNavbarProps) => {
 
 				{/* Desktop nav — centered */}
 				<nav className="hidden lg:flex items-center gap-1 flex-1 justify-center">
-					{navItems.map(({ label, key, icon: Icon }) => {
+					{visibleNavItems.map(({ label, key, icon: Icon }) => {
 						const badgeCount = getBadgeCount(key)
 
 						return (
@@ -171,7 +174,7 @@ export const AdminNavbar = ({ className, activeTab }: AdminNavbarProps) => {
 			{mobileOpen && (
 				<div className="fixed left-0 right-0 top-14 z-50 border-t border-white/5 bg-secondary shadow-xl shadow-slate-950/20 lg:hidden">
 					<nav className="flex flex-col gap-1 px-3 py-3">
-						{navItems.map(({ label, key, icon: Icon }) => {
+						{visibleNavItems.map(({ label, key, icon: Icon }) => {
 							const badgeCount = getBadgeCount(key)
 
 							return (

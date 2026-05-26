@@ -13,7 +13,7 @@ import { trpc } from '@/utils/trpc'
 import { useEffect, useState } from 'react'
 
 import DeliveryZonesSettings from '@/app/admin-panel/components/DeliveryZonesSettings'
-import { useIsAdmin } from '@/hooks/useIsAdmin'
+import { useIsAdmin, useIsManager } from '@/hooks/useRole'
 import {
   BadgePercent,
   Bike,
@@ -77,6 +77,7 @@ const SettingsModule = ({
 const Settings = () => {
   // Check if the user is an admin
   const isAdmin = useIsAdmin()
+  const isManager = useIsManager()
 
   // === Fetch general settings ===
   const { data: settingsData, refetch: refetchSettings } =
@@ -201,58 +202,62 @@ const Settings = () => {
           </Card>
         </section>
 
-        <section>
-          <SettingsModule title="Strefy dostaw" description="Promienie i ceny dostawy dla zamówień online." icon={Bike} count={deliveryZones.length}>
-            <DeliveryZonesSettings
-              deliveryZones={deliveryZones}
-              onUpdateZones={updateDeliveryZonePrices.mutate}
-            />
-          </SettingsModule>
-        </section>
+        {isManager && (
+          <>
+            <section>
+              <SettingsModule title="Strefy dostaw" description="Promienie i ceny dostawy dla zamówień online." icon={Bike} count={deliveryZones.length}>
+                <DeliveryZonesSettings
+                  deliveryZones={deliveryZones}
+                  onUpdateZones={updateDeliveryZonePrices.mutate}
+                />
+              </SettingsModule>
+            </section>
 
-        <section className="grid gap-5 xl:grid-cols-2">
-          <SettingsModule title="Pizza" description="Dostępność kategorii pizzy oraz harmonogram sprzedaży." icon={Pizza} count={settingsData?.pizzaAvailability && Array.isArray(settingsData.pizzaAvailability) ? settingsData.pizzaAvailability.length : 0}>
-            <PizzaSettings
-              settingsData={{
-                pizzaCategoryEnabled: settingsData?.pizzaCategoryEnabled ?? false,
-                pizzaAvailability: Array.isArray(settingsData?.pizzaAvailability)
-                  ? (settingsData?.pizzaAvailability as {
-                      day: number
-                      startHour: number
-                      endHour: number
-                    }[])
-                  : [],
-              }}
-              refetchSettings={refetchSettings}
-            />
-          </SettingsModule>
+            <section className="grid gap-5 xl:grid-cols-2">
+              <SettingsModule title="Pizza" description="Dostępność kategorii pizzy oraz harmonogram sprzedaży." icon={Pizza} count={settingsData?.pizzaAvailability && Array.isArray(settingsData.pizzaAvailability) ? settingsData.pizzaAvailability.length : 0}>
+                <PizzaSettings
+                  settingsData={{
+                    pizzaCategoryEnabled: settingsData?.pizzaCategoryEnabled ?? false,
+                    pizzaAvailability: Array.isArray(settingsData?.pizzaAvailability)
+                      ? (settingsData?.pizzaAvailability as {
+                          day: number
+                          startHour: number
+                          endHour: number
+                        }[])
+                      : [],
+                  }}
+                  refetchSettings={refetchSettings}
+                />
+              </SettingsModule>
 
-          <SettingsModule title="Kody promocyjne" description="Rabaty, daty ważności i jednorazowe kody." icon={BadgePercent} count={promoCodesData.length}>
-            <PromoCodeSettings />
-          </SettingsModule>
-        </section>
+              <SettingsModule title="Kody promocyjne" description="Rabaty, daty ważności i jednorazowe kody." icon={BadgePercent} count={promoCodesData.length}>
+                <PromoCodeSettings />
+              </SettingsModule>
+            </section>
 
-        <section className="grid gap-5 xl:grid-cols-2">
-          <SettingsModule title="Banery order.spokosopot.pl" description="Banery reklamowe widoczne w systemie zamówień." icon={ImageIcon} count={orderBannersData.length}>
-            <BannerSettings />
-          </SettingsModule>
+            <section className="grid gap-5 xl:grid-cols-2">
+              <SettingsModule title="Banery order.spokosopot.pl" description="Banery reklamowe widoczne w systemie zamówień." icon={ImageIcon} count={orderBannersData.length}>
+                <BannerSettings />
+              </SettingsModule>
 
-          <SettingsModule title="Banery spokosopot.pl" description="Banery strony głównej restauracji." icon={ImageIcon} count={mainBannersData.length}>
-            <MainPageBannerSettings />
-          </SettingsModule>
-        </section>
+              <SettingsModule title="Banery spokosopot.pl" description="Banery strony głównej restauracji." icon={ImageIcon} count={mainBannersData.length}>
+                <MainPageBannerSettings />
+              </SettingsModule>
+            </section>
 
-        <section>
-          <SettingsModule title="Galeria spokosopot.pl" description="Zdjęcia podzielone na kategorie widoczne na stronie restauracji." icon={Images} count={galleryData.length}>
-            <GallerySettings />
-          </SettingsModule>
-        </section>
+            <section>
+              <SettingsModule title="Galeria spokosopot.pl" description="Zdjęcia podzielone na kategorie widoczne na stronie restauracji." icon={Images} count={galleryData.length}>
+                <GallerySettings />
+              </SettingsModule>
+            </section>
 
-        <section>
-          <SettingsModule title="Wydarzenia" description="Aktualności widoczne na stronie." icon={Newspaper} count={eventsData.length}>
-            <EventSettings />
-          </SettingsModule>
-        </section>
+            <section>
+              <SettingsModule title="Wydarzenia" description="Aktualności widoczne na stronie." icon={Newspaper} count={eventsData.length}>
+                <EventSettings />
+              </SettingsModule>
+            </section>
+          </>
+        )}
 
         {isAdmin && (
           <section>

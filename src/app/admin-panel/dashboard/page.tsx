@@ -24,6 +24,7 @@ import {
   Users,
   WalletCards,
 } from 'lucide-react'
+import { useIsManager } from '@/hooks/useRole'
 import { useState } from 'react'
 import Link from 'next/link'
 import useSWR from 'swr'
@@ -317,6 +318,7 @@ const PriorityCard = ({
 }
 
 export default function DashboardPage() {
+  const isManager = useIsManager()
   const [range, setRange] = useState<Range>('week')
   const [selectedMonth, setSelectedMonth] = useState(currentMonth)
   const [selectedYear, setSelectedYear] = useState(currentYear)
@@ -542,7 +544,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section>
+        {isManager && <section>
           <SectionTitle title="Finanse" description="Łączna wartość sprzedaży i rezerwacji w wybranym okresie." />
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <StatCard title="Przychód łącznie" value={money(totalRevenue)} helper="Zamówienia online + rezerwacje" icon={WalletCards} />
@@ -550,7 +552,7 @@ export default function DashboardPage() {
             <StatCard title="Wartość rezerwacji" value={money(data.reservations.revenue)} helper={`${number(data.reservations.guests)} gości w rezerwacjach`} icon={CreditCard} />
             <StatCard title="Do obsłużenia" value={number(data.orders.activeCount + data.reservations.pendingCount)} helper="Aktywne zamówienia i nowe rezerwacje" icon={Clock} tone="danger" />
           </div>
-        </section>
+        </section>}
 
         <section>
           <SectionTitle title="Zamówienia" description="Sprzedaż online i aktualny stan operacyjny zamówień." />
@@ -572,7 +574,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="order-6">
+        {isManager && <section className="order-6">
           <SectionTitle title="Menu i klienci" description="Popularność pozycji, słabsze pozycje i najbardziej aktywni klienci." />
 
       <div className="grid gap-5 xl:grid-cols-[1.25fr_0.85fr]">
@@ -656,7 +658,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </section>
+    </section>}
 
     <section className="order-5">
       <SectionTitle title="Najbliższe działania" description="Rzeczy, które wymagają uwagi obsługi w pierwszej kolejności." />

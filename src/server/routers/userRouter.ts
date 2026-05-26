@@ -10,6 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET!
 
 const USER_ROLES = {
 	USER: "user",
+	MANAGER: "manager",
 	ADMIN: "admin",
 } as const
 
@@ -23,7 +24,7 @@ export const userRouter = router({
 			z.object({
 				username: z.string(),
 				password: z.string(),
-				role: z.enum(["user", "admin"]).default("user"),
+				role: z.enum(["user", "manager", "admin"]).default("user"),
 			})
 		)
 		.mutation(async ({ input }) => {
@@ -63,7 +64,7 @@ export const userRouter = router({
 		}),
 
 	createUser: publicProcedure
-		.input(z.object({ username: z.string(), password: z.string(), name: z.string().optional(), role: z.enum(["user", "admin"]) }))
+		.input(z.object({ username: z.string(), password: z.string(), name: z.string().optional(), role: z.enum(["user", "manager", "admin"]) }))
 		.mutation(async ({ input, ctx }) => {
 			const decodedToken = ctx.token
 

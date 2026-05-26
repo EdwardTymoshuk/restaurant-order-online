@@ -5,7 +5,7 @@ import { decode } from 'next-auth/jwt'
 
 interface CustomJwtPayload extends JwtPayload {
 	id: string
-	role: "user" | "admin"
+	role: "user" | "manager" | "admin"
 }
 
 const parseCookies = (cookieHeader: string) =>
