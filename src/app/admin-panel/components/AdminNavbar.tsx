@@ -151,13 +151,20 @@ export const AdminNavbar = ({ className, activeTab }: AdminNavbarProps) => {
 
 				{/* Mobile: spacer + header actions */}
 				<div className="flex-1 lg:hidden" />
-				<button
-					onClick={() => setMobileOpen(!mobileOpen)}
-					className="flex h-9 w-9 items-center justify-center rounded-full text-white/75 transition-colors hover:bg-white/10 hover:text-white lg:hidden"
-					aria-label={mobileOpen ? 'Zamknij menu' : 'Otwórz menu'}
-				>
-					{mobileOpen ? <RiCloseLine size={22} /> : <RiMenu3Line size={22} />}
-				</button>
+				<div className="relative lg:hidden">
+					<button
+						onClick={() => setMobileOpen(!mobileOpen)}
+						className="flex h-9 w-9 items-center justify-center rounded-full text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+						aria-label={mobileOpen ? 'Zamknij menu' : 'Otwórz menu'}
+					>
+						{mobileOpen ? <RiCloseLine size={22} /> : <RiMenu3Line size={22} />}
+					</button>
+					{!mobileOpen && (badges?.orders ?? 0) + (badges?.reservations ?? 0) > 0 && (
+						<span className="pointer-events-none absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-0.5 text-[10px] font-semibold leading-none text-secondary">
+							{formatBadgeCount((badges?.orders ?? 0) + (badges?.reservations ?? 0))}
+						</span>
+					)}
+				</div>
 			</header>
 
 			{/* Mobile dropdown */}

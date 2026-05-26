@@ -57,11 +57,11 @@ const Home = () => {
             <div className="w-full rounded-[24px] border border-white/35 bg-white/18 p-4 shadow-[0_24px_90px_rgba(9,24,61,0.28)] backdrop-blur-2xl md:p-6">
               <div className="flex justify-center">
                 <Image
-                  src="/img/logo-spoko-2.png"
+                  src="/img/page-main-logo.png"
                   alt="Spoko Sopot"
-                  width={190}
-                  height={68}
-                  className="h-auto w-40 object-contain"
+                  width={240}
+                  height={86}
+                  className="h-auto w-52 object-contain"
                   priority
                 />
               </div>
@@ -163,8 +163,16 @@ const Home = () => {
 
           <div className="hidden lg:order-1 lg:flex">
             <div className="flex w-full flex-col rounded-[24px] border border-white/35 bg-white/18 p-4 shadow-[0_24px_90px_rgba(9,24,61,0.24)] backdrop-blur-2xl">
-              <div className="mb-4 text-center">
-                <h2 className="text-center text-3xl font-semibold leading-tight text-primary">Sprawdź, gdzie dowozimy</h2>
+              <div className="mb-4 flex flex-col items-center gap-3">
+                <Image
+                  src="/img/page-main-logo.png"
+                  alt="Spoko Sopot"
+                  width={260}
+                  height={93}
+                  className="h-auto w-56 object-contain drop-shadow-md"
+                  priority
+                />
+                <p className="text-sm font-medium text-white/80">Sprawdź, gdzie dowozimy</p>
               </div>
               <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/35 bg-slate-100/80">
                 <LoadScriptNext

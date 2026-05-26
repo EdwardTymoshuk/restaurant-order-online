@@ -7,6 +7,7 @@ import {
   AccordionTrigger,
 } from '@/app/components/ui/accordion'
 import { Button } from '@/app/components/ui/button'
+import { Calendar } from '@/app/components/ui/calendar'
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,11 @@ import {
   DialogTitle,
 } from '@/app/components/ui/dialog'
 import { Input } from '@/app/components/ui/input'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/app/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -31,8 +37,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/app/components/ui/table'
+import { cn } from '@/utils/utils'
 import { trpc } from '@/utils/trpc'
 import dayjs from 'dayjs'
+import { format } from 'date-fns'
+import { pl } from 'date-fns/locale'
+import { CalendarDays } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -44,144 +54,151 @@ interface PromoCode {
   isActive: boolean
   isUsed: boolean
   expiresAt: Date | null
+  startDate: Date | null
   isOneTimeUse: boolean
+  _count: { orders: number }
 }
 
+function computeStatus(promo: PromoCode): { label: string; color: string } {
+  const now = new Date()
+  if (!promo.isActive) return { label: 'Nieaktywny', color: 'text-slate-400' }
+  if (promo.expiresAt && new Date(promo.expiresAt) < now) return { label: 'Wygasły', color: 'text-red-500' }
+  if (promo.startDate && new Date(promo.startDate) > now) return { label: 'Oczekujący', color: 'text-blue-500' }
+  if (promo.isOneTimeUse && promo.isUsed) return { label: 'Wykorzystany', color: 'text-amber-600' }
+  return { label: 'Aktywny', color: 'text-green-600' }
+}
+
+interface DatePickerFieldProps {
+  value: Date | undefined
+  onChange: (date: Date | undefined) => void
+  placeholder?: string
+}
+
+const DatePickerField = ({ value, onChange, placeholder = 'Wybierz datę' }: DatePickerFieldProps) => (
+  <Popover>
+    <PopoverTrigger asChild>
+      <Button
+        variant="outline"
+        className={cn('w-full justify-start text-left font-normal', !value && 'text-muted-foreground')}
+      >
+        <CalendarDays className="mr-2 h-4 w-4" />
+        {value ? format(value, 'dd.MM.yyyy', { locale: pl }) : placeholder}
+      </Button>
+    </PopoverTrigger>
+    <PopoverContent className="w-auto p-0" align="start">
+      <Calendar
+        mode="single"
+        selected={value}
+        onSelect={onChange}
+        locale={pl}
+        initialFocus
+      />
+    </PopoverContent>
+  </Popover>
+)
+
 const PromoCodeSettings: React.FC = () => {
-  // State for list of promo codes
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([])
-  // State for controlling the dialog for adding a new promo code
-  const [isPromoCodeDialogOpen, setIsPromoCodeDialogOpen] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-  // TRPC hooks for fetching, creating and deleting promo codes
-  const { data: promoCodesData, refetch: refetchPromoCodes } =
-    trpc.promoCode.getAllPromoCodes.useQuery()
-  const createPromoCode = trpc.promoCode.createPromoCode.useMutation({
-    onSuccess: () => {
-      refetchPromoCodes()
-    },
-  })
-  const deletePromoCode = trpc.promoCode.deletePromoCode.useMutation({
-    onSuccess: () => {
-      refetchPromoCodes()
-    },
-  })
+  const { data: promoCodesData, refetch } = trpc.promoCode.getAllPromoCodes.useQuery()
 
-  // New promo code state including new date range fields
-  const [newPromoCode, setNewPromoCode] = useState<{
+  const createPromoCode = trpc.promoCode.createPromoCode.useMutation({ onSuccess: () => refetch() })
+  const deletePromoCode = trpc.promoCode.deletePromoCode.useMutation({ onSuccess: () => refetch() })
+  const updatePromoCode = trpc.promoCode.updatePromoCode.useMutation({ onSuccess: () => refetch() })
+
+  const [newCode, setNewCode] = useState<{
     code: string
     discountType: 'FIXED' | 'PERCENTAGE'
     discountValue: string
-    isActive: boolean
-    expiresInDays: number | null // Used when date range is not selected
     isOneTimeUse: boolean
-    useDateRange: boolean // New switch for using explicit date range
-    startDate: string // Start date in YYYY-MM-DD format
-    endDate: string // End date in YYYY-MM-DD format
+    useDateRange: boolean
+    startDate: Date | undefined
+    endDate: Date | undefined
+    expiresInDays: number | null
   }>({
     code: '',
     discountType: 'FIXED',
     discountValue: '',
-    isActive: true,
-    expiresInDays: null,
     isOneTimeUse: false,
     useDateRange: false,
-    startDate: '',
-    endDate: '',
+    startDate: undefined,
+    endDate: undefined,
+    expiresInDays: null,
   })
 
-  // Update promo codes list when data is fetched
   useEffect(() => {
-    if (promoCodesData) {
-      setPromoCodes(promoCodesData)
-    }
+    if (promoCodesData) setPromoCodes(promoCodesData as PromoCode[])
   }, [promoCodesData])
 
-  // Function to generate a random promo code string
   const generateRandomCode = () => {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    let result = ''
-    const charactersLength = characters.length
-    for (let i = 0; i < 10; i++) {
-      result += characters.charAt(Math.floor(Math.random() * charactersLength))
-    }
-    return result
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
   }
 
-  // Handler for adding a new promo code
-  const handleAddPromoCode = () => {
-    console.log('handleAddPromoCode запущено')
-    if (!newPromoCode.code.trim()) {
+  const resetForm = () =>
+    setNewCode({
+      code: '',
+      discountType: 'FIXED',
+      discountValue: '',
+      isOneTimeUse: false,
+      useDateRange: false,
+      startDate: undefined,
+      endDate: undefined,
+      expiresInDays: null,
+    })
+
+  const handleAdd = () => {
+    if (!newCode.code.trim()) {
       toast.warning('Proszę wpisać kod promocyjny.')
       return
     }
-
-    if (!newPromoCode.discountValue.trim()) {
-      toast.warning('Proszę wpisać wartość zniżki.')
-      return
-    }
-
-    const discountValue = parseFloat(newPromoCode.discountValue)
+    const discountValue = parseFloat(newCode.discountValue)
     if (isNaN(discountValue) || discountValue <= 0) {
       toast.warning('Proszę wpisać prawidłową wartość zniżki.')
       return
     }
+    if (newCode.useDateRange && (!newCode.startDate || !newCode.endDate)) {
+      toast.warning('Proszę wybrać daty rozpoczęcia i zakończenia.')
+      return
+    }
 
-    // If date range option is enabled, validate start and end dates
-    if (newPromoCode.useDateRange) {
-      if (!newPromoCode.startDate || !newPromoCode.endDate) {
-        toast.warning('Proszę wybrać daty rozpoczęcia i zakończenia.')
-        return
-      }
-      console.log('Creating promo code with explicit date range:', newPromoCode)
-      // Call the mutation with explicit date range
+    if (newCode.useDateRange) {
       createPromoCode.mutate({
-        code: newPromoCode.code,
-        discountType: newPromoCode.discountType,
-        discountValue: discountValue,
-        isActive: newPromoCode.isActive,
-        isOneTimeUse: newPromoCode.isOneTimeUse,
-        // Assuming backend accepts 'startDate' and 'expiresAt' for date range mode
-        startDate: newPromoCode.startDate,
-        expiresAt: newPromoCode.endDate,
+        code: newCode.code,
+        discountType: newCode.discountType,
+        discountValue,
+        isActive: true,
+        isOneTimeUse: newCode.isOneTimeUse,
+        startDate: newCode.startDate!.toISOString(),
+        expiresAt: newCode.endDate!.toISOString(),
       })
     } else {
-      // Use relative expiration (in days) if not using date range
-      const expiresAt = newPromoCode.expiresInDays
-        ? dayjs().add(newPromoCode.expiresInDays, 'day').toISOString()
+      const expiresAt = newCode.expiresInDays
+        ? dayjs().add(newCode.expiresInDays, 'day').toISOString()
         : undefined
-
-      console.log('Creating promo code with relative expiration:', newPromoCode)
-
       createPromoCode.mutate({
-        code: newPromoCode.code,
-        discountType: newPromoCode.discountType,
-        discountValue: discountValue,
-        isActive: newPromoCode.isActive,
-        isOneTimeUse: newPromoCode.isOneTimeUse,
-        expiresAt: expiresAt,
+        code: newCode.code,
+        discountType: newCode.discountType,
+        discountValue,
+        isActive: true,
+        isOneTimeUse: newCode.isOneTimeUse,
+        expiresAt,
       })
     }
 
-    // Reset the new promo code state and close the dialog
-    setNewPromoCode({
-      code: '',
-      discountType: 'FIXED',
-      discountValue: '',
-      isActive: true,
-      expiresInDays: null,
-      isOneTimeUse: false,
-      useDateRange: false,
-      startDate: '',
-      endDate: '',
-    })
-    setIsPromoCodeDialogOpen(false)
+    resetForm()
+    setIsDialogOpen(false)
+  }
+
+  const handleToggleActive = (promo: PromoCode) => {
+    updatePromoCode.mutate({ id: promo.id, isActive: !promo.isActive })
   }
 
   return (
     <Accordion type="single" collapsible>
       <AccordionItem value="promoCodes" className="border-0">
-        <AccordionTrigger className="text-left font-semibold text-lg hover:no-underline">
+        <AccordionTrigger className="text-left text-lg font-semibold hover:no-underline">
           <span className="flex w-full items-center justify-between gap-3 pr-3">
             <span>Kody promocyjne</span>
             <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
@@ -190,237 +207,172 @@ const PromoCodeSettings: React.FC = () => {
           </span>
         </AccordionTrigger>
         <AccordionContent>
-          <Table>
-            <TableHeader className="text-text-foreground">
-              <TableRow>
-                <TableHead>Kod</TableHead>
-                <TableHead>Typ zniżki</TableHead>
-                <TableHead>Wartość</TableHead>
-                <TableHead>Data ważności</TableHead>
-                <TableHead>Jednorazowy</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Akcje</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {promoCodes.map((promo) => (
-                <TableRow key={promo.id}>
-                  <TableCell className="font-bold">{promo.code}</TableCell>
-                  <TableCell>
-                    {promo.discountType === 'FIXED' ? 'Kwota stała' : 'Procent'}
-                  </TableCell>
-                  <TableCell>
-                    {promo.discountValue}{' '}
-                    {promo.discountType === 'FIXED' ? 'zł' : '%'}
-                  </TableCell>
-                  <TableCell>
-                    {promo.expiresAt
-                      ? dayjs(promo.expiresAt).format('YYYY-MM-DD')
-                      : 'Bezterminowy'}
-                  </TableCell>
-                  <TableCell>{promo.isOneTimeUse ? 'Tak' : 'Nie'}</TableCell>
-                  <TableCell>
-                    {promo.isUsed ? 'Wykorzystany' : 'Aktywny'}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => {
-                        deletePromoCode.mutate({ id: promo.id })
-                      }}
-                    >
-                      Usuń
-                    </Button>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table className="min-w-[640px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Kod</TableHead>
+                  <TableHead>Typ</TableHead>
+                  <TableHead>Wartość</TableHead>
+                  <TableHead>Obowiązuje od</TableHead>
+                  <TableHead>Wygasa</TableHead>
+                  <TableHead>Użyto</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Aktywny</TableHead>
+                  <TableHead>Akcje</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <Button
-            onClick={() => setIsPromoCodeDialogOpen(true)}
-            className="mt-4"
-          >
-            Dodaj
+              </TableHeader>
+              <TableBody>
+                {promoCodes.map((promo) => {
+                  const { label, color } = computeStatus(promo)
+                  return (
+                    <TableRow key={promo.id}>
+                      <TableCell className="font-bold">{promo.code}</TableCell>
+                      <TableCell>{promo.discountType === 'FIXED' ? 'Kwota' : 'Procent'}</TableCell>
+                      <TableCell>
+                        {promo.discountValue}{promo.discountType === 'FIXED' ? ' zł' : '%'}
+                      </TableCell>
+                      <TableCell>
+                        {promo.startDate ? dayjs(promo.startDate).format('DD.MM.YYYY') : '—'}
+                      </TableCell>
+                      <TableCell>
+                        {promo.expiresAt ? dayjs(promo.expiresAt).format('DD.MM.YYYY') : 'Bezterminowy'}
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium">×{promo._count.orders}</span>
+                        {promo.isOneTimeUse && (
+                          <span className="ml-1 text-xs text-slate-400">(1×)</span>
+                        )}
+                      </TableCell>
+                      <TableCell className={cn('font-medium', color)}>{label}</TableCell>
+                      <TableCell>
+                        <Switch
+                          checked={promo.isActive}
+                          onCheckedChange={() => handleToggleActive(promo)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => deletePromoCode.mutate({ id: promo.id })}
+                        >
+                          Usuń
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
+
+          <Button onClick={() => setIsDialogOpen(true)} className="mt-4">
+            Dodaj kod
           </Button>
 
-          {/* Dialog for adding a new promo code */}
-          <Dialog
-            open={isPromoCodeDialogOpen}
-            onOpenChange={setIsPromoCodeDialogOpen}
-          >
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Dodaj nowy kod promocyjny</DialogTitle>
+                <DialogTitle>Nowy kod promocyjny</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                {/* Code input and random generation */}
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-2">
                   <Input
                     placeholder="Kod"
-                    value={newPromoCode.code}
-                    onChange={(e) =>
-                      setNewPromoCode((prev) => ({
-                        ...prev,
-                        code: e.target.value,
-                      }))
-                    }
+                    value={newCode.code}
+                    onChange={(e) => setNewCode((p) => ({ ...p, code: e.target.value.toUpperCase() }))}
                   />
                   <Button
-                    onClick={() =>
-                      setNewPromoCode((prev) => ({
-                        ...prev,
-                        code: generateRandomCode(),
-                      }))
-                    }
+                    variant="outline"
+                    onClick={() => setNewCode((p) => ({ ...p, code: generateRandomCode() }))}
                   >
-                    Zgenerować
+                    Generuj
                   </Button>
                 </div>
 
-                {/* Discount type selection */}
                 <Select
-                  value={newPromoCode.discountType}
-                  onValueChange={(value) =>
-                    setNewPromoCode((prev) => ({
-                      ...prev,
-                      discountType: value as 'FIXED' | 'PERCENTAGE',
-                      discountValue: '',
-                    }))
+                  value={newCode.discountType}
+                  onValueChange={(v) =>
+                    setNewCode((p) => ({ ...p, discountType: v as 'FIXED' | 'PERCENTAGE', discountValue: '' }))
                   }
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Typ zniżki" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="FIXED">Kwota stała</SelectItem>
-                    <SelectItem value="PERCENTAGE">Procent</SelectItem>
+                    <SelectItem value="FIXED">Kwota stała (zł)</SelectItem>
+                    <SelectItem value="PERCENTAGE">Procent (%)</SelectItem>
                   </SelectContent>
                 </Select>
 
-                {/* Discount value input */}
                 <Input
                   type="number"
-                  placeholder="Wartość"
-                  value={newPromoCode.discountValue}
+                  placeholder={newCode.discountType === 'FIXED' ? 'Wartość w zł' : 'Procent (1–100)'}
+                  value={newCode.discountValue}
+                  min={0}
+                  max={newCode.discountType === 'PERCENTAGE' ? 100 : undefined}
                   onChange={(e) => {
-                    let value = e.target.value.replace(/[^0-9.]/g, '')
-                    if (value === '') {
-                      setNewPromoCode((prev) => ({
-                        ...prev,
-                        discountValue: '',
-                      }))
-                      return
-                    }
-                    let numericValue = parseFloat(value)
-                    if (numericValue < 0) {
-                      numericValue = 0
-                    }
-                    if (
-                      newPromoCode.discountType === 'PERCENTAGE' &&
-                      numericValue > 100
-                    ) {
-                      numericValue = 100
-                    }
-                    setNewPromoCode((prev) => ({
-                      ...prev,
-                      discountValue: numericValue.toString(),
-                    }))
+                    let val = parseFloat(e.target.value)
+                    if (isNaN(val) || val < 0) val = 0
+                    if (newCode.discountType === 'PERCENTAGE' && val > 100) val = 100
+                    setNewCode((p) => ({ ...p, discountValue: val.toString() }))
                   }}
                 />
 
-                {/* One-time use switch */}
-                <div>
-                  <label className="flex items-center space-x-2">
-                    <Switch
-                      checked={newPromoCode.isOneTimeUse}
-                      onCheckedChange={(checked) =>
-                        setNewPromoCode((prev) => ({
-                          ...prev,
-                          isOneTimeUse: checked,
-                        }))
-                      }
-                    />
-                    <span>Kod jednorazowy</span>
-                  </label>
-                </div>
+                <label className="flex items-center gap-2">
+                  <Switch
+                    checked={newCode.isOneTimeUse}
+                    onCheckedChange={(v) => setNewCode((p) => ({ ...p, isOneTimeUse: v }))}
+                  />
+                  <span className="text-sm">Kod jednorazowy</span>
+                </label>
 
-                {/* New switch for using explicit date range */}
-                <div>
-                  <label className="flex items-center space-x-2">
-                    <Switch
-                      checked={newPromoCode.useDateRange}
-                      onCheckedChange={(checked) =>
-                        setNewPromoCode((prev) => ({
-                          ...prev,
-                          useDateRange: checked,
-                        }))
-                      }
-                    />
-                    <span>Ustal zakres dat aktywności</span>
-                  </label>
-                  {newPromoCode.useDateRange && (
-                    <div className="pt-4 space-y-2">
-                      <Input
-                        type="date"
-                        placeholder="Data rozpoczęcia"
-                        value={newPromoCode.startDate}
-                        onChange={(e) =>
-                          setNewPromoCode((prev) => ({
-                            ...prev,
-                            startDate: e.target.value,
-                          }))
-                        }
-                      />
-                      <Input
-                        type="date"
-                        placeholder="Data zakończenia"
-                        value={newPromoCode.endDate}
-                        onChange={(e) =>
-                          setNewPromoCode((prev) => ({
-                            ...prev,
-                            endDate: e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-                  )}
-                </div>
+                <label className="flex items-center gap-2">
+                  <Switch
+                    checked={newCode.useDateRange}
+                    onCheckedChange={(v) =>
+                      setNewCode((p) => ({ ...p, useDateRange: v, startDate: undefined, endDate: undefined }))
+                    }
+                  />
+                  <span className="text-sm">Zakres dat aktywności</span>
+                </label>
 
-                {/* Existing expiration mode switch (only if not using date range) */}
-                {!newPromoCode.useDateRange && (
+                {newCode.useDateRange ? (
+                  <div className="space-y-2">
+                    <DatePickerField
+                      value={newCode.startDate}
+                      onChange={(d) => setNewCode((p) => ({ ...p, startDate: d }))}
+                      placeholder="Data rozpoczęcia"
+                    />
+                    <DatePickerField
+                      value={newCode.endDate}
+                      onChange={(d) => setNewCode((p) => ({ ...p, endDate: d }))}
+                      placeholder="Data zakończenia"
+                    />
+                  </div>
+                ) : (
                   <div>
-                    <label className="flex items-center space-x-2">
+                    <label className="flex items-center gap-2">
                       <Switch
-                        checked={newPromoCode.expiresInDays === null}
-                        onCheckedChange={(checked) =>
-                          setNewPromoCode((prev) => ({
-                            ...prev,
-                            expiresInDays: checked ? null : 30,
-                          }))
+                        checked={newCode.expiresInDays === null}
+                        onCheckedChange={(v) =>
+                          setNewCode((p) => ({ ...p, expiresInDays: v ? null : 30 }))
                         }
                       />
-                      <span>
-                        {newPromoCode.expiresInDays === null
-                          ? 'Bezterminowy'
-                          : 'Terminowy'}
+                      <span className="text-sm">
+                        {newCode.expiresInDays === null ? 'Bezterminowy' : 'Terminowy'}
                       </span>
                     </label>
-                    {newPromoCode.expiresInDays !== null && (
-                      <div className="pt-4">
+                    {newCode.expiresInDays !== null && (
+                      <div className="pt-3">
                         <Input
                           type="number"
-                          placeholder="Dni ważności"
-                          value={
-                            newPromoCode.expiresInDays !== null
-                              ? newPromoCode.expiresInDays.toString()
-                              : ''
-                          }
+                          placeholder="Liczba dni ważności"
+                          value={newCode.expiresInDays}
+                          min={1}
                           onChange={(e) =>
-                            setNewPromoCode((prev) => ({
-                              ...prev,
-                              expiresInDays: Number(e.target.value),
-                            }))
+                            setNewCode((p) => ({ ...p, expiresInDays: Number(e.target.value) }))
                           }
                         />
                       </div>
@@ -430,18 +382,12 @@ const PromoCodeSettings: React.FC = () => {
               </div>
               <DialogFooter className="gap-2">
                 <Button
-                  onClick={handleAddPromoCode}
-                  disabled={
-                    !newPromoCode.code.trim() ||
-                    !newPromoCode.discountValue.trim()
-                  }
+                  onClick={handleAdd}
+                  disabled={!newCode.code.trim() || !newCode.discountValue.trim()}
                 >
                   Dodaj
                 </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => setIsPromoCodeDialogOpen(false)}
-                >
+                <Button variant="secondary" onClick={() => { resetForm(); setIsDialogOpen(false) }}>
                   Anuluj
                 </Button>
               </DialogFooter>

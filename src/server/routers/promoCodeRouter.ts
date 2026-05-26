@@ -47,7 +47,10 @@ export const promoCodeRouter = router({
     }),
 
   getAllPromoCodes: publicProcedure.query(async () => {
-    return await prisma.promoCode.findMany()
+    return await prisma.promoCode.findMany({
+      include: { _count: { select: { orders: true } } },
+      orderBy: { createdAt: 'desc' },
+    })
   }),
 
   updatePromoCode: publicProcedure

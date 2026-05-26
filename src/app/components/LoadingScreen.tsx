@@ -43,19 +43,10 @@ const LoadingScreen = ({ fullScreen = false }: LoadingScreenProps) => {
         >
           <AnimatedLogo variant="dark" width={220} height={116} />
 
-          <motion.p
-            className="font-special text-3xl text-[#a3c13c]"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35, duration: 0.5, ease: 'easeOut' }}
-          >
-            Sopot
-          </motion.p>
-
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.6, duration: 0.4 }}
+            transition={{ delay: 0.45, duration: 0.4 }}
           >
             <Dots />
           </motion.div>
