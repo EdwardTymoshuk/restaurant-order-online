@@ -48,8 +48,22 @@ const LoginPage = () => {
 	}
 
 	return (
-		<div className="flex min-h-dvh items-center bg-muted px-4 py-8 md:px-8">
-			<div className="mx-auto grid w-full max-w-6xl overflow-hidden rounded-2xl border border-border bg-white shadow-xl lg:grid-cols-[0.95fr_1fr]">
+		<div className="flex min-h-dvh flex-col items-center bg-secondary px-4 py-10 md:justify-center md:bg-muted md:px-8">
+
+			{/* Logo widoczne tylko na mobile, nad kartą, na granatowym tle */}
+			<div className="mb-8 flex justify-center lg:hidden">
+				<Image
+					src="/img/logo-admin.svg"
+					alt="Spoko"
+					width={160}
+					height={84}
+					priority
+					className="h-auto w-40"
+				/>
+			</div>
+
+			<div className="w-full max-w-6xl overflow-hidden rounded-2xl border border-border bg-white shadow-xl lg:grid lg:grid-cols-[0.95fr_1fr]">
+				{/* Panel lewy — tylko desktop */}
 				<section className="hidden min-h-[580px] flex-col justify-between bg-secondary p-10 text-white lg:flex">
 					<div>
 						<Image
@@ -87,21 +101,10 @@ const LoginPage = () => {
 					</div>
 				</section>
 
-				<section className="flex min-h-[580px] items-center justify-center px-5 py-10 sm:px-10">
+				{/* Formularz */}
+				<section className="flex min-h-[480px] items-center justify-center px-5 py-10 sm:px-10">
 					<Card className="w-full max-w-md border-0 bg-transparent shadow-none">
 						<CardHeader className="px-0 pb-7">
-							<div className="mb-8 flex justify-center lg:hidden">
-								<div className="flex h-16 w-36 items-center justify-center rounded-xl bg-secondary px-5 shadow-sm">
-									<Image
-										src="/img/logo-admin.svg"
-										alt="Spoko"
-										width={120}
-										height={64}
-										priority
-										className="h-auto w-full"
-									/>
-								</div>
-							</div>
 							<p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
 								Logowanie
 							</p>
