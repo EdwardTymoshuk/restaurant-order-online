@@ -41,6 +41,7 @@ jobs:
             npm run build
 
             pm2 restart spoko-order || pm2 start npm --name "spoko-order" -- start
+            pm2 restart spoko-admin || pm2 start node_modules/.bin/next --name "spoko-admin" -- start -p 3010
             pm2 save
 
             echo "✅ ORDER deploy finished"
