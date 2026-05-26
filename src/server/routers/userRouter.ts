@@ -93,19 +93,42 @@ export const userRouter = router({
 	deleteUser: publicProcedure
 		.input(z.object({ userId: z.string() }))
 		.mutation(async ({ input, ctx }) => {
-			const decodedToken = ctx.token
-
-			if (!decodedToken || decodedToken.role !== USER_ROLES.ADMIN) {
-				throw new TRPCError({ code: "FORBIDDEN", message: "Доступ заборонено" })
+			if (!ctx.token || ctx.token.role !== USER_ROLES.ADMIN) {
+				throw new TRPCError({ code: 'FORBIDDEN', message: 'Brak uprawnień.' })
 			}
-
 			try {
-				await prisma.user.delete({
-					where: { id: input.userId },
-				})
-				return { message: 'User deleted successfully' }
-			} catch (error) {
-				throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to delete user" })
+				await prisma.user.delete({ where: { id: input.userId } })
+				return { success: true }
+			} catch {
+				throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Nie udało się usunąć użytkownika.' })
 			}
+		}),
+
+	updateUser: publicProcedure
+		.input(z.object({
+			userId: z.string(),
+			name: z.string().optional(),
+			role: z.enum(['user', 'manager', 'admin']).optional(),
+		}))
+		.mutation(async ({ input, ctx }) => {
+			if (!ctx.token || ctx.token.role !== USER_ROLES.ADMIN) {
+				throw new TRPCError({ code: 'FORBIDDEN', message: 'Brak uprawnień.' })
+			}
+			const { userId, ...data } = input
+			return await prisma.user.update({ where: { id: userId }, data })
+		}),
+
+	resetPassword: publicProcedure
+		.input(z.object({
+			userId: z.string(),
+			newPassword: z.string().min(6, 'Hasło musi mieć co najmniej 6 znaków.'),
+		}))
+		.mutation(async ({ input, ctx }) => {
+			if (!ctx.token || ctx.token.role !== USER_ROLES.ADMIN) {
+				throw new TRPCError({ code: 'FORBIDDEN', message: 'Brak uprawnień.' })
+			}
+			const hashed = await bcrypt.hash(input.newPassword, 10)
+			await prisma.user.update({ where: { id: input.userId }, data: { password: hashed } })
+			return { success: true }
 		}),
 })
