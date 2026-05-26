@@ -22,10 +22,11 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/icons/cleaned.png', sizes: '512x512', type: 'image/png' },
+      { url: '/icons/spoko-icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/spoko-icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
     apple: [
-      { url: '/icons/cleaned.png', sizes: '512x512', type: 'image/png' },
+      { url: '/icons/spoko-icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
   },
   openGraph: {
