@@ -30,7 +30,8 @@ export const authOptions: AuthOptions = {
 				if (user && bcrypt.compareSync(credentials.password, user.password)) {
 					const accessToken = jwt.sign(
 						{ id: user.id, role: user.role },
-						JWT_SECRET
+						JWT_SECRET,
+						{ expiresIn: '2h' }
 					)
 					return { id: user.id, name: user.username || user.email, email: user.email, role: user.role, accessToken }
 				}
@@ -57,6 +58,13 @@ export const authOptions: AuthOptions = {
 		},
 	},
 	secret: process.env.NEXTAUTH_SECRET,
+	session: {
+		strategy: 'jwt',
+		maxAge: 2 * 60 * 60, // 2 hours
+	},
+	jwt: {
+		maxAge: 2 * 60 * 60, // 2 hours
+	},
 	cookies: {
 		sessionToken: {
 			name: 'spoko-admin.session-token',
