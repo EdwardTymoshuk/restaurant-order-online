@@ -328,9 +328,13 @@ export const menuRouter = router({
     )
     .mutation(async ({ input }) => {
       const parsedItems = parseMenuDocumentForImport(input.type)
+      const scopeCategories = getImportScopeCategories(input.type)
       const existingItems = await prisma.menuItem.findMany({
         where: {
           isArchived: false,
+          category: {
+            in: scopeCategories,
+          },
         },
         select: {
           id: true,
@@ -395,6 +399,9 @@ export const menuRouter = router({
           where: {
             id: {
               in: input.archiveMissingIds,
+            },
+            category: {
+              in: scopeCategories,
             },
             isArchived: false,
           },

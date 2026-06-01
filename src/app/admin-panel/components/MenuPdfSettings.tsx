@@ -275,7 +275,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
     try {
       const preview = await previewMenuDocumentImport.mutateAsync({ type: doc.type })
       setImportPreview(preview)
-      setSelectedArchiveIds([])
+      setSelectedArchiveIds(preview.missing.map((item) => item.id))
     } catch (error) {
       console.error(error)
       toast.error('Nie udało się przygotować podsumowania importu.')
@@ -577,7 +577,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
           <DialogHeader className="border-b border-border px-5 py-4">
             <DialogTitle className="font-serif text-xl text-dark-gray">Podsumowanie importu</DialogTitle>
             <DialogDescription>
-              Sprawdź zmiany przed zapisaniem. Pozycje, których nie ma w nowym PDF-ie, możesz zaznaczyć do archiwizacji.
+              Sprawdź zmiany przed zapisaniem. Pozycje, których nie ma w nowym pliku, są domyślnie zaznaczone do archiwizacji.
             </DialogDescription>
           </DialogHeader>
 
