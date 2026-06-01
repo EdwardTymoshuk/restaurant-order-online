@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import vm from 'vm'
 
-export type ImportDocumentType = 'menu' | 'drinks' | 'other'
+export type ImportDocumentType = 'menu' | 'drinks' | 'full' | 'other'
 
 export type ParsedMenuImportItem = {
   category: string
@@ -11,7 +11,7 @@ export type ParsedMenuImportItem = {
   description: string | null
 }
 
-const SCRIPT_BY_TYPE: Record<Exclude<ImportDocumentType, 'other'>, string> = {
+const SCRIPT_BY_TYPE: Record<Exclude<ImportDocumentType, 'full' | 'other'>, string> = {
   menu: 'import-spoko-menu-from-pdf.js',
   drinks: 'import-spoko-drinks-from-pdf.js',
 }
@@ -45,8 +45,15 @@ const loadItemsFromScript = (scriptName: string): unknown[] => {
 }
 
 export const parseMenuDocumentForImport = (type: ImportDocumentType): ParsedMenuImportItem[] => {
+  if (type === 'full') {
+    return [
+      ...parseMenuDocumentForImport('menu'),
+      ...parseMenuDocumentForImport('drinks'),
+    ]
+  }
+
   if (type === 'other') {
-    throw new Error('Import pozycji jest dostępny tylko dla dokumentów typu Menu albo Napoje.')
+    throw new Error('Import pozycji jest dostępny tylko dla dokumentów typu Menu, Napoje albo Pełna karta.')
   }
 
   const rawItems = loadItemsFromScript(SCRIPT_BY_TYPE[type])

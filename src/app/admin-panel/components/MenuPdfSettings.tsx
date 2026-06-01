@@ -45,11 +45,21 @@ type ImportPreview = {
 const DOCUMENT_TYPE_OPTIONS: Array<{ value: MenuDocumentType; label: string }> = [
   { value: 'menu', label: 'Menu' },
   { value: 'drinks', label: 'Napoje' },
+  { value: 'full', label: 'Pełna karta' },
   { value: 'other', label: 'Inne' },
 ]
 
 const inferDocumentType = (fileName: string): MenuDocumentType => {
   const normalized = fileName.toLowerCase()
+  if (
+    normalized.includes('pelna') ||
+    normalized.includes('pełna') ||
+    normalized.includes('calosc') ||
+    normalized.includes('całość') ||
+    normalized.includes('full')
+  ) {
+    return 'full'
+  }
   if (normalized.includes('napoj') || normalized.includes('drink') || normalized.includes('beverage')) {
     return 'drinks'
   }
@@ -267,7 +277,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
 
   const previewDocumentImport = async (doc: MenuDownloadDocument) => {
     if (doc.type === 'other') {
-      toast.error('Import pozycji działa tylko dla dokumentów typu Menu albo Napoje.')
+      toast.error('Import pozycji działa tylko dla dokumentów typu Menu, Napoje albo Pełna karta.')
       return
     }
 

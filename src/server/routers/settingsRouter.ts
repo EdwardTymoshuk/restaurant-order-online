@@ -132,7 +132,7 @@ export const settingsRouter = router({
             },
             { message: 'Invalid url' }
           ),
-          type: z.enum(['menu', 'drinks', 'other']),
+          type: z.enum(['menu', 'drinks', 'full', 'other']),
           sortOrder: z.number().int().min(0),
           isActive: z.boolean(),
         }),

@@ -7,6 +7,7 @@ import { publicProcedure, router } from '../trpc'
 const getImportScopeCategories = (type: ImportDocumentType) => {
   if (type === 'menu') return foodMenuItemCategories
   if (type === 'drinks') return drinkMenuItemCategories
+  if (type === 'full') return [...foodMenuItemCategories, ...drinkMenuItemCategories]
   return []
 }
 
@@ -312,7 +313,7 @@ export const menuRouter = router({
   previewMenuDocumentImport: publicProcedure
     .input(
       z.object({
-        type: z.enum(['menu', 'drinks', 'other']),
+        type: z.enum(['menu', 'drinks', 'full', 'other']),
       }),
     )
     .mutation(async ({ input }) => {
@@ -322,7 +323,7 @@ export const menuRouter = router({
   importMenuFromDocument: publicProcedure
     .input(
       z.object({
-        type: z.enum(['menu', 'drinks', 'other']),
+        type: z.enum(['menu', 'drinks', 'full', 'other']),
         archiveMissingIds: z.array(z.string().uuid()).default([]),
       }),
     )

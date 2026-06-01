@@ -193,7 +193,7 @@ export interface MenuDownloadDocument {
 	id: string
 	title: string
 	url: string
-	type: 'menu' | 'drinks' | 'other'
+	type: 'menu' | 'drinks' | 'full' | 'other'
 	sortOrder: number
 	isActive: boolean
 }
