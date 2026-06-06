@@ -69,6 +69,9 @@ const inferDocumentType = (fileName: string): MenuDocumentType => {
 const getDefaultTitle = (fileName: string) =>
   fileName.replace(/\.pdf$/i, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim() || 'Nowy PDF'
 
+const MAX_MENU_PDF_SIZE_MB = 50
+const MAX_MENU_PDF_SIZE_BYTES = MAX_MENU_PDF_SIZE_MB * 1024 * 1024
+
 const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocument[] }) => {
   const [documents, setDocuments] = useState<MenuDownloadDocument[]>(
     [...menuDocuments]
@@ -201,6 +204,13 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
       return
     }
 
+    if (file.size > MAX_MENU_PDF_SIZE_BYTES) {
+      toast.error(
+        `PDF jest za duży (${Math.ceil(file.size / 1024 / 1024)} MB). Wgraj wersję do internetu, maksymalnie ${MAX_MENU_PDF_SIZE_MB} MB.`
+      )
+      return
+    }
+
     setUploadingId(pendingReplaceId ?? 'new')
     try {
       const formData = new FormData()
@@ -213,6 +223,9 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
       })
 
       if (!response.ok) {
+        if (response.status === 413) {
+          throw new Error('Plik jest za duży. Wgraj lżejszą wersję PDF do internetu.')
+        }
         throw new Error('Upload failed')
       }
 
@@ -240,7 +253,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
       toast.success('PDF został wgrany. Teraz możesz ustawić tytuł i widoczność.')
     } catch (error) {
       console.error(error)
-      toast.error('Nie udało się wgrać PDF-a.')
+      toast.error(error instanceof Error ? error.message : 'Nie udało się wgrać PDF-a.')
     } finally {
       setUploadingId(null)
       setPendingReplaceId(null)

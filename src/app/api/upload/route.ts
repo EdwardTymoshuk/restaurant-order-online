@@ -8,6 +8,9 @@ import sharp from 'sharp'
 
 export const runtime = 'nodejs'
 
+const MAX_UPLOAD_SIZE_MB = 50
+const MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024
+
 export async function POST(request: NextRequest) {
 	try {
 		const formData = await request.formData()
@@ -15,6 +18,13 @@ export async function POST(request: NextRequest) {
 
 		if (!file) {
 			return NextResponse.json({ error: 'Brak pliku' }, { status: 400 })
+		}
+
+		if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+			return NextResponse.json(
+				{ error: `Plik jest za duży. Maksymalny rozmiar to ${MAX_UPLOAD_SIZE_MB} MB.` },
+				{ status: 413 }
+			)
 		}
 
 		const arrayBuffer = await file.arrayBuffer()
