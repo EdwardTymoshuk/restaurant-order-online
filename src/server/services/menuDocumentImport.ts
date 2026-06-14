@@ -389,7 +389,7 @@ export const parseMenuDocumentWithOcr = async (
 ): Promise<OcrMenuImportResult> => {
   const startedAt = Date.now()
   const timeoutMs = options.timeoutMs ?? 10 * 60 * 1000
-  const pageTimeoutMs = options.pageTimeoutMs ?? 90 * 1000
+  const pageTimeoutMs = options.pageTimeoutMs ?? 75 * 1000
   const assertWithinTimeLimit = () => {
     if (Date.now() - startedAt > timeoutMs) {
       throw new Error('OCR trwał zbyt długo. Wgraj lżejszy PDF albo podziel menu na kilka plików.')
@@ -397,72 +397,94 @@ export const parseMenuDocumentWithOcr = async (
   }
 
   const parser = new PDFParse({ url: documentUrl })
-  let screenshots: Awaited<ReturnType<PDFParse['getScreenshot']>>
+  let totalPages = 0
+
+  const pages: OcrMenuImportResult['pages'] = []
 
   try {
     options.onProgress?.({
       stage: 'rendering',
-      message: 'Przygotowujemy strony PDF do rozpoznania tekstu.',
+      message: 'Sprawdzamy liczbę stron w PDF-ie.',
     })
-    screenshots = await withTimeout(
-      parser.getScreenshot({
-        desiredWidth: 1100,
-        imageDataUrl: false,
-        imageBuffer: true,
+    const info = await withTimeout(
+      parser.getInfo(),
+      30 * 1000,
+      'Nie udało się odczytać informacji o PDF-ie. Plik może być uszkodzony.',
+    )
+    totalPages = info.total
+
+    if (totalPages > 40) {
+      throw new Error('Ten PDF ma zbyt dużo stron do OCR. Podziel menu na mniejsze pliki.')
+    }
+
+    options.onProgress?.({
+      stage: 'initializing',
+      message: 'Uruchamiamy OCR dla języka polskiego i angielskiego.',
+      totalPages,
+    })
+
+    const worker = await withTimeout(
+      createWorker('pol+eng', 1, {
+        cachePath: path.join(os.tmpdir(), 'spoko-tesseract'),
       }),
       2 * 60 * 1000,
-      'Nie udało się przygotować stron PDF do OCR. Plik może być zbyt ciężki albo uszkodzony.',
+      'Nie udało się uruchomić OCR. Spróbuj ponownie za chwilę.',
     )
+
+    try {
+      for (let pageNumber = 1; pageNumber <= totalPages; pageNumber += 1) {
+        assertWithinTimeLimit()
+        options.onProgress?.({
+          stage: 'rendering',
+          message: `Przygotowujemy stronę ${pageNumber} z ${totalPages}.`,
+          currentPage: pageNumber,
+          totalPages,
+        })
+        const screenshot = await withTimeout(
+          parser.getScreenshot({
+            partial: [pageNumber],
+            desiredWidth: 900,
+            imageDataUrl: false,
+            imageBuffer: true,
+          }),
+          pageTimeoutMs,
+          `Nie udało się przygotować strony ${pageNumber} do OCR. Plik może mieć zbyt ciężką grafikę.`,
+        )
+        const page = screenshot.pages[0]
+        if (!page) continue
+
+        assertWithinTimeLimit()
+        options.onProgress?.({
+          stage: 'recognizing',
+          message: `Rozpoznajemy stronę ${pageNumber} z ${totalPages}.`,
+          currentPage: pageNumber,
+          totalPages,
+        })
+        const result = await withTimeout(
+          worker.recognize(Buffer.from(page.data)),
+          pageTimeoutMs,
+          `OCR zatrzymał się na stronie ${pageNumber}. Wgraj lżejszy PDF albo podziel plik na mniejsze części.`,
+        )
+        pages.push({
+          pageNumber,
+          text: result.data.text,
+        })
+      }
+    } finally {
+      await worker.terminate()
+    }
   } finally {
     await parser.destroy()
   }
 
-  if (screenshots.pages.length > 40) {
-    throw new Error('Ten PDF ma zbyt dużo stron do OCR. Podziel menu na mniejsze pliki.')
-  }
-
-  options.onProgress?.({
-    stage: 'initializing',
-    message: 'Uruchamiamy OCR dla języka polskiego i angielskiego.',
-    totalPages: screenshots.pages.length,
-  })
-
-  const worker = await withTimeout(
-    createWorker('pol+eng', 1, {
-      cachePath: path.join(os.tmpdir(), 'spoko-tesseract'),
-    }),
-    2 * 60 * 1000,
-    'Nie udało się uruchomić OCR. Spróbuj ponownie za chwilę.',
-  )
-  const pages: OcrMenuImportResult['pages'] = []
-
-  try {
-    for (const page of screenshots.pages) {
-      assertWithinTimeLimit()
-      options.onProgress?.({
-        stage: 'recognizing',
-        message: `Rozpoznajemy stronę ${page.pageNumber} z ${screenshots.pages.length}.`,
-        currentPage: page.pageNumber,
-        totalPages: screenshots.pages.length,
-      })
-      const result = await withTimeout(
-        worker.recognize(Buffer.from(page.data)),
-        pageTimeoutMs,
-        `OCR zatrzymał się na stronie ${page.pageNumber}. Wgraj lżejszy PDF albo podziel plik na mniejsze części.`,
-      )
-      pages.push({
-        pageNumber: page.pageNumber,
-        text: result.data.text,
-      })
-    }
-  } finally {
-    await worker.terminate()
+  if (pages.length === 0) {
+    throw new Error('OCR nie zwrócił żadnego tekstu z PDF-a. Spróbuj wgrać plik w lepszej jakości.')
   }
 
   options.onProgress?.({
     stage: 'parsing',
     message: 'Układamy rozpoznany tekst w pozycje menu.',
-    totalPages: screenshots.pages.length,
+    totalPages,
   })
   const text = pages.map((page) => page.text).join('\n')
   const textItems = parseItemsFromMenuDocumentText(text)
