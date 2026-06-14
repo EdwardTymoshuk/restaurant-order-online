@@ -28,6 +28,9 @@ const SCRIPT_BY_TYPE: Record<Exclude<ImportDocumentType, 'full' | 'other'>, stri
   drinks: 'import-spoko-drinks-from-pdf.js',
 }
 
+const pdfParseWorkerPath = path.join(process.cwd(), 'node_modules/pdf-parse/dist/pdf-parse/cjs/pdf.worker.mjs')
+PDFParse.setWorker(pdfParseWorkerPath)
+
 const CATEGORY_ALIASES: Record<string, string> = {
   'alkohole spirits mocne': 'Napoje alkoholowe',
   'mocne': 'Napoje alkoholowe',
