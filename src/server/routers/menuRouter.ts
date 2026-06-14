@@ -8,6 +8,7 @@ import {
   ParsedMenuImportItem,
 } from '@/server/services/menuDocumentImport'
 import type { MenuDownloadDocument } from '@/app/types/types'
+import { randomUUID } from 'crypto'
 import { z } from 'zod'
 import { publicProcedure, router } from '../trpc'
 
@@ -41,6 +42,41 @@ const reviewedImportItemInput = z.object({
 const reviewedImportInput = importDocumentInput.extend({
   items: z.array(reviewedImportItemInput).default([]),
 })
+
+type MenuOcrJob =
+  | {
+      status: 'processing'
+      message: string
+      createdAt: number
+    }
+  | {
+      status: 'completed'
+      message: string
+      createdAt: number
+      result: Awaited<ReturnType<typeof buildMenuImportPreviewFromItems>> & {
+        documentUrl: string
+        ocrText: string
+        ocrPages: Array<{ pageNumber: number; text: string }>
+        items: ParsedMenuImportItem[]
+      }
+    }
+  | {
+      status: 'failed'
+      message: string
+      createdAt: number
+    }
+
+const menuOcrJobs = new Map<string, MenuOcrJob>()
+
+const cleanupMenuOcrJobs = () => {
+  const now = Date.now()
+  const maxAgeMs = 30 * 60 * 1000
+  for (const [jobId, job] of menuOcrJobs) {
+    if (now - job.createdAt > maxAgeMs) {
+      menuOcrJobs.delete(jobId)
+    }
+  }
+}
 
 const normalizeReviewedItems = (items: z.infer<typeof reviewedImportItemInput>[]): ParsedMenuImportItem[] =>
   items
@@ -535,6 +571,73 @@ export const menuRouter = router({
         ocrPages: result.pages,
         items: result.items,
       }
+    }),
+
+  startMenuDocumentOcr: publicProcedure
+    .input(importDocumentInput)
+    .mutation(async ({ input }) => {
+      cleanupMenuOcrJobs()
+
+      const document = await resolveImportDocument(input)
+      if (!document.documentUrl) {
+        throw new Error('OCR działa tylko dla wgranego pliku PDF.')
+      }
+
+      const jobId = randomUUID()
+      menuOcrJobs.set(jobId, {
+        status: 'processing',
+        message: 'Rozpoznajemy tekst z PDF-a. To może potrwać kilka minut przy dużych plikach.',
+        createdAt: Date.now(),
+      })
+
+      void (async () => {
+        try {
+          const result = await parseMenuDocumentWithOcr(document.documentUrl!)
+          const preview = await buildMenuImportPreviewFromItems(document.type, result.items, document.documentId)
+
+          menuOcrJobs.set(jobId, {
+            status: 'completed',
+            message: `OCR rozpoznał ${result.items.length} pozycji. Sprawdź je przed zapisem.`,
+            createdAt: Date.now(),
+            result: {
+              ...preview,
+              documentUrl: document.documentUrl!,
+              ocrText: result.text,
+              ocrPages: result.pages,
+              items: result.items,
+            },
+          })
+        } catch (error) {
+          console.error(error)
+          menuOcrJobs.set(jobId, {
+            status: 'failed',
+            message: error instanceof Error ? error.message : 'Nie udało się wykonać OCR pliku PDF.',
+            createdAt: Date.now(),
+          })
+        }
+      })()
+
+      return {
+        jobId,
+        status: 'processing' as const,
+        message: 'OCR został uruchomiony. Możesz poczekać na wynik w tym oknie.',
+      }
+    }),
+
+  getMenuDocumentOcrJob: publicProcedure
+    .input(z.object({ jobId: z.string().uuid() }))
+    .query(({ input }) => {
+      cleanupMenuOcrJobs()
+
+      const job = menuOcrJobs.get(input.jobId)
+      if (!job) {
+        return {
+          status: 'failed' as const,
+          message: 'Nie znaleziono zadania OCR. Uruchom rozpoznawanie ponownie.',
+        }
+      }
+
+      return job
     }),
 
   previewReviewedMenuImport: publicProcedure

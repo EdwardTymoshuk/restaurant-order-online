@@ -105,6 +105,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
   const [expandedDocumentId, setExpandedDocumentId] = useState<string | null>(null)
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null)
   const [ocrReview, setOcrReview] = useState<OcrReview | null>(null)
+  const [ocrJobId, setOcrJobId] = useState<string | null>(null)
   const [selectedArchiveIds, setSelectedArchiveIds] = useState<string[]>([])
   const [editDraft, setEditDraft] = useState<{ title: string; type: MenuDocumentType }>({
     title: '',
@@ -117,7 +118,14 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
   const saveMenuDocuments = trpc.settings.updateMenuDocuments.useMutation()
   const previewMenuDocumentImport = trpc.menu.previewMenuDocumentImport.useMutation()
   const importMenuFromDocument = trpc.menu.importMenuFromDocument.useMutation()
-  const recognizeMenuDocumentWithOcr = trpc.menu.recognizeMenuDocumentWithOcr.useMutation()
+  const startMenuDocumentOcr = trpc.menu.startMenuDocumentOcr.useMutation()
+  const ocrJobQuery = trpc.menu.getMenuDocumentOcrJob.useQuery(
+    { jobId: ocrJobId ?? '00000000-0000-0000-0000-000000000000' },
+    {
+      enabled: Boolean(ocrJobId),
+      refetchInterval: ocrJobId ? 2500 : false,
+    }
+  )
   const previewReviewedMenuImport = trpc.menu.previewReviewedMenuImport.useMutation()
   const importReviewedMenuItems = trpc.menu.importReviewedMenuItems.useMutation()
 
@@ -128,6 +136,34 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
         .map((doc, index) => ({ ...doc, sortOrder: index }))
     )
   }, [menuDocuments])
+
+  useEffect(() => {
+    const job = ocrJobQuery.data
+    if (!job || !ocrJobId) return
+
+    if (job.status === 'completed') {
+      setOcrReview({
+        ...job.result,
+        items: job.result.items.map((item, index) => ({
+          rowId: `${Date.now()}-${index}`,
+          category: item.category,
+          name: item.name,
+          price: item.price,
+          description: item.description ?? '',
+        })),
+      })
+      setSelectedArchiveIds(job.result.missing.map((item) => item.id))
+      setImportingId(null)
+      setOcrJobId(null)
+      toast.success(job.message)
+    }
+
+    if (job.status === 'failed') {
+      setImportingId(null)
+      setOcrJobId(null)
+      toast.error(job.message)
+    }
+  }, [ocrJobId, ocrJobQuery.data])
 
   const normalizedDocuments = useMemo(
     () => documents.map((doc, index) => ({ ...doc, sortOrder: index })),
@@ -337,24 +373,15 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
     }
 
     setImportingId(`ocr-${doc.id}`)
+    setOcrReview(null)
+    setOcrJobId(null)
     try {
-      const result = await recognizeMenuDocumentWithOcr.mutateAsync({ type: doc.type, documentId: doc.id })
-      setOcrReview({
-        ...result,
-        items: result.items.map((item, index) => ({
-          rowId: `${Date.now()}-${index}`,
-          category: item.category,
-          name: item.name,
-          price: item.price,
-          description: item.description ?? '',
-        })),
-      })
-      setSelectedArchiveIds(result.missing.map((item) => item.id))
-      toast.success(`OCR rozpoznał ${result.items.length} pozycji. Sprawdź je przed zapisem.`)
+      const job = await startMenuDocumentOcr.mutateAsync({ type: doc.type, documentId: doc.id })
+      setOcrJobId(job.jobId)
+      toast.info(job.message)
     } catch (error) {
       console.error(error)
       toast.error(getErrorMessage(error, 'Nie udało się wykonać OCR pliku PDF.'))
-    } finally {
       setImportingId(null)
     }
   }
