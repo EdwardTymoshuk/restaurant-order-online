@@ -1,9 +1,11 @@
+import { execFile } from 'child_process'
+import { randomUUID } from 'crypto'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
+import { promisify } from 'util'
 import vm from 'vm'
 import { PDFParse } from 'pdf-parse'
-import { createWorker } from 'tesseract.js'
 
 export type ImportDocumentType = 'menu' | 'drinks' | 'full' | 'other'
 
@@ -24,7 +26,7 @@ export type OcrMenuImportResult = {
 }
 
 type OcrProgress = {
-  stage: 'rendering' | 'initializing' | 'recognizing' | 'parsing'
+  stage: 'rendering' | 'recognizing' | 'parsing'
   message: string
   currentPage?: number
   totalPages?: number
@@ -41,22 +43,10 @@ const SCRIPT_BY_TYPE: Record<Exclude<ImportDocumentType, 'full' | 'other'>, stri
   drinks: 'import-spoko-drinks-from-pdf.js',
 }
 
+const execFileAsync = promisify(execFile)
+
 const pdfParseWorkerPath = path.join(process.cwd(), 'node_modules/pdf-parse/dist/pdf-parse/cjs/pdf.worker.mjs')
 PDFParse.setWorker(pdfParseWorkerPath)
-
-const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> => {
-  let timeout: ReturnType<typeof setTimeout> | undefined
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<never>((_, reject) => {
-        timeout = setTimeout(() => reject(new Error(message)), timeoutMs)
-      }),
-    ])
-  } finally {
-    if (timeout) clearTimeout(timeout)
-  }
-}
 
 const CATEGORY_ALIASES: Record<string, string> = {
   'alkohole spirits mocne': 'Napoje alkoholowe',
@@ -383,6 +373,95 @@ export const parseMenuDocumentForImport = async (
   return parsedItems
 }
 
+const getToolErrorMessage = (tool: string) =>
+  `Na serwerze brakuje narzędzia ${tool}, które jest wymagane do OCR. Zainstaluj poppler-utils oraz tesseract-ocr z językami polskim i angielskim.`
+
+const runTool = async (
+  command: string,
+  args: string[],
+  timeoutMs: number,
+  errorMessage: string,
+  maxBuffer = 10 * 1024 * 1024,
+) => {
+  try {
+    return await execFileAsync(command, args, {
+      timeout: timeoutMs,
+      maxBuffer,
+    })
+  } catch (error) {
+    const typedError = error as NodeJS.ErrnoException & { stderr?: string; signal?: string }
+    if (typedError.code === 'ENOENT') {
+      throw new Error(getToolErrorMessage(command))
+    }
+    if (typedError.signal === 'SIGTERM' || typedError.code === 'ETIMEDOUT') {
+      throw new Error(errorMessage)
+    }
+    const details = typedError.stderr?.trim()
+    throw new Error(details ? `${errorMessage} (${details})` : errorMessage)
+  }
+}
+
+const downloadPdfToFile = async (documentUrl: string, tmpDir: string, timeoutMs: number) => {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const response = await fetch(documentUrl, { signal: controller.signal })
+    if (!response.ok) {
+      throw new Error(`Nie udało się pobrać PDF-a do OCR. Serwer zwrócił status ${response.status}.`)
+    }
+
+    const pdfPath = path.join(tmpDir, 'menu.pdf')
+    await fs.promises.writeFile(pdfPath, Buffer.from(await response.arrayBuffer()))
+    return pdfPath
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+const getPdfPageCount = async (pdfPath: string) => {
+  const { stdout } = await runTool(
+    'pdfinfo',
+    [pdfPath],
+    30 * 1000,
+    'Nie udało się odczytać liczby stron PDF-a. Plik może być uszkodzony.',
+    1024 * 1024,
+  )
+  const match = stdout.match(/^Pages:\s+(\d+)/m)
+  if (!match) {
+    throw new Error('Nie udało się odczytać liczby stron PDF-a. Plik może być uszkodzony.')
+  }
+  return Number(match[1])
+}
+
+const renderPdfPage = async (pdfPath: string, tmpDir: string, pageNumber: number, timeoutMs: number) => {
+  const prefix = path.join(tmpDir, `page-${pageNumber}`)
+  await runTool(
+    'pdftoppm',
+    ['-f', String(pageNumber), '-l', String(pageNumber), '-r', '180', '-png', pdfPath, prefix],
+    timeoutMs,
+    `Nie udało się przygotować strony ${pageNumber} do OCR. Plik może mieć zbyt ciężką grafikę.`,
+    1024 * 1024,
+  )
+
+  const files = await fs.promises.readdir(tmpDir)
+  const imageFile = files.find((file) => file.startsWith(`page-${pageNumber}-`) && file.endsWith('.png'))
+  if (!imageFile) {
+    throw new Error(`Nie udało się przygotować strony ${pageNumber} do OCR. Spróbuj wgrać lżejszy PDF.`)
+  }
+  return path.join(tmpDir, imageFile)
+}
+
+const recognizeImage = async (imagePath: string, pageNumber: number, timeoutMs: number) => {
+  const { stdout } = await runTool(
+    'tesseract',
+    [imagePath, 'stdout', '-l', 'pol+eng', '--psm', '6', '--oem', '1'],
+    timeoutMs,
+    `OCR zatrzymał się na stronie ${pageNumber}. Wgraj lżejszy PDF albo podziel plik na mniejsze części.`,
+    20 * 1024 * 1024,
+  )
+  return stdout
+}
+
 export const parseMenuDocumentWithOcr = async (
   documentUrl: string,
   options: OcrOptions = {},
@@ -396,85 +475,52 @@ export const parseMenuDocumentWithOcr = async (
     }
   }
 
-  const parser = new PDFParse({ url: documentUrl })
-  let totalPages = 0
-
+  const tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), `spoko-menu-ocr-${randomUUID()}-`))
   const pages: OcrMenuImportResult['pages'] = []
+  let totalPages = 0
 
   try {
     options.onProgress?.({
       stage: 'rendering',
+      message: 'Pobieramy PDF do OCR.',
+    })
+    const pdfPath = await downloadPdfToFile(documentUrl, tmpDir, 45 * 1000)
+
+    options.onProgress?.({
+      stage: 'rendering',
       message: 'Sprawdzamy liczbę stron w PDF-ie.',
     })
-    const info = await withTimeout(
-      parser.getInfo(),
-      30 * 1000,
-      'Nie udało się odczytać informacji o PDF-ie. Plik może być uszkodzony.',
-    )
-    totalPages = info.total
+    totalPages = await getPdfPageCount(pdfPath)
 
     if (totalPages > 40) {
       throw new Error('Ten PDF ma zbyt dużo stron do OCR. Podziel menu na mniejsze pliki.')
     }
 
-    options.onProgress?.({
-      stage: 'initializing',
-      message: 'Uruchamiamy OCR dla języka polskiego i angielskiego.',
-      totalPages,
-    })
+    for (let pageNumber = 1; pageNumber <= totalPages; pageNumber += 1) {
+      assertWithinTimeLimit()
+      options.onProgress?.({
+        stage: 'rendering',
+        message: `Przygotowujemy stronę ${pageNumber} z ${totalPages}.`,
+        currentPage: pageNumber,
+        totalPages,
+      })
+      const imagePath = await renderPdfPage(pdfPath, tmpDir, pageNumber, pageTimeoutMs)
 
-    const worker = await withTimeout(
-      createWorker('pol+eng', 1, {
-        cachePath: path.join(os.tmpdir(), 'spoko-tesseract'),
-      }),
-      2 * 60 * 1000,
-      'Nie udało się uruchomić OCR. Spróbuj ponownie za chwilę.',
-    )
-
-    try {
-      for (let pageNumber = 1; pageNumber <= totalPages; pageNumber += 1) {
-        assertWithinTimeLimit()
-        options.onProgress?.({
-          stage: 'rendering',
-          message: `Przygotowujemy stronę ${pageNumber} z ${totalPages}.`,
-          currentPage: pageNumber,
-          totalPages,
-        })
-        const screenshot = await withTimeout(
-          parser.getScreenshot({
-            partial: [pageNumber],
-            desiredWidth: 900,
-            imageDataUrl: false,
-            imageBuffer: true,
-          }),
-          pageTimeoutMs,
-          `Nie udało się przygotować strony ${pageNumber} do OCR. Plik może mieć zbyt ciężką grafikę.`,
-        )
-        const page = screenshot.pages[0]
-        if (!page) continue
-
-        assertWithinTimeLimit()
-        options.onProgress?.({
-          stage: 'recognizing',
-          message: `Rozpoznajemy stronę ${pageNumber} z ${totalPages}.`,
-          currentPage: pageNumber,
-          totalPages,
-        })
-        const result = await withTimeout(
-          worker.recognize(Buffer.from(page.data)),
-          pageTimeoutMs,
-          `OCR zatrzymał się na stronie ${pageNumber}. Wgraj lżejszy PDF albo podziel plik na mniejsze części.`,
-        )
-        pages.push({
-          pageNumber,
-          text: result.data.text,
-        })
-      }
-    } finally {
-      await worker.terminate()
+      assertWithinTimeLimit()
+      options.onProgress?.({
+        stage: 'recognizing',
+        message: `Rozpoznajemy stronę ${pageNumber} z ${totalPages}.`,
+        currentPage: pageNumber,
+        totalPages,
+      })
+      const text = await recognizeImage(imagePath, pageNumber, pageTimeoutMs)
+      pages.push({
+        pageNumber,
+        text,
+      })
     }
   } finally {
-    await parser.destroy()
+    await fs.promises.rm(tmpDir, { recursive: true, force: true })
   }
 
   if (pages.length === 0) {
