@@ -13,11 +13,12 @@ import { Input } from '@/app/components/ui/input'
 import { Label } from '@/app/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select'
 import { Switch } from '@/app/components/ui/switch'
+import { Textarea } from '@/app/components/ui/textarea'
 import { MenuDownloadDocument } from '@/app/types/types'
 import { sanitizeImageFilename } from '@/utils/sanitizeImageFilename'
 import { cn } from '@/utils/utils'
 import { trpc } from '@/utils/trpc'
-import { ArrowDown, ArrowUp, FileDown, FileInput, FileText, Loader2, Pencil, Save, Trash2, Upload, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, FileDown, FileInput, FileText, Loader2, Pencil, Plus, Save, ScanText, Trash2, Upload, X } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -35,11 +36,26 @@ type ImportPreviewItem = {
 
 type ImportPreview = {
   type: MenuDocumentType
+  documentId?: string
   total: number
   created: ImportPreviewItem[]
   updated: ImportPreviewItem[]
   unchanged: ImportPreviewItem[]
   missing: Required<Pick<ImportPreviewItem, 'id' | 'category' | 'name' | 'price'>>[]
+}
+
+type OcrReviewItem = {
+  rowId: string
+  category: string
+  name: string
+  price: number
+  description: string
+}
+
+type OcrReview = ImportPreview & {
+  documentUrl: string
+  ocrText: string
+  items: OcrReviewItem[]
 }
 
 const DOCUMENT_TYPE_OPTIONS: Array<{ value: MenuDocumentType; label: string }> = [
@@ -72,6 +88,9 @@ const getDefaultTitle = (fileName: string) =>
 const MAX_MENU_PDF_SIZE_MB = 50
 const MAX_MENU_PDF_SIZE_BYTES = MAX_MENU_PDF_SIZE_MB * 1024 * 1024
 
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error && error.message ? error.message : fallback
+
 const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocument[] }) => {
   const [documents, setDocuments] = useState<MenuDownloadDocument[]>(
     [...menuDocuments]
@@ -85,6 +104,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
   const [pendingReplaceId, setPendingReplaceId] = useState<string | null>(null)
   const [expandedDocumentId, setExpandedDocumentId] = useState<string | null>(null)
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null)
+  const [ocrReview, setOcrReview] = useState<OcrReview | null>(null)
   const [selectedArchiveIds, setSelectedArchiveIds] = useState<string[]>([])
   const [editDraft, setEditDraft] = useState<{ title: string; type: MenuDocumentType }>({
     title: '',
@@ -97,6 +117,9 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
   const saveMenuDocuments = trpc.settings.updateMenuDocuments.useMutation()
   const previewMenuDocumentImport = trpc.menu.previewMenuDocumentImport.useMutation()
   const importMenuFromDocument = trpc.menu.importMenuFromDocument.useMutation()
+  const recognizeMenuDocumentWithOcr = trpc.menu.recognizeMenuDocumentWithOcr.useMutation()
+  const previewReviewedMenuImport = trpc.menu.previewReviewedMenuImport.useMutation()
+  const importReviewedMenuItems = trpc.menu.importReviewedMenuItems.useMutation()
 
   useEffect(() => {
     setDocuments(
@@ -296,12 +319,111 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
 
     setImportingId(doc.id)
     try {
-      const preview = await previewMenuDocumentImport.mutateAsync({ type: doc.type })
+      const preview = await previewMenuDocumentImport.mutateAsync({ type: doc.type, documentId: doc.id })
       setImportPreview(preview)
       setSelectedArchiveIds(preview.missing.map((item) => item.id))
     } catch (error) {
       console.error(error)
-      toast.error('Nie udało się przygotować podsumowania importu.')
+      toast.error(getErrorMessage(error, 'Nie udało się przygotować podsumowania importu.'))
+    } finally {
+      setImportingId(null)
+    }
+  }
+
+  const startOcrReview = async (doc: MenuDownloadDocument) => {
+    if (doc.type === 'other') {
+      toast.error('OCR pozycji działa tylko dla dokumentów typu Menu, Napoje albo Pełna karta.')
+      return
+    }
+
+    setImportingId(`ocr-${doc.id}`)
+    try {
+      const result = await recognizeMenuDocumentWithOcr.mutateAsync({ type: doc.type, documentId: doc.id })
+      setOcrReview({
+        ...result,
+        items: result.items.map((item, index) => ({
+          rowId: `${Date.now()}-${index}`,
+          category: item.category,
+          name: item.name,
+          price: item.price,
+          description: item.description ?? '',
+        })),
+      })
+      setSelectedArchiveIds(result.missing.map((item) => item.id))
+      toast.success(`OCR rozpoznał ${result.items.length} pozycji. Sprawdź je przed zapisem.`)
+    } catch (error) {
+      console.error(error)
+      toast.error(getErrorMessage(error, 'Nie udało się wykonać OCR pliku PDF.'))
+    } finally {
+      setImportingId(null)
+    }
+  }
+
+  const updateOcrItem = (rowId: string, patch: Partial<OcrReviewItem>) => {
+    setOcrReview((current) => {
+      if (!current) return current
+      return {
+        ...current,
+        items: current.items.map((item) => (item.rowId === rowId ? { ...item, ...patch } : item)),
+      }
+    })
+  }
+
+  const addOcrItem = () => {
+    setOcrReview((current) => {
+      if (!current) return current
+      return {
+        ...current,
+        items: [
+          ...current.items,
+          {
+            rowId: crypto.randomUUID(),
+            category: current.type === 'drinks' ? 'Napoje zimne' : 'Dania główne',
+            name: '',
+            price: 0,
+            description: '',
+          },
+        ],
+      }
+    })
+  }
+
+  const removeOcrItem = (rowId: string) => {
+    setOcrReview((current) => {
+      if (!current) return current
+      return {
+        ...current,
+        items: current.items.filter((item) => item.rowId !== rowId),
+      }
+    })
+  }
+
+  const getReviewedItemsForApi = (review: OcrReview) =>
+    review.items
+      .map((item) => ({
+        category: item.category.trim(),
+        name: item.name.trim(),
+        price: Number(item.price),
+        description: item.description.trim() || null,
+      }))
+      .filter((item) => item.category && item.name && Number.isFinite(item.price))
+
+  const refreshOcrPreview = async () => {
+    if (!ocrReview) return
+
+    setImportingId('ocr-preview')
+    try {
+      const preview = await previewReviewedMenuImport.mutateAsync({
+        type: ocrReview.type,
+        documentId: ocrReview.documentId,
+        items: getReviewedItemsForApi(ocrReview),
+      })
+      setOcrReview((current) => (current ? { ...current, ...preview } : current))
+      setSelectedArchiveIds(preview.missing.map((item) => item.id))
+      toast.success('Podsumowanie zostało odświeżone.')
+    } catch (error) {
+      console.error(error)
+      toast.error(getErrorMessage(error, 'Nie udało się odświeżyć podsumowania.'))
     } finally {
       setImportingId(null)
     }
@@ -314,6 +436,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
     try {
       const result = await importMenuFromDocument.mutateAsync({
         type: importPreview.type,
+        documentId: importPreview.documentId,
         archiveMissingIds: selectedArchiveIds,
       })
       await queryClient.invalidateQueries(['menu.getAllMenuItems'])
@@ -326,7 +449,40 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
       setSelectedArchiveIds([])
     } catch (error) {
       console.error(error)
-      toast.error('Nie udało się zapisać importu.')
+      toast.error(getErrorMessage(error, 'Nie udało się zapisać importu.'))
+    } finally {
+      setImportingId(null)
+    }
+  }
+
+  const confirmOcrImport = async () => {
+    if (!ocrReview) return
+
+    const items = getReviewedItemsForApi(ocrReview)
+    if (items.length === 0) {
+      toast.error('Dodaj przynajmniej jedną poprawną pozycję przed zapisem.')
+      return
+    }
+
+    setImportingId('ocr-confirm')
+    try {
+      const result = await importReviewedMenuItems.mutateAsync({
+        type: ocrReview.type,
+        documentId: ocrReview.documentId,
+        items,
+        archiveMissingIds: selectedArchiveIds,
+      })
+      await queryClient.invalidateQueries(['menu.getAllMenuItems'])
+      await queryClient.invalidateQueries(['menu.getMenuItems'])
+
+      toast.success(
+        `Wczytano ${result.total} pozycji: ${result.created} dodano, ${result.updated} zaktualizowano, ${result.archived} zarchiwizowano.`
+      )
+      setOcrReview(null)
+      setSelectedArchiveIds([])
+    } catch (error) {
+      console.error(error)
+      toast.error(getErrorMessage(error, 'Nie udało się zapisać importu OCR.'))
     } finally {
       setImportingId(null)
     }
@@ -465,20 +621,36 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
                       </Button>
                     )}
                     {doc.url && doc.type !== 'other' && (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="gap-2"
-                        onClick={() => void previewDocumentImport(doc)}
-                        disabled={isUploading || saving || importingId === doc.id}
-                      >
-                        {importingId === doc.id ? (
-                          <Loader2 size={14} className="animate-spin" />
-                        ) : (
-                          <FileInput size={14} />
-                        )}
-                        {importingId === doc.id ? 'Sprawdzanie...' : 'Wczytaj'}
-                      </Button>
+                      <>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="gap-2"
+                          onClick={() => void previewDocumentImport(doc)}
+                          disabled={isUploading || saving || importingId === doc.id || importingId === `ocr-${doc.id}`}
+                        >
+                          {importingId === doc.id ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <FileInput size={14} />
+                          )}
+                          {importingId === doc.id ? 'Sprawdzanie...' : 'Wczytaj tekst'}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="gap-2"
+                          onClick={() => void startOcrReview(doc)}
+                          disabled={isUploading || saving || importingId === doc.id || importingId === `ocr-${doc.id}`}
+                        >
+                          {importingId === `ocr-${doc.id}` ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <ScanText size={14} />
+                          )}
+                          {importingId === `ocr-${doc.id}` ? 'OCR...' : 'OCR i korekta'}
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -706,6 +878,241 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
                   >
                     {importingId === 'confirm' && <Loader2 size={14} className="animate-spin" />}
                     Zapisz import
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={ocrReview !== null}
+        onOpenChange={(open) => {
+          if (open || importingId === 'ocr-confirm') return
+          setOcrReview(null)
+          setSelectedArchiveIds([])
+        }}
+      >
+        <DialogContent className="max-h-[92vh] max-w-7xl overflow-hidden rounded-2xl p-0">
+          <DialogHeader className="border-b border-border px-5 py-4">
+            <DialogTitle className="font-serif text-xl text-dark-gray">OCR menu i korekta</DialogTitle>
+            <DialogDescription>
+              Sprawdź rozpoznane pozycje po lewej i porównaj je z PDF-em po prawej. Zapis uruchomi się dopiero po Twojej akceptacji.
+            </DialogDescription>
+          </DialogHeader>
+
+          {ocrReview && (
+            <div className="flex max-h-[calc(92vh-92px)] flex-col">
+              <div className="grid gap-2 border-b border-border bg-muted/30 p-4 sm:grid-cols-5">
+                <div className="rounded-xl bg-white px-3 py-2">
+                  <p className="text-xs text-muted-foreground">Rozpoznane</p>
+                  <p className="text-lg font-semibold text-slate-950">{ocrReview.items.length}</p>
+                </div>
+                <div className="rounded-xl bg-white px-3 py-2">
+                  <p className="text-xs text-muted-foreground">Nowe</p>
+                  <p className="text-lg font-semibold text-slate-950">{ocrReview.created.length}</p>
+                </div>
+                <div className="rounded-xl bg-white px-3 py-2">
+                  <p className="text-xs text-muted-foreground">Aktualizowane</p>
+                  <p className="text-lg font-semibold text-slate-950">{ocrReview.updated.length}</p>
+                </div>
+                <div className="rounded-xl bg-white px-3 py-2">
+                  <p className="text-xs text-muted-foreground">Bez zmian</p>
+                  <p className="text-lg font-semibold text-slate-950">{ocrReview.unchanged.length}</p>
+                </div>
+                <div className="rounded-xl bg-white px-3 py-2">
+                  <p className="text-xs text-muted-foreground">Poza PDF-em</p>
+                  <p className="text-lg font-semibold text-slate-950">{ocrReview.missing.length}</p>
+                </div>
+              </div>
+
+              <div className="grid min-h-0 flex-1 gap-0 overflow-hidden lg:grid-cols-[minmax(0,1.2fr)_minmax(420px,0.8fr)]">
+                <div className="min-h-0 overflow-y-auto p-4">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-950">Pozycje do importu</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Popraw kategorię, nazwę, opis i cenę przed zapisaniem.
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={addOcrItem}
+                        disabled={importingId === 'ocr-confirm' || importingId === 'ocr-preview'}
+                      >
+                        <Plus size={14} />
+                        Dodaj pozycję
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => void refreshOcrPreview()}
+                        disabled={importingId === 'ocr-confirm' || importingId === 'ocr-preview'}
+                      >
+                        {importingId === 'ocr-preview' ? <Loader2 size={14} className="animate-spin" /> : <ScanText size={14} />}
+                        Przelicz zmiany
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {ocrReview.items.length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-border bg-white px-4 py-8 text-sm text-muted-foreground">
+                        OCR nie rozpoznał pozycji automatycznie. Możesz dodać je ręcznie i porównać z PDF-em po prawej.
+                      </div>
+                    ) : (
+                      ocrReview.items.map((item, index) => (
+                        <div key={item.rowId} className="rounded-xl border border-border bg-white p-3 shadow-sm">
+                          <div className="mb-3 flex items-center justify-between gap-3">
+                            <span className="text-xs font-semibold text-muted-foreground">Pozycja {index + 1}</span>
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-danger hover:text-danger"
+                              onClick={() => removeOcrItem(item.rowId)}
+                              disabled={importingId === 'ocr-confirm'}
+                              aria-label="Usuń pozycję"
+                            >
+                              <Trash2 size={15} />
+                            </Button>
+                          </div>
+                          <div className="grid gap-3 md:grid-cols-[1fr_1.2fr_96px]">
+                            <div className="space-y-1.5">
+                              <Label>Kategoria</Label>
+                              <Input
+                                value={item.category}
+                                onChange={(event) => updateOcrItem(item.rowId, { category: event.target.value })}
+                                disabled={importingId === 'ocr-confirm'}
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label>Nazwa</Label>
+                              <Input
+                                value={item.name}
+                                onChange={(event) => updateOcrItem(item.rowId, { name: event.target.value })}
+                                disabled={importingId === 'ocr-confirm'}
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label>Cena</Label>
+                              <Input
+                                type="number"
+                                value={item.price}
+                                onChange={(event) => updateOcrItem(item.rowId, { price: Number(event.target.value) })}
+                                disabled={importingId === 'ocr-confirm'}
+                              />
+                            </div>
+                            <div className="space-y-1.5 md:col-span-3">
+                              <Label>Opis</Label>
+                              <Textarea
+                                value={item.description}
+                                onChange={(event) => updateOcrItem(item.rowId, { description: event.target.value })}
+                                disabled={importingId === 'ocr-confirm'}
+                                rows={2}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="mt-4 rounded-xl border border-border bg-white">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-950">Pozycje bez odpowiednika w OCR</h3>
+                        <p className="text-xs text-muted-foreground">Zaznaczone pozycje zostaną ukryte przy zapisie.</p>
+                      </div>
+                      {ocrReview.missing.length > 0 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setSelectedArchiveIds((current) =>
+                              current.length === ocrReview.missing.length
+                                ? []
+                                : ocrReview.missing.map((item) => item.id)
+                            )
+                          }
+                          disabled={importingId === 'ocr-confirm'}
+                        >
+                          {selectedArchiveIds.length === ocrReview.missing.length ? 'Odznacz wszystkie' : 'Zaznacz wszystkie'}
+                        </Button>
+                      )}
+                    </div>
+
+                    {ocrReview.missing.length === 0 ? (
+                      <p className="px-3 py-5 text-sm text-muted-foreground">Nie ma pozycji do archiwizacji.</p>
+                    ) : (
+                      <div className="max-h-52 divide-y divide-border overflow-y-auto">
+                        {ocrReview.missing.map((item) => (
+                          <label
+                            key={item.id}
+                            className="flex cursor-pointer items-center gap-3 px-3 py-2 text-sm hover:bg-muted/30"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedArchiveIds.includes(item.id)}
+                              onChange={() => toggleArchiveSelection(item.id)}
+                              disabled={importingId === 'ocr-confirm'}
+                              className="h-4 w-4 rounded border-border accent-primary"
+                            />
+                            <span className="min-w-0 flex-1 truncate text-slate-900">{item.name}</span>
+                            <span className="shrink-0 text-xs text-muted-foreground">{item.category}</span>
+                            <span className="shrink-0 text-sm tabular-nums text-slate-700">{item.price} zł</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <aside className="hidden min-h-0 border-l border-border bg-muted/30 p-4 lg:block">
+                  <div className="mb-3">
+                    <h3 className="text-sm font-semibold text-slate-950">Podgląd PDF</h3>
+                    <p className="text-xs text-muted-foreground">Porównaj rozpoznane dane z oryginalnym plikiem.</p>
+                  </div>
+                  <iframe
+                    title="Podgląd PDF menu"
+                    src={ocrReview.documentUrl}
+                    className="h-[calc(92vh-220px)] w-full rounded-xl border border-border bg-white"
+                  />
+                </aside>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-white px-5 py-4">
+                <p className="text-xs text-muted-foreground">
+                  Do archiwizacji zaznaczono {selectedArchiveIds.length} pozycji. Po ręcznych zmianach użyj „Przelicz zmiany”.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setOcrReview(null)
+                      setSelectedArchiveIds([])
+                    }}
+                    disabled={importingId === 'ocr-confirm'}
+                  >
+                    Anuluj
+                  </Button>
+                  <Button
+                    type="button"
+                    className="gap-2"
+                    onClick={() => void confirmOcrImport()}
+                    disabled={importingId === 'ocr-confirm'}
+                  >
+                    {importingId === 'ocr-confirm' && <Loader2 size={14} className="animate-spin" />}
+                    Zapisz import OCR
                   </Button>
                 </div>
               </div>

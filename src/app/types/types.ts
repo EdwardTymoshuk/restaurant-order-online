@@ -45,6 +45,7 @@ export type MenuItemCategory =
 	'Piwo bezalkoholowe' |
 	'Piwo beczkowe' |
 	'Piwo smakowe' |
+	'Regionalne' |
 	'Wina Białe' |
 	'Wina Czerwone' |
 	'Wina Musujące' |
@@ -55,6 +56,7 @@ export type MenuItemCategory =
 	'Tequila' |
 	'Cognac / Brandy' |
 	'Wódka' |
+	'Nalewki' |
 	'Napoje alkoholowe' |
 	'Napoje bezalkoholowe' |
 	'Napoje łekkoprocentowe' |

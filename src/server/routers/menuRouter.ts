@@ -1,22 +1,121 @@
 import { prisma } from '@/lib/prisma'
 import { drinkMenuItemCategories, foodMenuItemCategories, isAlcoholMenuCategory } from '@/config'
-import { getMenuImportKey, ImportDocumentType, parseMenuDocumentForImport } from '@/server/services/menuDocumentImport'
+import {
+  getMenuImportKey,
+  ImportDocumentType,
+  parseMenuDocumentForImport,
+  parseMenuDocumentWithOcr,
+  ParsedMenuImportItem,
+} from '@/server/services/menuDocumentImport'
+import type { MenuDownloadDocument } from '@/app/types/types'
 import { z } from 'zod'
 import { publicProcedure, router } from '../trpc'
 
-const getImportScopeCategories = (type: ImportDocumentType) => {
-  if (type === 'menu') return foodMenuItemCategories
-  if (type === 'drinks') return drinkMenuItemCategories
-  if (type === 'full') return [...foodMenuItemCategories, ...drinkMenuItemCategories]
-  return []
+const getImportScopeCategories = (type: ImportDocumentType, parsedCategories: string[] = []) => {
+  const baseCategories =
+    type === 'menu'
+      ? foodMenuItemCategories
+      : type === 'drinks'
+        ? drinkMenuItemCategories
+        : type === 'full'
+          ? [...foodMenuItemCategories, ...drinkMenuItemCategories]
+          : []
+
+  return Array.from(new Set([...baseCategories, ...parsedCategories]))
+}
+
+const importDocumentInput = z.object({
+  type: z.enum(['menu', 'drinks', 'full', 'other']),
+  documentId: z.string().optional(),
+})
+
+type ImportDocumentInput = z.infer<typeof importDocumentInput>
+
+const reviewedImportItemInput = z.object({
+  category: z.string().trim().min(1),
+  name: z.string().trim().min(1),
+  description: z.string().trim().nullable().optional(),
+  price: z.number().finite().min(0),
+})
+
+const reviewedImportInput = importDocumentInput.extend({
+  items: z.array(reviewedImportItemInput).default([]),
+})
+
+const normalizeReviewedItems = (items: z.infer<typeof reviewedImportItemInput>[]): ParsedMenuImportItem[] =>
+  items
+    .map((item) => ({
+      category: item.category.trim(),
+      name: item.name.trim(),
+      price: Number(item.price),
+      description: item.description?.trim() ? item.description.trim() : null,
+    }))
+    .filter((item) => item.category && item.name && Number.isFinite(item.price))
+
+const getMenuDocumentById = async (documentId: string) => {
+  const settings = await prisma.settings.findFirst({
+    select: {
+      menuDocuments: true,
+    },
+  })
+
+  const documents = Array.isArray(settings?.menuDocuments)
+    ? (settings.menuDocuments as unknown as MenuDownloadDocument[])
+    : []
+
+  const document = documents.find((item) => item.id === documentId)
+  if (!document) {
+    throw new Error('Nie znaleziono wybranego pliku PDF w ustawieniach menu.')
+  }
+
+  return document
+}
+
+const resolveImportDocument = async (input: ImportDocumentInput) => {
+  if (!input.documentId) {
+    return {
+      type: input.type,
+      documentId: undefined,
+      documentUrl: undefined,
+    }
+  }
+
+  const document = await getMenuDocumentById(input.documentId)
+  if (document.type === 'other') {
+    throw new Error('Import pozycji jest dostępny tylko dla dokumentów typu Menu, Napoje albo Pełna karta.')
+  }
+
+  return {
+    type: document.type,
+    documentId: document.id,
+    documentUrl: document.url,
+  }
+}
+
+const getParsedImportItems = async (input: ImportDocumentInput) => {
+  const document = await resolveImportDocument(input)
+  const parsedItems = await parseMenuDocumentForImport(document.type, document.documentUrl)
+
+  return {
+    ...document,
+    parsedItems,
+  }
 }
 
 const isPresent = <T,>(value: T | null): value is T => value !== null
 
-const buildMenuImportPreview = async (type: ImportDocumentType) => {
-  const parsedItems = parseMenuDocumentForImport(type)
+const buildMenuImportPreview = async (input: ImportDocumentInput) => {
+  const { type, documentId, parsedItems } = await getParsedImportItems(input)
+  return buildMenuImportPreviewFromItems(type, parsedItems, documentId)
+}
+
+const buildMenuImportPreviewFromItems = async (
+  type: ImportDocumentType,
+  parsedItems: ParsedMenuImportItem[],
+  documentId?: string,
+) => {
   const parsedByKey = new Map(parsedItems.map((item) => [getMenuImportKey(item), item]))
-  const scopeCategories = getImportScopeCategories(type)
+  const scopeCategories = getImportScopeCategories(type, parsedItems.map((item) => item.category))
   const existingItems = await prisma.menuItem.findMany({
     where: {
       isArchived: false,
@@ -90,11 +189,113 @@ const buildMenuImportPreview = async (type: ImportDocumentType) => {
 
   return {
     type,
+    documentId,
     total: parsedItems.length,
     created,
     updated,
     unchanged,
     missing,
+  }
+}
+
+const saveMenuImportItems = async (
+  type: ImportDocumentType,
+  parsedItems: ParsedMenuImportItem[],
+  archiveMissingIds: string[],
+) => {
+  const scopeCategories = getImportScopeCategories(type, parsedItems.map((item) => item.category))
+  const existingItems = await prisma.menuItem.findMany({
+    where: {
+      isArchived: false,
+      category: {
+        in: scopeCategories,
+      },
+    },
+    select: {
+      id: true,
+      category: true,
+      name: true,
+    },
+  })
+
+  const existingByKey = new Map(
+    existingItems.map((item) => [getMenuImportKey(item), item])
+  )
+
+  let created = 0
+  let updated = 0
+
+  for (const item of parsedItems) {
+    const key = getMenuImportKey(item)
+    const existing = existingByKey.get(key)
+
+    if (existing) {
+      await prisma.menuItem.update({
+        where: { id: existing.id },
+        data: {
+          price: item.price,
+          description: item.description,
+          isActive: true,
+          isOrderable: !isAlcoholMenuCategory(item.category),
+          isArchived: false,
+        },
+      })
+      updated += 1
+      continue
+    }
+
+    const createdItem = await prisma.menuItem.create({
+      data: {
+        category: item.category,
+        name: item.name,
+        price: item.price,
+        description: item.description,
+        image: null,
+        isActive: true,
+        isOrderable: !isAlcoholMenuCategory(item.category),
+        isRecommended: false,
+        isOnMainPage: false,
+        isArchived: false,
+      },
+      select: {
+        id: true,
+        category: true,
+        name: true,
+      },
+    })
+
+    existingByKey.set(getMenuImportKey(createdItem), createdItem)
+    created += 1
+  }
+
+  let archived = 0
+  if (archiveMissingIds.length > 0) {
+    const result = await prisma.menuItem.updateMany({
+      where: {
+        id: {
+          in: archiveMissingIds,
+        },
+        category: {
+          in: scopeCategories,
+        },
+        isArchived: false,
+      },
+      data: {
+        isArchived: true,
+        isActive: false,
+        isOrderable: false,
+        isRecommended: false,
+        isOnMainPage: false,
+      },
+    })
+    archived = result.count
+  }
+
+  return {
+    total: parsedItems.length,
+    created,
+    updated,
+    archived,
   }
 }
 
@@ -311,117 +512,59 @@ export const menuRouter = router({
     }),
 
   previewMenuDocumentImport: publicProcedure
-    .input(
-      z.object({
-        type: z.enum(['menu', 'drinks', 'full', 'other']),
-      }),
-    )
+    .input(importDocumentInput)
     .mutation(async ({ input }) => {
-      return buildMenuImportPreview(input.type)
+      return buildMenuImportPreview(input)
+    }),
+
+  recognizeMenuDocumentWithOcr: publicProcedure
+    .input(importDocumentInput)
+    .mutation(async ({ input }) => {
+      const document = await resolveImportDocument(input)
+      if (!document.documentUrl) {
+        throw new Error('OCR działa tylko dla wgranego pliku PDF.')
+      }
+
+      const result = await parseMenuDocumentWithOcr(document.documentUrl)
+      const preview = await buildMenuImportPreviewFromItems(document.type, result.items, document.documentId)
+
+      return {
+        ...preview,
+        documentUrl: document.documentUrl,
+        ocrText: result.text,
+        ocrPages: result.pages,
+        items: result.items,
+      }
+    }),
+
+  previewReviewedMenuImport: publicProcedure
+    .input(reviewedImportInput)
+    .mutation(async ({ input }) => {
+      const document = await resolveImportDocument(input)
+      const items = normalizeReviewedItems(input.items)
+      return buildMenuImportPreviewFromItems(document.type, items, document.documentId)
     }),
 
   importMenuFromDocument: publicProcedure
     .input(
-      z.object({
-        type: z.enum(['menu', 'drinks', 'full', 'other']),
+      importDocumentInput.extend({
         archiveMissingIds: z.array(z.string().uuid()).default([]),
       }),
     )
     .mutation(async ({ input }) => {
-      const parsedItems = parseMenuDocumentForImport(input.type)
-      const scopeCategories = getImportScopeCategories(input.type)
-      const existingItems = await prisma.menuItem.findMany({
-        where: {
-          isArchived: false,
-          category: {
-            in: scopeCategories,
-          },
-        },
-        select: {
-          id: true,
-          category: true,
-          name: true,
-        },
-      })
+      const { type, parsedItems } = await getParsedImportItems(input)
+      return saveMenuImportItems(type, parsedItems, input.archiveMissingIds)
+    }),
 
-      const existingByKey = new Map(
-        existingItems.map((item) => [getMenuImportKey(item), item])
-      )
-
-      let created = 0
-      let updated = 0
-
-      for (const item of parsedItems) {
-        const key = getMenuImportKey(item)
-        const existing = existingByKey.get(key)
-
-        if (existing) {
-          await prisma.menuItem.update({
-            where: { id: existing.id },
-            data: {
-              price: item.price,
-              description: item.description,
-              isActive: true,
-              isOrderable: !isAlcoholMenuCategory(item.category),
-              isArchived: false,
-            },
-          })
-          updated += 1
-          continue
-        }
-
-        const createdItem = await prisma.menuItem.create({
-          data: {
-            category: item.category,
-            name: item.name,
-            price: item.price,
-            description: item.description,
-            image: null,
-            isActive: true,
-            isOrderable: !isAlcoholMenuCategory(item.category),
-            isRecommended: false,
-            isOnMainPage: false,
-            isArchived: false,
-          },
-          select: {
-            id: true,
-            category: true,
-            name: true,
-          },
-        })
-
-        existingByKey.set(getMenuImportKey(createdItem), createdItem)
-        created += 1
-      }
-
-      let archived = 0
-      if (input.archiveMissingIds.length > 0) {
-        const result = await prisma.menuItem.updateMany({
-          where: {
-            id: {
-              in: input.archiveMissingIds,
-            },
-            category: {
-              in: scopeCategories,
-            },
-            isArchived: false,
-          },
-          data: {
-            isArchived: true,
-            isActive: false,
-            isOrderable: false,
-            isRecommended: false,
-            isOnMainPage: false,
-          },
-        })
-        archived = result.count
-      }
-
-      return {
-        total: parsedItems.length,
-        created,
-        updated,
-        archived,
-      }
+  importReviewedMenuItems: publicProcedure
+    .input(
+      reviewedImportInput.extend({
+        archiveMissingIds: z.array(z.string().uuid()).default([]),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const document = await resolveImportDocument(input)
+      const items = normalizeReviewedItems(input.items)
+      return saveMenuImportItems(document.type, items, input.archiveMissingIds)
     }),
 })
