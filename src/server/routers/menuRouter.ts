@@ -48,11 +48,16 @@ type MenuOcrJob =
       status: 'processing'
       message: string
       createdAt: number
+      updatedAt: number
+      stage?: 'rendering' | 'initializing' | 'recognizing' | 'parsing'
+      currentPage?: number
+      totalPages?: number
     }
   | {
       status: 'completed'
       message: string
       createdAt: number
+      updatedAt: number
       result: Awaited<ReturnType<typeof buildMenuImportPreviewFromItems>> & {
         documentUrl: string
         ocrText: string
@@ -64,18 +69,54 @@ type MenuOcrJob =
       status: 'failed'
       message: string
       createdAt: number
+      updatedAt: number
     }
 
 const menuOcrJobs = new Map<string, MenuOcrJob>()
+const MENU_OCR_JOB_TTL_MS = 30 * 60 * 1000
+const MENU_OCR_MAX_DURATION_MS = 10 * 60 * 1000
 
 const cleanupMenuOcrJobs = () => {
   const now = Date.now()
-  const maxAgeMs = 30 * 60 * 1000
   for (const [jobId, job] of menuOcrJobs) {
-    if (now - job.createdAt > maxAgeMs) {
+    if (now - job.createdAt > MENU_OCR_JOB_TTL_MS) {
       menuOcrJobs.delete(jobId)
     }
   }
+}
+
+const expireMenuOcrJobIfNeeded = (jobId: string, job: MenuOcrJob) => {
+  if (job.status !== 'processing' || Date.now() - job.createdAt <= MENU_OCR_MAX_DURATION_MS) {
+    return job
+  }
+
+  const failedJob: MenuOcrJob = {
+    status: 'failed',
+    message: 'OCR trwał zbyt długo. Wgraj lżejszy PDF albo podziel menu na kilka plików.',
+    createdAt: job.createdAt,
+    updatedAt: Date.now(),
+  }
+  menuOcrJobs.set(jobId, failedJob)
+  return failedJob
+}
+
+const setMenuOcrJobProgress = (
+  jobId: string,
+  progress: {
+    stage: 'rendering' | 'initializing' | 'recognizing' | 'parsing'
+    message: string
+    currentPage?: number
+    totalPages?: number
+  },
+) => {
+  const job = menuOcrJobs.get(jobId)
+  if (!job || job.status !== 'processing') return
+
+  menuOcrJobs.set(jobId, {
+    ...job,
+    ...progress,
+    updatedAt: Date.now(),
+  })
 }
 
 const normalizeReviewedItems = (items: z.infer<typeof reviewedImportItemInput>[]): ParsedMenuImportItem[] =>
@@ -584,21 +625,27 @@ export const menuRouter = router({
       }
 
       const jobId = randomUUID()
+      const createdAt = Date.now()
       menuOcrJobs.set(jobId, {
         status: 'processing',
-        message: 'Rozpoznajemy tekst z PDF-a. To może potrwać kilka minut przy dużych plikach.',
-        createdAt: Date.now(),
+        message: 'Przygotowujemy OCR. To może potrwać kilka minut przy dużych plikach.',
+        createdAt,
+        updatedAt: createdAt,
+        stage: 'rendering',
       })
 
       void (async () => {
         try {
-          const result = await parseMenuDocumentWithOcr(document.documentUrl!)
+          const result = await parseMenuDocumentWithOcr(document.documentUrl!, {
+            onProgress: (progress) => setMenuOcrJobProgress(jobId, progress),
+          })
           const preview = await buildMenuImportPreviewFromItems(document.type, result.items, document.documentId)
 
           menuOcrJobs.set(jobId, {
             status: 'completed',
             message: `OCR rozpoznał ${result.items.length} pozycji. Sprawdź je przed zapisem.`,
-            createdAt: Date.now(),
+            createdAt,
+            updatedAt: Date.now(),
             result: {
               ...preview,
               documentUrl: document.documentUrl!,
@@ -612,7 +659,8 @@ export const menuRouter = router({
           menuOcrJobs.set(jobId, {
             status: 'failed',
             message: error instanceof Error ? error.message : 'Nie udało się wykonać OCR pliku PDF.',
-            createdAt: Date.now(),
+            createdAt,
+            updatedAt: Date.now(),
           })
         }
       })()
@@ -634,10 +682,12 @@ export const menuRouter = router({
         return {
           status: 'failed' as const,
           message: 'Nie znaleziono zadania OCR. Uruchom rozpoznawanie ponownie.',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
         }
       }
 
-      return job
+      return expireMenuOcrJobIfNeeded(input.jobId, job)
     }),
 
   previewReviewedMenuImport: publicProcedure

@@ -106,6 +106,11 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null)
   const [ocrReview, setOcrReview] = useState<OcrReview | null>(null)
   const [ocrJobId, setOcrJobId] = useState<string | null>(null)
+  const [ocrJobStatus, setOcrJobStatus] = useState<{
+    message: string
+    currentPage?: number
+    totalPages?: number
+  } | null>(null)
   const [selectedArchiveIds, setSelectedArchiveIds] = useState<string[]>([])
   const [editDraft, setEditDraft] = useState<{ title: string; type: MenuDocumentType }>({
     title: '',
@@ -141,6 +146,15 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
     const job = ocrJobQuery.data
     if (!job || !ocrJobId) return
 
+    if (job.status === 'processing') {
+      setOcrJobStatus({
+        message: job.message,
+        currentPage: job.currentPage,
+        totalPages: job.totalPages,
+      })
+      return
+    }
+
     if (job.status === 'completed') {
       setOcrReview({
         ...job.result,
@@ -155,12 +169,14 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
       setSelectedArchiveIds(job.result.missing.map((item) => item.id))
       setImportingId(null)
       setOcrJobId(null)
+      setOcrJobStatus(null)
       toast.success(job.message)
     }
 
     if (job.status === 'failed') {
       setImportingId(null)
       setOcrJobId(null)
+      setOcrJobStatus(null)
       toast.error(job.message)
     }
   }, [ocrJobId, ocrJobQuery.data])
@@ -375,14 +391,21 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
     setImportingId(`ocr-${doc.id}`)
     setOcrReview(null)
     setOcrJobId(null)
+    setOcrJobStatus({
+      message: 'Uruchamiamy OCR dla pliku PDF.',
+    })
     try {
       const job = await startMenuDocumentOcr.mutateAsync({ type: doc.type, documentId: doc.id })
       setOcrJobId(job.jobId)
+      setOcrJobStatus({
+        message: job.message,
+      })
       toast.info(job.message)
     } catch (error) {
       console.error(error)
       toast.error(getErrorMessage(error, 'Nie udało się wykonać OCR pliku PDF.'))
       setImportingId(null)
+      setOcrJobStatus(null)
     }
   }
 
@@ -786,6 +809,53 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
           </div>
         </div>
       </div>
+
+      <Dialog
+        open={Boolean(ocrJobStatus && !ocrReview)}
+        onOpenChange={(open) => {
+          if (open) return
+          setOcrJobId(null)
+          setOcrJobStatus(null)
+          setImportingId(null)
+        }}
+      >
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-xl text-dark-gray">Rozpoznajemy menu</DialogTitle>
+            <DialogDescription>
+              OCR działa w tle. Przy dużych PDF-ach może to potrwać kilka minut, ale zadanie nie będzie już wisiało bez końca.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-xl border border-border bg-muted/30 p-4">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Loader2 size={18} className="animate-spin" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-950">
+                  {ocrJobStatus?.message ?? 'OCR jest w toku.'}
+                </p>
+                {ocrJobStatus?.totalPages && ocrJobStatus.currentPage ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Strona {ocrJobStatus.currentPage} z {ocrJobStatus.totalPages}
+                  </p>
+                ) : ocrJobStatus?.totalPages ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Przygotowano {ocrJobStatus.totalPages} stron do rozpoznania.
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-muted-foreground">Przygotowujemy plik do rozpoznania.</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            Jeśli OCR zatrzyma się na zbyt ciężkim pliku, panel pokaże komunikat błędu i poprosi o lżejszy PDF albo podział pliku.
+          </p>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={importPreview !== null}
