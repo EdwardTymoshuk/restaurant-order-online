@@ -18,7 +18,7 @@ import { MenuDownloadDocument } from '@/app/types/types'
 import { sanitizeImageFilename } from '@/utils/sanitizeImageFilename'
 import { cn } from '@/utils/utils'
 import { trpc } from '@/utils/trpc'
-import { ArrowDown, ArrowUp, FileDown, FileInput, FileText, Loader2, Pencil, Plus, Save, ScanText, Sparkles, Trash2, Upload, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, FileDown, FileText, Loader2, Pencil, Plus, Save, ScanText, Sparkles, Trash2, Upload, X } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -91,6 +91,17 @@ const MAX_MENU_PDF_SIZE_BYTES = MAX_MENU_PDF_SIZE_MB * 1024 * 1024
 
 const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error && error.message ? error.message : fallback
+
+const formatDateTime = (value?: string) => {
+  if (!value) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+
+  return new Intl.DateTimeFormat('pl-PL', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date)
+}
 
 const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocument[] }) => {
   const [documents, setDocuments] = useState<MenuDownloadDocument[]>(
@@ -314,12 +325,19 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
         type: inferDocumentType(file.name),
         sortOrder: documents.length,
         isActive: true,
+        uploadedAt: new Date().toISOString(),
       }
 
       if (pendingReplaceId) {
         const nextDocuments = documents.map((doc) =>
           doc.id === pendingReplaceId
-            ? { ...doc, url: imageUrl, title: doc.title || baseDoc.title, type: doc.type || baseDoc.type }
+            ? {
+                ...doc,
+                url: imageUrl,
+                title: doc.title || baseDoc.title,
+                type: doc.type || baseDoc.type,
+                uploadedAt: baseDoc.uploadedAt,
+              }
             : doc
         )
         await saveCurrentDocuments(nextDocuments)
@@ -413,7 +431,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
 
   const startAiReview = async (doc: MenuDownloadDocument) => {
     if (doc.type === 'other') {
-      toast.error('Import AI pozycji dziala tylko dla dokumentow typu Menu, Napoje albo Pelna karta.')
+      toast.error('Rozpoznawanie działa tylko dla dokumentów typu Menu, Napoje albo Pełna karta.')
       return
     }
 
@@ -421,7 +439,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
     setOcrReview(null)
     setOcrJobId(null)
     setOcrJobStatus({
-      message: 'Uruchamiamy import AI dla pliku PDF.',
+      message: 'Przygotowujemy plik do rozpoznania menu.',
     })
     try {
       const job = await startMenuDocumentAiImport.mutateAsync({ type: doc.type, documentId: doc.id })
@@ -432,7 +450,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
       toast.info(job.message)
     } catch (error) {
       console.error(error)
-      toast.error(getErrorMessage(error, 'Nie udalo sie uruchomic importu AI pliku PDF.'))
+      toast.error(getErrorMessage(error, 'Nie udało się rozpocząć rozpoznawania menu.'))
       setImportingId(null)
       setOcrJobStatus(null)
     }
@@ -561,7 +579,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
       setSelectedArchiveIds([])
     } catch (error) {
       console.error(error)
-      toast.error(getErrorMessage(error, 'Nie udało się zapisać importu OCR.'))
+      toast.error(getErrorMessage(error, 'Nie udało się zapisać zmian w menu.'))
     } finally {
       setImportingId(null)
     }
@@ -631,11 +649,16 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
                           {doc.isActive ? 'Widoczny' : 'Ukryty'}
                         </span>
                       </div>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {doc.isActive
-                          ? 'Pokazywany gościom na stronie menu.'
-                          : 'Ukryty przed gośćmi na stronie menu.'}
-                      </p>
+                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        <span>
+                          {doc.isActive
+                            ? 'Pokazywany gościom na stronie menu.'
+                            : 'Ukryty przed gośćmi na stronie menu.'}
+                        </span>
+                        {formatDateTime(doc.uploadedAt) && (
+                          <span>Wgrano {formatDateTime(doc.uploadedAt)}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -700,50 +723,20 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
                       </Button>
                     )}
                     {doc.url && doc.type !== 'other' && (
-                      <>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          className="gap-2"
-                          onClick={() => void previewDocumentImport(doc)}
-                          disabled={isUploading || saving || importingId === doc.id || importingId === `ocr-${doc.id}` || importingId === `ai-${doc.id}`}
-                        >
-                          {importingId === doc.id ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            <FileInput size={14} />
-                          )}
-                          {importingId === doc.id ? 'Sprawdzanie...' : 'Wczytaj tekst'}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          className="gap-2"
-                          onClick={() => void startAiReview(doc)}
-                          disabled={isUploading || saving || importingId === doc.id || importingId === `ocr-${doc.id}` || importingId === `ai-${doc.id}`}
-                        >
-                          {importingId === `ai-${doc.id}` ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            <Sparkles size={14} />
-                          )}
-                          {importingId === `ai-${doc.id}` ? 'AI...' : 'AI i korekta'}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="gap-2"
-                          onClick={() => void startOcrReview(doc)}
-                          disabled={isUploading || saving || importingId === doc.id || importingId === `ocr-${doc.id}` || importingId === `ai-${doc.id}`}
-                        >
-                          {importingId === `ocr-${doc.id}` ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            <ScanText size={14} />
-                          )}
-                          {importingId === `ocr-${doc.id}` ? 'OCR...' : 'OCR awaryjnie'}
-                        </Button>
-                      </>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="gap-2"
+                        onClick={() => void startAiReview(doc)}
+                        disabled={isUploading || saving || importingId === doc.id || importingId === `ocr-${doc.id}` || importingId === `ai-${doc.id}`}
+                      >
+                        {importingId === `ai-${doc.id}` ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Sparkles size={14} />
+                        )}
+                        {importingId === `ai-${doc.id}` ? 'Rozpoznajemy...' : 'Rozpoznaj menu'}
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -866,7 +859,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
           <DialogHeader>
             <DialogTitle className="font-serif text-xl text-dark-gray">Rozpoznajemy menu</DialogTitle>
             <DialogDescription>
-              OCR działa w tle. Przy dużych PDF-ach może to potrwać kilka minut, ale zadanie nie będzie już wisiało bez końca.
+              Przetwarzamy PDF i szukamy pozycji menu. Przy większych plikach może to potrwać kilka minut.
             </DialogDescription>
           </DialogHeader>
 
@@ -877,7 +870,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-slate-950">
-                  {ocrJobStatus?.message ?? 'OCR jest w toku.'}
+                  {ocrJobStatus?.message ?? 'Rozpoznawanie menu jest w toku.'}
                 </p>
                 {ocrJobStatus?.totalPages && ocrJobStatus.currentPage ? (
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -895,7 +888,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Jeśli OCR zatrzyma się na zbyt ciężkim pliku, panel pokaże komunikat błędu i poprosi o lżejszy PDF albo podział pliku.
+            Zostaw to okno otwarte. Po zakończeniu pokażemy listę pozycji do sprawdzenia i zapisania.
           </p>
         </DialogContent>
       </Dialog>
@@ -1034,19 +1027,19 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
           setSelectedArchiveIds([])
         }}
       >
-        <DialogContent className="max-h-[92vh] max-w-7xl overflow-hidden rounded-2xl p-0">
+        <DialogContent className="flex h-[92dvh] w-[calc(100vw-24px)] max-w-7xl flex-col overflow-hidden rounded-2xl p-0 sm:w-[calc(100vw-40px)]">
           <DialogHeader className="border-b border-border px-5 py-4">
-            <DialogTitle className="font-serif text-xl text-dark-gray">{ocrReview?.recognitionSource === 'ai' ? 'AI menu i korekta' : 'OCR menu i korekta'}</DialogTitle>
+            <DialogTitle className="font-serif text-xl text-dark-gray">Sprawdź menu przed zapisem</DialogTitle>
             <DialogDescription>
-              Sprawdź rozpoznane pozycje po lewej i porównaj je z PDF-em po prawej. Warianty cenowe są rozbite na osobne wiersze, które możesz poprawić przed zapisem.
+              Popraw nazwy, kategorie, ceny i opisy. Po zapisie nowe pozycje trafią do menu, zmienione zostaną zaktualizowane, a zaznaczone stare pozycje ukryte.
             </DialogDescription>
           </DialogHeader>
 
           {ocrReview && (
-            <div className="flex max-h-[calc(92vh-92px)] flex-col">
-              <div className="grid gap-2 border-b border-border bg-muted/30 p-4 sm:grid-cols-5">
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="grid gap-2 border-b border-border bg-muted/30 p-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
                 <div className="rounded-xl bg-white px-3 py-2">
-                  <p className="text-xs text-muted-foreground">Rozpoznane</p>
+                  <p className="text-xs text-muted-foreground">Do sprawdzenia</p>
                   <p className="text-lg font-semibold text-slate-950">{ocrReview.items.length}</p>
                 </div>
                 <div className="rounded-xl bg-white px-3 py-2">
@@ -1054,7 +1047,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
                   <p className="text-lg font-semibold text-slate-950">{ocrReview.created.length}</p>
                 </div>
                 <div className="rounded-xl bg-white px-3 py-2">
-                  <p className="text-xs text-muted-foreground">Aktualizowane</p>
+                  <p className="text-xs text-muted-foreground">Zmienione</p>
                   <p className="text-lg font-semibold text-slate-950">{ocrReview.updated.length}</p>
                 </div>
                 <div className="rounded-xl bg-white px-3 py-2">
@@ -1062,7 +1055,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
                   <p className="text-lg font-semibold text-slate-950">{ocrReview.unchanged.length}</p>
                 </div>
                 <div className="rounded-xl bg-white px-3 py-2">
-                  <p className="text-xs text-muted-foreground">Poza PDF-em</p>
+                  <p className="text-xs text-muted-foreground">Do ukrycia</p>
                   <p className="text-lg font-semibold text-slate-950">{ocrReview.missing.length}</p>
                 </div>
               </div>
@@ -1071,9 +1064,9 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
                 <div className="min-h-0 overflow-y-auto p-4">
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <div>
-                      <h3 className="text-sm font-semibold text-slate-950">Pozycje do importu</h3>
+                      <h3 className="text-sm font-semibold text-slate-950">Pozycje wczytane z PDF</h3>
                       <p className="text-xs text-muted-foreground">
-                        Popraw kategorię, nazwę, opis i cenę przed zapisaniem.
+                        Sprawdź dane przed zapisaniem ich w menu.
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -1097,7 +1090,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
                         disabled={importingId === 'ocr-confirm' || importingId === 'ocr-preview'}
                       >
                         {importingId === 'ocr-preview' ? <Loader2 size={14} className="animate-spin" /> : <ScanText size={14} />}
-                        Przelicz zmiany
+                        Odśwież podsumowanie
                       </Button>
                     </div>
                   </div>
@@ -1105,7 +1098,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
                   <div className="space-y-3">
                     {ocrReview.items.length === 0 ? (
                       <div className="rounded-xl border border-dashed border-border bg-white px-4 py-8 text-sm text-muted-foreground">
-                        Import nie rozpoznał pozycji automatycznie. Możesz dodać je ręcznie i porównać z PDF-em po prawej.
+                        Nie udało się rozpoznać pozycji automatycznie. Możesz dodać je ręcznie i porównać z PDF-em na większym ekranie.
                       </div>
                     ) : (
                       ocrReview.items.map((item, index) => (
@@ -1168,8 +1161,8 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
                   <div className="mt-4 rounded-xl border border-border bg-white">
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
                       <div>
-                        <h3 className="text-sm font-semibold text-slate-950">Pozycje bez odpowiednika w pliku</h3>
-                        <p className="text-xs text-muted-foreground">Zaznaczone pozycje zostaną ukryte przy zapisie.</p>
+                        <h3 className="text-sm font-semibold text-slate-950">Pozycje, których nie ma w nowym pliku</h3>
+                        <p className="text-xs text-muted-foreground">Zaznaczone pozycje zostaną ukryte w menu, ale nie znikną z historii zamówień.</p>
                       </div>
                       {ocrReview.missing.length > 0 && (
                         <Button
@@ -1191,7 +1184,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
                     </div>
 
                     {ocrReview.missing.length === 0 ? (
-                      <p className="px-3 py-5 text-sm text-muted-foreground">Nie ma pozycji do archiwizacji.</p>
+                      <p className="px-3 py-5 text-sm text-muted-foreground">Nie znaleźliśmy starszych pozycji do ukrycia.</p>
                     ) : (
                       <div className="max-h-52 divide-y divide-border overflow-y-auto">
                         {ocrReview.missing.map((item) => (
@@ -1218,7 +1211,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
 
                 <aside className="hidden min-h-0 border-l border-border bg-muted/30 p-4 lg:block">
                   <div className="mb-3">
-                    <h3 className="text-sm font-semibold text-slate-950">Podgląd PDF</h3>
+                    <h3 className="text-sm font-semibold text-slate-950">Oryginalny PDF</h3>
                     <p className="text-xs text-muted-foreground">Porównaj rozpoznane dane z oryginalnym plikiem.</p>
                   </div>
                   <iframe
@@ -1231,12 +1224,13 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-white px-5 py-4">
                 <p className="text-xs text-muted-foreground">
-                  Do archiwizacji zaznaczono {selectedArchiveIds.length} pozycji. Po ręcznych zmianach użyj „Przelicz zmiany”.
+                  Do ukrycia zaznaczono {selectedArchiveIds.length} pozycji. Po ręcznych poprawkach odśwież podsumowanie.
                 </p>
-                <div className="flex gap-2">
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                   <Button
                     type="button"
                     variant="outline"
+                    className="w-full sm:w-auto"
                     onClick={() => {
                       setOcrReview(null)
                       setSelectedArchiveIds([])
@@ -1247,12 +1241,12 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
                   </Button>
                   <Button
                     type="button"
-                    className="gap-2"
+                    className="w-full gap-2 sm:w-auto"
                     onClick={() => void confirmOcrImport()}
                     disabled={importingId === 'ocr-confirm'}
                   >
                     {importingId === 'ocr-confirm' && <Loader2 size={14} className="animate-spin" />}
-                    {ocrReview?.recognitionSource === 'ai' ? 'Zapisz import AI' : 'Zapisz import OCR'}
+                    Zapisz zmiany w menu
                   </Button>
                 </div>
               </div>

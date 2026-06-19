@@ -78,9 +78,11 @@ const CATEGORY_ALIASES: Record<string, string> = {
   'tequila': 'Tequila',
   'whisky': 'Whisky',
   'gin': 'Gin',
-  'brandy cognac likier': 'Cognac / Brandy',
-  'brandy | cognac | likier': 'Cognac / Brandy',
+  'brandy cognac likier': 'Brandy / Cognac / Likier',
+  'brandy | cognac | likier': 'Brandy / Cognac / Likier',
   'cognac brandy': 'Cognac / Brandy',
+  'likiery': 'Brandy / Cognac / Likier',
+  'likier': 'Brandy / Cognac / Likier',
   'wódka': 'Wódka',
   'wodka': 'Wódka',
   'nalewki': 'Nalewki',
@@ -90,6 +92,8 @@ const CATEGORY_ALIASES: Record<string, string> = {
   'bottled': 'Piwo butelkowe',
   'bezalkoholowe': 'Piwo bezalkoholowe',
   'alcohol free': 'Piwo bezalkoholowe',
+  'piwa regionalne': 'Regionalne',
+  'piwo regionalne': 'Regionalne',
   'regionalne': 'Regionalne',
   'regional': 'Regionalne',
   'regional from sopot': 'Regionalne',
@@ -98,7 +102,13 @@ const CATEGORY_ALIASES: Record<string, string> = {
   'spoko koktajle': 'Drinki',
   'cocktails': 'Drinki',
   'drinki': 'Drinki',
+  'koktajle': 'Drinki',
+  'strefa zero': 'Drinki bezalkoholowe',
+  'zero': 'Drinki bezalkoholowe',
+  'mocktails': 'Drinki bezalkoholowe',
+  'bezalkoholowe koktajle': 'Drinki bezalkoholowe',
   'klasyczne koktaile': 'Klasyczne koktaile',
+  'klasyczne koktajle': 'Klasyczne koktaile',
   'grzańce sezonowe': 'Na ciepło',
   'grzance sezonowe': 'Na ciepło',
   'hot drinks': 'Na ciepło',
@@ -114,7 +124,13 @@ const CATEGORY_ALIASES: Record<string, string> = {
   'prosecco': 'Wina Musujące',
   'napoje zimne': 'Napoje zimne',
   'cold drinks': 'Napoje zimne',
+  'lemoniady': 'Napoje zimne',
+  'lemoniada': 'Napoje zimne',
+  'lemonades': 'Napoje zimne',
   'kawa': 'Kawa',
+  'kawy': 'Kawa',
+  'kawy sezonowe': 'Kawa',
+  'seasonal coffee': 'Kawa',
   'coffee': 'Kawa',
   'herbata': 'Herbata',
   'tea': 'Herbata',
@@ -521,11 +537,15 @@ const MENU_AI_RESPONSE_SCHEMA = {
 const MENU_AI_SYSTEM_PROMPT = `Jestes ekspertem od przepisywania menu restauracji z PDF/obrazu do danych strukturalnych.
 Zadanie: odczytaj pozycje menu z pojedynczej strony PDF restauracji Spoko Sopot.
 Zwracaj wylacznie pozycje sprzedazowe: kategorie, nazwe, opis i ceny.
-Ignoruj dekoracje, zdjecia, numery stron, stopki, teksty promocyjne, angielskie tlumaczenia kategorii i informacje typu procent alkoholu.
+Ignoruj dekoracje, zdjecia, numery stron, stopki, teksty promocyjne i angielskie tlumaczenia kategorii.
 Jesli pozycja ma jedna cene, wpisz ja w price i zostaw variants jako pusta tablice.
 Jesli ten sam produkt ma kilka wariantow cenowych, np. kolumny 40 ml i 500 ml, wpisz nazwe produktu raz, price ustaw na null, a warianty dodaj jako [{"label":"40 ml","price":18},{"label":"500 ml","price":139}].
+Przy napojach i alkoholu zawsze zachowuj widoczna objetosc w nazwie albo wariancie: 40 ml, 200 ml, 330 ml, 500 ml, 700 ml, 1 l. Nie zostawiaj samej nazwy napoju, jesli PDF pokazuje objetosc.
+Jesli objetosc dotyczy calej sekcji/kolumny, przenies ja do wariantu lub nazwy kazdej pozycji z tej sekcji. Przyklad: "Wyborowa" pod kolumna "40 ml" => wariant "40 ml"; "Lech 500 ml" => nazwa "Lech 500 ml".
+Jesli PDF podaje procent alkoholu dla sekcji albo pozycji, nie tworz z niego osobnej pozycji. Dopisz go do description, np. "8-9% vol.", "36-40% alcohol", "25-30% alcohol".
 Ceny zapisuj jako liczby: 18,- to 18, 18 zl to 18. Nie zgaduj cen, jesli wiersz jest nieczytelny.
-Kategorie maja byc mozliwie konkretne. Dla piwa rozrozniaj: Piwo butelkowe, Piwo beczkowe, Regionalne, Piwo bezalkoholowe, Piwo smakowe. Dla alkoholi mocnych uzywaj m.in.: Wodka, Gin, Rum, Whisky, Tequila, Nalewki, Cognac / Brandy, Likiery. Dla napojow uzywaj m.in.: Napoje zimne, Kawa, Herbata, Drinki, Klasyczne koktaile, Wina Biale, Wina Czerwone, Wina Musujace.
+Kategorie maja byc mozliwie konkretne. Dla piwa rozrozniaj: Piwo butelkowe, Piwo beczkowe, Regionalne, Piwo bezalkoholowe, Piwo smakowe. Dla alkoholi mocnych uzywaj m.in.: Wodka, Gin, Rum, Whisky, Tequila, Nalewki, Brandy / Cognac / Likier. Dla napojow uzywaj m.in.: Napoje zimne, Kawa, Herbata, Drinki, Drinki bezalkoholowe, Klasyczne koktaile, Wina Biale, Wina Czerwone, Wina Musujace.
+Mapuj sekcje praktycznie: "Strefa zero" to Drinki bezalkoholowe, "Lemoniady" to Napoje zimne, "Kawy sezonowe" to Kawa, "Regionalne" przy piwie to Regionalne.
 Nie lacz kilku roznych produktow w jedna pozycje.`
 
 const cleanAiValue = (value: unknown) => {

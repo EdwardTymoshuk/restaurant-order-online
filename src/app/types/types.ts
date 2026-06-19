@@ -50,11 +50,13 @@ export type MenuItemCategory =
 	'Wina Czerwone' |
 	'Wina Musujące' |
 	'Drinki' |
+	'Drinki bezalkoholowe' |
 	'Whisky' |
 	'Rum' |
 	'Gin' |
 	'Tequila' |
 	'Cognac / Brandy' |
+	'Brandy / Cognac / Likier' |
 	'Wódka' |
 	'Nalewki' |
 	'Napoje alkoholowe' |
@@ -198,4 +200,5 @@ export interface MenuDownloadDocument {
 	type: 'menu' | 'drinks' | 'full' | 'other'
 	sortOrder: number
 	isActive: boolean
+	uploadedAt?: string
 }

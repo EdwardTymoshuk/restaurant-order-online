@@ -689,7 +689,7 @@ export const menuRouter = router({
       const createdAt = Date.now()
       menuOcrJobs.set(jobId, {
         status: 'processing',
-        message: 'Przygotowujemy PDF do analizy AI.',
+        message: 'Przygotowujemy plik do rozpoznania menu.',
         createdAt,
         updatedAt: createdAt,
         stage: 'rendering',
@@ -705,7 +705,7 @@ export const menuRouter = router({
 
           menuOcrJobs.set(jobId, {
             status: 'completed',
-            message: `AI rozpoznalo ${result.items.length} pozycji. Sprawdz kategorie, warianty i ceny przed zapisem.`,
+            message: `Rozpoznano ${result.items.length} pozycji. Sprawdź kategorie, warianty i ceny przed zapisem.`,
             createdAt,
             updatedAt: Date.now(),
             result: {
@@ -721,7 +721,7 @@ export const menuRouter = router({
           console.error(error)
           menuOcrJobs.set(jobId, {
             status: 'failed',
-            message: error instanceof Error ? error.message : 'Nie udalo sie wykonac importu AI pliku PDF.',
+            message: error instanceof Error ? error.message : 'Nie udało się rozpoznać menu z pliku PDF.',
             createdAt,
             updatedAt: Date.now(),
           })
@@ -731,7 +731,7 @@ export const menuRouter = router({
       return {
         jobId,
         status: 'processing' as const,
-        message: 'Import AI zostal uruchomiony. Zostaw to okno otwarte do czasu korekty.',
+        message: 'Rozpoznawanie menu zostało uruchomione. Zostaw to okno otwarte do czasu korekty.',
       }
     }),
 

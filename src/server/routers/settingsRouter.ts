@@ -135,6 +135,7 @@ export const settingsRouter = router({
           type: z.enum(['menu', 'drinks', 'full', 'other']),
           sortOrder: z.number().int().min(0),
           isActive: z.boolean(),
+          uploadedAt: z.string().optional(),
         }),
       ),
     )
