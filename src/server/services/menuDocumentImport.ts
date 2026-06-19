@@ -25,8 +25,27 @@ export type OcrMenuImportResult = {
   items: ParsedMenuImportItem[]
 }
 
+export type AiMenuImportResult = OcrMenuImportResult
+
+type AiMenuVariant = {
+  label: string
+  price: number
+}
+
+type AiMenuItem = {
+  category: string
+  name: string
+  description: string | null
+  price: number | null
+  variants: AiMenuVariant[]
+}
+
+type AiMenuPageResponse = {
+  items: AiMenuItem[]
+}
+
 type OcrProgress = {
-  stage: 'rendering' | 'recognizing' | 'parsing'
+  stage: 'rendering' | 'recognizing' | 'parsing' | 'analyzing'
   message: string
   currentPage?: number
   totalPages?: number
@@ -44,6 +63,9 @@ const SCRIPT_BY_TYPE: Record<Exclude<ImportDocumentType, 'full' | 'other'>, stri
 }
 
 const execFileAsync = promisify(execFile)
+const OCR_RENDER_DPI = 180
+const AI_RENDER_DPI = 150
+const MENU_AI_IMPORT_MODEL = process.env.OPENAI_MENU_IMPORT_MODEL || 'gpt-4o'
 
 const pdfParseWorkerPath = path.join(process.cwd(), 'node_modules/pdf-parse/dist/pdf-parse/cjs/pdf.worker.mjs')
 PDFParse.setWorker(pdfParseWorkerPath)
@@ -433,11 +455,11 @@ const getPdfPageCount = async (pdfPath: string) => {
   return Number(match[1])
 }
 
-const renderPdfPage = async (pdfPath: string, tmpDir: string, pageNumber: number, timeoutMs: number) => {
+const renderPdfPage = async (pdfPath: string, tmpDir: string, pageNumber: number, timeoutMs: number, resolutionDpi = OCR_RENDER_DPI) => {
   const prefix = path.join(tmpDir, `page-${pageNumber}`)
   await runTool(
     'pdftoppm',
-    ['-f', String(pageNumber), '-l', String(pageNumber), '-r', '180', '-png', pdfPath, prefix],
+    ['-f', String(pageNumber), '-l', String(pageNumber), '-r', String(resolutionDpi), '-png', pdfPath, prefix],
     timeoutMs,
     `Nie udało się przygotować strony ${pageNumber} do OCR. Plik może mieć zbyt ciężką grafikę.`,
     1024 * 1024,
@@ -460,6 +482,266 @@ const recognizeImage = async (imagePath: string, pageNumber: number, timeoutMs: 
     20 * 1024 * 1024,
   )
   return stdout
+}
+
+const MENU_AI_RESPONSE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          category: { type: 'string' },
+          name: { type: 'string' },
+          description: { type: ['string', 'null'] },
+          price: { type: ['number', 'null'] },
+          variants: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                label: { type: 'string' },
+                price: { type: 'number' },
+              },
+              required: ['label', 'price'],
+            },
+          },
+        },
+        required: ['category', 'name', 'description', 'price', 'variants'],
+      },
+    },
+  },
+  required: ['items'],
+} as const
+
+const MENU_AI_SYSTEM_PROMPT = `Jestes ekspertem od przepisywania menu restauracji z PDF/obrazu do danych strukturalnych.
+Zadanie: odczytaj pozycje menu z pojedynczej strony PDF restauracji Spoko Sopot.
+Zwracaj wylacznie pozycje sprzedazowe: kategorie, nazwe, opis i ceny.
+Ignoruj dekoracje, zdjecia, numery stron, stopki, teksty promocyjne, angielskie tlumaczenia kategorii i informacje typu procent alkoholu.
+Jesli pozycja ma jedna cene, wpisz ja w price i zostaw variants jako pusta tablice.
+Jesli ten sam produkt ma kilka wariantow cenowych, np. kolumny 40 ml i 500 ml, wpisz nazwe produktu raz, price ustaw na null, a warianty dodaj jako [{"label":"40 ml","price":18},{"label":"500 ml","price":139}].
+Ceny zapisuj jako liczby: 18,- to 18, 18 zl to 18. Nie zgaduj cen, jesli wiersz jest nieczytelny.
+Kategorie maja byc mozliwie konkretne. Dla piwa rozrozniaj: Piwo butelkowe, Piwo beczkowe, Regionalne, Piwo bezalkoholowe, Piwo smakowe. Dla alkoholi mocnych uzywaj m.in.: Wodka, Gin, Rum, Whisky, Tequila, Nalewki, Cognac / Brandy, Likiery. Dla napojow uzywaj m.in.: Napoje zimne, Kawa, Herbata, Drinki, Klasyczne koktaile, Wina Biale, Wina Czerwone, Wina Musujace.
+Nie lacz kilku roznych produktow w jedna pozycje.`
+
+const cleanAiValue = (value: unknown) => {
+  if (typeof value !== 'string') return ''
+  return value.replace(/\s+/g, ' ').trim()
+}
+
+const canonicalizeAiCategory = (value: unknown) => {
+  const cleaned = cleanAiValue(value)
+  if (!cleaned) return 'Inne'
+  return getCanonicalMenuImportCategory(cleaned) || cleaned
+}
+
+const normalizeVariantLabel = (value: unknown) => {
+  const cleaned = cleanAiValue(value)
+  if (!cleaned) return ''
+  return cleaned
+    .replace(/([0-9])\s*(ml|l|g|kg|szt\.?|os\.?)$/i, '$1 $2')
+    .replace(/\.$/, '')
+}
+
+const appendVariantLabel = (name: string, label: string) => {
+  if (!label) return name
+  const normalizedName = normalize(name)
+  const normalizedLabel = normalize(label)
+  if (normalizedName.includes(normalizedLabel)) return name
+  return `${name} ${label}`.trim()
+}
+
+const isValidAiPrice = (price: unknown): price is number =>
+  typeof price === 'number' && Number.isFinite(price) && price > 0
+
+const normalizeAiItems = (items: AiMenuItem[]) => {
+  const parsed: ParsedMenuImportItem[] = []
+  const seen = new Set<string>()
+
+  for (const item of items) {
+    const category = canonicalizeAiCategory(item.category)
+    const name = cleanAiValue(item.name)
+    const description = cleanAiValue(item.description) || null
+
+    if (!name) continue
+
+    if (Array.isArray(item.variants) && item.variants.length > 0) {
+      for (const variant of item.variants) {
+        if (!isValidAiPrice(variant.price)) continue
+        const variantName = appendVariantLabel(name, normalizeVariantLabel(variant.label))
+        const parsedItem = { category, name: variantName, price: variant.price, description }
+        const key = getMenuImportKey(parsedItem)
+        if (seen.has(key)) continue
+        seen.add(key)
+        parsed.push(parsedItem)
+      }
+      continue
+    }
+
+    if (!isValidAiPrice(item.price)) continue
+    const parsedItem = { category, name, price: item.price, description }
+    const key = getMenuImportKey(parsedItem)
+    if (seen.has(key)) continue
+    seen.add(key)
+    parsed.push(parsedItem)
+  }
+
+  return parsed
+}
+
+const callOpenAiMenuVision = async (
+  imagePath: string,
+  pageNumber: number,
+  totalPages: number,
+  timeoutMs: number,
+): Promise<AiMenuPageResponse> => {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) {
+    throw new Error('Brakuje OPENAI_API_KEY w konfiguracji serwera. Import AI nie moze zostac uruchomiony.')
+  }
+
+  const image = await fs.promises.readFile(imagePath)
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: MENU_AI_IMPORT_MODEL,
+        temperature: 0,
+        max_tokens: 3500,
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'spoko_menu_page_import',
+            strict: true,
+            schema: MENU_AI_RESPONSE_SCHEMA,
+          },
+        },
+        messages: [
+          { role: 'system', content: MENU_AI_SYSTEM_PROMPT },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `Odczytaj pozycje menu ze strony ${pageNumber} z ${totalPages}. Zachowaj konkretne kategorie i warianty cenowe.`,
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:image/png;base64,${image.toString('base64')}`,
+                  detail: 'high',
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    })
+
+    const payload = await response.json().catch(() => null)
+    if (!response.ok) {
+      const message = payload?.error?.message || 'Nieznany blad OpenAI API.'
+      throw new Error(`Import AI nie powiodl sie dla strony ${pageNumber}: ${message}`)
+    }
+
+    const content = payload?.choices?.[0]?.message?.content
+    if (typeof content !== 'string' || !content.trim()) {
+      throw new Error(`Import AI nie zwrocil danych dla strony ${pageNumber}.`)
+    }
+
+    return JSON.parse(content) as AiMenuPageResponse
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`Import AI przekroczyl limit czasu dla strony ${pageNumber}.`)
+    }
+    throw error
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+export const parseMenuDocumentWithAi = async (
+  documentUrl: string,
+  options: OcrOptions = {},
+): Promise<AiMenuImportResult> => {
+  const startedAt = Date.now()
+  const timeoutMs = options.timeoutMs ?? 20 * 60 * 1000
+  const pageTimeoutMs = options.pageTimeoutMs ?? 120 * 1000
+  const assertWithinTimeLimit = () => {
+    if (Date.now() - startedAt > timeoutMs) {
+      throw new Error('Import AI trwa zbyt dlugo. Wgraj lzejszy PDF albo podziel menu na kilka plikow.')
+    }
+  }
+
+  const tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), `spoko-menu-ai-${randomUUID()}-`))
+  const pages: AiMenuImportResult['pages'] = []
+  const allItems: ParsedMenuImportItem[] = []
+  let totalPages = 0
+
+  try {
+    options.onProgress?.({ stage: 'rendering', message: 'Pobieramy PDF do importu AI.' })
+    const pdfPath = await downloadPdfToFile(documentUrl, tmpDir, 45 * 1000)
+
+    options.onProgress?.({ stage: 'rendering', message: 'Sprawdzamy liczbe stron w PDF-ie.' })
+    totalPages = await getPdfPageCount(pdfPath)
+
+    if (totalPages > 40) {
+      throw new Error('Ten PDF ma zbyt duzo stron do importu AI. Podziel menu na mniejsze pliki.')
+    }
+
+    for (let pageNumber = 1; pageNumber <= totalPages; pageNumber += 1) {
+      assertWithinTimeLimit()
+      options.onProgress?.({
+        stage: 'rendering',
+        message: `Przygotowujemy strone ${pageNumber} z ${totalPages}.`,
+        currentPage: pageNumber,
+        totalPages,
+      })
+      const imagePath = await renderPdfPage(pdfPath, tmpDir, pageNumber, 75 * 1000, AI_RENDER_DPI)
+
+      assertWithinTimeLimit()
+      options.onProgress?.({
+        stage: 'analyzing',
+        message: `AI odczytuje pozycje ze strony ${pageNumber} z ${totalPages}.`,
+        currentPage: pageNumber,
+        totalPages,
+      })
+      const aiPage = await callOpenAiMenuVision(imagePath, pageNumber, totalPages, pageTimeoutMs)
+      const pageItems = normalizeAiItems(aiPage.items || [])
+      allItems.push(...pageItems)
+      pages.push({
+        pageNumber,
+        text: pageItems
+          .map((item) => `${item.category} | ${item.name} | ${item.price}${item.description ? ` | ${item.description}` : ''}`)
+          .join('\n'),
+      })
+    }
+  } finally {
+    await fs.promises.rm(tmpDir, { recursive: true, force: true })
+  }
+
+  const items = Array.from(new Map(allItems.map((item) => [getMenuImportKey(item), item])).values())
+  if (items.length === 0) {
+    throw new Error('AI nie rozpoznalo zadnych pozycji menu w tym pliku.')
+  }
+
+  return {
+    text: pages.map((page) => `--- Strona ${page.pageNumber} ---\n${page.text}`).join('\n\n'),
+    pages,
+    items,
+  }
 }
 
 export const parseMenuDocumentWithOcr = async (

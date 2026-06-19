@@ -4,6 +4,7 @@ import {
   getMenuImportKey,
   ImportDocumentType,
   parseMenuDocumentForImport,
+  parseMenuDocumentWithAi,
   parseMenuDocumentWithOcr,
   ParsedMenuImportItem,
 } from '@/server/services/menuDocumentImport'
@@ -49,7 +50,7 @@ type MenuOcrJob =
       message: string
       createdAt: number
       updatedAt: number
-      stage?: 'rendering' | 'initializing' | 'recognizing' | 'parsing'
+      stage?: 'rendering' | 'initializing' | 'recognizing' | 'parsing' | 'analyzing'
       currentPage?: number
       totalPages?: number
     }
@@ -63,6 +64,7 @@ type MenuOcrJob =
         ocrText: string
         ocrPages: Array<{ pageNumber: number; text: string }>
         items: ParsedMenuImportItem[]
+        recognitionSource?: 'ocr' | 'ai'
       }
     }
   | {
@@ -74,7 +76,7 @@ type MenuOcrJob =
 
 const menuOcrJobs = new Map<string, MenuOcrJob>()
 const MENU_OCR_JOB_TTL_MS = 30 * 60 * 1000
-const MENU_OCR_MAX_DURATION_MS = 10 * 60 * 1000
+const MENU_OCR_MAX_DURATION_MS = 20 * 60 * 1000
 
 const cleanupMenuOcrJobs = () => {
   const now = Date.now()
@@ -103,7 +105,7 @@ const expireMenuOcrJobIfNeeded = (jobId: string, job: MenuOcrJob) => {
 const setMenuOcrJobProgress = (
   jobId: string,
   progress: {
-    stage: 'rendering' | 'initializing' | 'recognizing' | 'parsing'
+    stage: 'rendering' | 'initializing' | 'recognizing' | 'parsing' | 'analyzing'
     message: string
     currentPage?: number
     totalPages?: number
@@ -652,6 +654,7 @@ export const menuRouter = router({
               ocrText: result.text,
               ocrPages: result.pages,
               items: result.items,
+              recognitionSource: 'ocr',
             },
           })
         } catch (error) {
@@ -669,6 +672,66 @@ export const menuRouter = router({
         jobId,
         status: 'processing' as const,
         message: 'OCR został uruchomiony. Możesz poczekać na wynik w tym oknie.',
+      }
+    }),
+
+  startMenuDocumentAiImport: publicProcedure
+    .input(importDocumentInput)
+    .mutation(async ({ input }) => {
+      cleanupMenuOcrJobs()
+
+      const document = await resolveImportDocument(input)
+      if (!document.documentUrl) {
+        throw new Error('Import AI dziala tylko dla wgranego pliku PDF.')
+      }
+
+      const jobId = randomUUID()
+      const createdAt = Date.now()
+      menuOcrJobs.set(jobId, {
+        status: 'processing',
+        message: 'Przygotowujemy PDF do analizy AI.',
+        createdAt,
+        updatedAt: createdAt,
+        stage: 'rendering',
+      })
+
+      void (async () => {
+        try {
+          const result = await parseMenuDocumentWithAi(document.documentUrl!, {
+            onProgress: (progress) => setMenuOcrJobProgress(jobId, progress),
+            timeoutMs: MENU_OCR_MAX_DURATION_MS,
+          })
+          const preview = await buildMenuImportPreviewFromItems(document.type, result.items, document.documentId)
+
+          menuOcrJobs.set(jobId, {
+            status: 'completed',
+            message: `AI rozpoznalo ${result.items.length} pozycji. Sprawdz kategorie, warianty i ceny przed zapisem.`,
+            createdAt,
+            updatedAt: Date.now(),
+            result: {
+              ...preview,
+              documentUrl: document.documentUrl!,
+              ocrText: result.text,
+              ocrPages: result.pages,
+              items: result.items,
+              recognitionSource: 'ai',
+            },
+          })
+        } catch (error) {
+          console.error(error)
+          menuOcrJobs.set(jobId, {
+            status: 'failed',
+            message: error instanceof Error ? error.message : 'Nie udalo sie wykonac importu AI pliku PDF.',
+            createdAt,
+            updatedAt: Date.now(),
+          })
+        }
+      })()
+
+      return {
+        jobId,
+        status: 'processing' as const,
+        message: 'Import AI zostal uruchomiony. Zostaw to okno otwarte do czasu korekty.',
       }
     }),
 

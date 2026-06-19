@@ -18,7 +18,7 @@ import { MenuDownloadDocument } from '@/app/types/types'
 import { sanitizeImageFilename } from '@/utils/sanitizeImageFilename'
 import { cn } from '@/utils/utils'
 import { trpc } from '@/utils/trpc'
-import { ArrowDown, ArrowUp, FileDown, FileInput, FileText, Loader2, Pencil, Plus, Save, ScanText, Trash2, Upload, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, FileDown, FileInput, FileText, Loader2, Pencil, Plus, Save, ScanText, Sparkles, Trash2, Upload, X } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -56,6 +56,7 @@ type OcrReview = ImportPreview & {
   documentUrl: string
   ocrText: string
   items: OcrReviewItem[]
+  recognitionSource?: 'ocr' | 'ai'
 }
 
 const DOCUMENT_TYPE_OPTIONS: Array<{ value: MenuDocumentType; label: string }> = [
@@ -124,6 +125,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
   const previewMenuDocumentImport = trpc.menu.previewMenuDocumentImport.useMutation()
   const importMenuFromDocument = trpc.menu.importMenuFromDocument.useMutation()
   const startMenuDocumentOcr = trpc.menu.startMenuDocumentOcr.useMutation()
+  const startMenuDocumentAiImport = trpc.menu.startMenuDocumentAiImport.useMutation()
   const ocrJobQuery = trpc.menu.getMenuDocumentOcrJob.useQuery(
     { jobId: ocrJobId ?? '00000000-0000-0000-0000-000000000000' },
     {
@@ -409,6 +411,33 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
     }
   }
 
+  const startAiReview = async (doc: MenuDownloadDocument) => {
+    if (doc.type === 'other') {
+      toast.error('Import AI pozycji dziala tylko dla dokumentow typu Menu, Napoje albo Pelna karta.')
+      return
+    }
+
+    setImportingId(`ai-${doc.id}`)
+    setOcrReview(null)
+    setOcrJobId(null)
+    setOcrJobStatus({
+      message: 'Uruchamiamy import AI dla pliku PDF.',
+    })
+    try {
+      const job = await startMenuDocumentAiImport.mutateAsync({ type: doc.type, documentId: doc.id })
+      setOcrJobId(job.jobId)
+      setOcrJobStatus({
+        message: job.message,
+      })
+      toast.info(job.message)
+    } catch (error) {
+      console.error(error)
+      toast.error(getErrorMessage(error, 'Nie udalo sie uruchomic importu AI pliku PDF.'))
+      setImportingId(null)
+      setOcrJobStatus(null)
+    }
+  }
+
   const updateOcrItem = (rowId: string, patch: Partial<OcrReviewItem>) => {
     setOcrReview((current) => {
       if (!current) return current
@@ -677,7 +706,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
                           variant="secondary"
                           className="gap-2"
                           onClick={() => void previewDocumentImport(doc)}
-                          disabled={isUploading || saving || importingId === doc.id || importingId === `ocr-${doc.id}`}
+                          disabled={isUploading || saving || importingId === doc.id || importingId === `ocr-${doc.id}` || importingId === `ai-${doc.id}`}
                         >
                           {importingId === doc.id ? (
                             <Loader2 size={14} className="animate-spin" />
@@ -688,17 +717,31 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
                         </Button>
                         <Button
                           type="button"
+                          variant="secondary"
+                          className="gap-2"
+                          onClick={() => void startAiReview(doc)}
+                          disabled={isUploading || saving || importingId === doc.id || importingId === `ocr-${doc.id}` || importingId === `ai-${doc.id}`}
+                        >
+                          {importingId === `ai-${doc.id}` ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Sparkles size={14} />
+                          )}
+                          {importingId === `ai-${doc.id}` ? 'AI...' : 'AI i korekta'}
+                        </Button>
+                        <Button
+                          type="button"
                           variant="outline"
                           className="gap-2"
                           onClick={() => void startOcrReview(doc)}
-                          disabled={isUploading || saving || importingId === doc.id || importingId === `ocr-${doc.id}`}
+                          disabled={isUploading || saving || importingId === doc.id || importingId === `ocr-${doc.id}` || importingId === `ai-${doc.id}`}
                         >
                           {importingId === `ocr-${doc.id}` ? (
                             <Loader2 size={14} className="animate-spin" />
                           ) : (
                             <ScanText size={14} />
                           )}
-                          {importingId === `ocr-${doc.id}` ? 'OCR...' : 'OCR i korekta'}
+                          {importingId === `ocr-${doc.id}` ? 'OCR...' : 'OCR awaryjnie'}
                         </Button>
                       </>
                     )}
@@ -993,9 +1036,9 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
       >
         <DialogContent className="max-h-[92vh] max-w-7xl overflow-hidden rounded-2xl p-0">
           <DialogHeader className="border-b border-border px-5 py-4">
-            <DialogTitle className="font-serif text-xl text-dark-gray">OCR menu i korekta</DialogTitle>
+            <DialogTitle className="font-serif text-xl text-dark-gray">{ocrReview?.recognitionSource === 'ai' ? 'AI menu i korekta' : 'OCR menu i korekta'}</DialogTitle>
             <DialogDescription>
-              Sprawdź rozpoznane pozycje po lewej i porównaj je z PDF-em po prawej. Zapis uruchomi się dopiero po Twojej akceptacji.
+              Sprawdź rozpoznane pozycje po lewej i porównaj je z PDF-em po prawej. Warianty cenowe są rozbite na osobne wiersze, które możesz poprawić przed zapisem.
             </DialogDescription>
           </DialogHeader>
 
@@ -1062,7 +1105,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
                   <div className="space-y-3">
                     {ocrReview.items.length === 0 ? (
                       <div className="rounded-xl border border-dashed border-border bg-white px-4 py-8 text-sm text-muted-foreground">
-                        OCR nie rozpoznał pozycji automatycznie. Możesz dodać je ręcznie i porównać z PDF-em po prawej.
+                        Import nie rozpoznał pozycji automatycznie. Możesz dodać je ręcznie i porównać z PDF-em po prawej.
                       </div>
                     ) : (
                       ocrReview.items.map((item, index) => (
@@ -1125,7 +1168,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
                   <div className="mt-4 rounded-xl border border-border bg-white">
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
                       <div>
-                        <h3 className="text-sm font-semibold text-slate-950">Pozycje bez odpowiednika w OCR</h3>
+                        <h3 className="text-sm font-semibold text-slate-950">Pozycje bez odpowiednika w pliku</h3>
                         <p className="text-xs text-muted-foreground">Zaznaczone pozycje zostaną ukryte przy zapisie.</p>
                       </div>
                       {ocrReview.missing.length > 0 && (
@@ -1209,7 +1252,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
                     disabled={importingId === 'ocr-confirm'}
                   >
                     {importingId === 'ocr-confirm' && <Loader2 size={14} className="animate-spin" />}
-                    Zapisz import OCR
+                    {ocrReview?.recognitionSource === 'ai' ? 'Zapisz import AI' : 'Zapisz import OCR'}
                   </Button>
                 </div>
               </div>
