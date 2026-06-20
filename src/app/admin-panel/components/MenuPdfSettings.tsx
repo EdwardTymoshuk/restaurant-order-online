@@ -103,12 +103,20 @@ const formatDateTime = (value?: string) => {
   }).format(date)
 }
 
+const normalizeMenuDocuments = (docs: MenuDownloadDocument[]) =>
+  [...docs]
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((doc, index) => ({ ...doc, sortOrder: index }))
+
+const formatMetaLine = (label: string, date?: string, actor?: string) => {
+  const formattedDate = formatDateTime(date)
+  if (!formattedDate && !actor) return null
+  if (!formattedDate) return `${label}: ${actor}`
+  return `${label}: ${formattedDate}${actor ? ` · ${actor}` : ''}`
+}
+
 const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocument[] }) => {
-  const [documents, setDocuments] = useState<MenuDownloadDocument[]>(
-    [...menuDocuments]
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map((doc, index) => ({ ...doc, sortOrder: index }))
-  )
+  const [documents, setDocuments] = useState<MenuDownloadDocument[]>(normalizeMenuDocuments(menuDocuments))
   const [saving, setSaving] = useState(false)
   const [uploadingId, setUploadingId] = useState<string | null>(null)
   const [importingId, setImportingId] = useState<string | null>(null)
@@ -148,11 +156,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
   const importReviewedMenuItems = trpc.menu.importReviewedMenuItems.useMutation()
 
   useEffect(() => {
-    setDocuments(
-      [...menuDocuments]
-        .sort((a, b) => a.sortOrder - b.sortOrder)
-        .map((doc, index) => ({ ...doc, sortOrder: index }))
-    )
+    setDocuments(normalizeMenuDocuments(menuDocuments))
   }, [menuDocuments])
 
   useEffect(() => {
@@ -212,9 +216,13 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
     setSaving(true)
     let saved = false
     try {
-      await saveMenuDocuments.mutateAsync(
+      const updatedSettings = await saveMenuDocuments.mutateAsync(
         nextDocuments.map((doc, index) => ({ ...doc, sortOrder: index }))
       )
+      const savedDocuments = Array.isArray(updatedSettings.menuDocuments)
+        ? (updatedSettings.menuDocuments as unknown as MenuDownloadDocument[])
+        : nextDocuments
+      setDocuments(normalizeMenuDocuments(savedDocuments))
       saved = true
       if (options?.notify) {
         toast.success('Dokumenty PDF zostały zapisane.')
@@ -239,6 +247,27 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
   const updateDocument = async (id: string, patch: Partial<MenuDownloadDocument>) => {
     const nextDocuments = documents.map((doc) => (doc.id === id ? { ...doc, ...patch } : doc))
     await saveCurrentDocuments(nextDocuments)
+  }
+
+  const updateDocumentImportMeta = (
+    documentId: string | undefined,
+    meta?: { importedAt: string; importedBy: string } | null
+  ) => {
+    if (!documentId || !meta) return
+
+    setDocuments((current) =>
+      normalizeMenuDocuments(
+        current.map((doc) =>
+          doc.id === documentId
+            ? {
+                ...doc,
+                importedAt: meta.importedAt,
+                importedBy: meta.importedBy,
+              }
+            : doc
+        )
+      )
+    )
   }
 
   const startEditingDocument = (doc: MenuDownloadDocument) => {
@@ -337,6 +366,9 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
                 title: doc.title || baseDoc.title,
                 type: doc.type || baseDoc.type,
                 uploadedAt: baseDoc.uploadedAt,
+                uploadedBy: undefined,
+                importedAt: undefined,
+                importedBy: undefined,
               }
             : doc
         )
@@ -538,6 +570,8 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
       })
       await queryClient.invalidateQueries(['menu.getAllMenuItems'])
       await queryClient.invalidateQueries(['menu.getMenuItems'])
+      await queryClient.invalidateQueries(['settings.getSettings'])
+      updateDocumentImportMeta(importPreview.documentId, result.documentImportMeta)
 
       toast.success(
         `Wczytano ${result.total} pozycji: ${result.created} dodano, ${result.updated} zaktualizowano, ${result.archived} zarchiwizowano.`
@@ -571,6 +605,8 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
       })
       await queryClient.invalidateQueries(['menu.getAllMenuItems'])
       await queryClient.invalidateQueries(['menu.getMenuItems'])
+      await queryClient.invalidateQueries(['settings.getSettings'])
+      updateDocumentImportMeta(ocrReview.documentId, result.documentImportMeta)
 
       toast.success(
         `Wczytano ${result.total} pozycji: ${result.created} dodano, ${result.updated} zaktualizowano, ${result.archived} zarchiwizowano.`
@@ -649,14 +685,19 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
                           {doc.isActive ? 'Widoczny' : 'Ukryty'}
                         </span>
                       </div>
-                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <div className="mt-2 flex flex-col gap-1 text-xs text-muted-foreground">
                         <span>
                           {doc.isActive
                             ? 'Pokazywany gościom na stronie menu.'
                             : 'Ukryty przed gośćmi na stronie menu.'}
                         </span>
-                        {formatDateTime(doc.uploadedAt) && (
-                          <span>Wgrano {formatDateTime(doc.uploadedAt)}</span>
+                        {formatMetaLine('Plik wgrany', doc.uploadedAt, doc.uploadedBy) && (
+                          <span>{formatMetaLine('Plik wgrany', doc.uploadedAt, doc.uploadedBy)}</span>
+                        )}
+                        {formatMetaLine('Import menu zapisany', doc.importedAt, doc.importedBy) ? (
+                          <span>{formatMetaLine('Import menu zapisany', doc.importedAt, doc.importedBy)}</span>
+                        ) : (
+                          <span>Import menu nie był jeszcze zapisany z tego pliku.</span>
                         )}
                       </div>
                     </div>

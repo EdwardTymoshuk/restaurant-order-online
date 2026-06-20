@@ -201,4 +201,7 @@ export interface MenuDownloadDocument {
 	sortOrder: number
 	isActive: boolean
 	uploadedAt?: string
+	uploadedBy?: string
+	importedAt?: string
+	importedBy?: string
 }

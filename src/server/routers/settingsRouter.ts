@@ -1,6 +1,22 @@
 import { prisma } from '@/lib/prisma'
+import type { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { publicProcedure, router } from '../trpc'
+
+const getActorName = async (userId?: string | null) => {
+  if (!userId) return 'Administrator'
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      name: true,
+      username: true,
+      email: true,
+    },
+  })
+
+  return user?.name || user?.username || user?.email || 'Administrator'
+}
 
 export const settingsRouter = router({
   // Get all settings
@@ -136,16 +152,44 @@ export const settingsRouter = router({
           sortOrder: z.number().int().min(0),
           isActive: z.boolean(),
           uploadedAt: z.string().optional(),
+          uploadedBy: z.string().optional(),
+          importedAt: z.string().optional(),
+          importedBy: z.string().optional(),
         }),
       ),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const settings = await prisma.settings.findFirst()
       if (!settings) throw new Error('Settings not found')
 
+      const existingDocuments = Array.isArray(settings.menuDocuments)
+        ? (settings.menuDocuments as Array<{
+            id?: string
+            uploadedAt?: string
+            uploadedBy?: string
+            importedAt?: string
+            importedBy?: string
+          }>)
+        : []
+      const existingById = new Map(existingDocuments.map((doc) => [doc.id, doc]))
+      const now = new Date().toISOString()
+      const actorName = await getActorName(ctx.user?.id)
+      const documentsWithMetadata = input.map((doc) => {
+        const existing = existingById.get(doc.id)
+        const isNewUpload = Boolean(doc.uploadedAt && doc.uploadedAt !== existing?.uploadedAt)
+
+        return {
+          ...doc,
+          uploadedAt: doc.uploadedAt || existing?.uploadedAt || now,
+          uploadedBy: isNewUpload ? actorName : doc.uploadedBy || existing?.uploadedBy || actorName,
+          importedAt: isNewUpload ? doc.importedAt : doc.importedAt || existing?.importedAt,
+          importedBy: isNewUpload ? doc.importedBy : doc.importedBy || existing?.importedBy,
+        }
+      })
+
       return await prisma.settings.update({
         where: { id: settings.id },
-        data: { menuDocuments: input },
+        data: { menuDocuments: documentsWithMetadata as unknown as Prisma.InputJsonValue },
       })
     }),
   updatePizzaAvailability: publicProcedure

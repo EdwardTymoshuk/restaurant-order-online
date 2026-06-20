@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { drinkMenuItemCategories, foodMenuItemCategories, isAlcoholMenuCategory } from '@/config'
+import type { Prisma } from '@prisma/client'
 import {
   getMenuImportKey,
   ImportDocumentType,
@@ -148,6 +149,55 @@ const getMenuDocumentById = async (documentId: string) => {
   }
 
   return document
+}
+
+const getActorName = async (userId?: string | null) => {
+  if (!userId) return 'Administrator'
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      name: true,
+      username: true,
+      email: true,
+    },
+  })
+
+  return user?.name || user?.username || user?.email || 'Administrator'
+}
+
+const markMenuDocumentImported = async (documentId: string | undefined, userId?: string | null) => {
+  if (!documentId) return null
+
+  const settings = await prisma.settings.findFirst({
+    select: {
+      id: true,
+      menuDocuments: true,
+    },
+  })
+  if (!settings) return null
+
+  const documents = Array.isArray(settings.menuDocuments)
+    ? (settings.menuDocuments as unknown as MenuDownloadDocument[])
+    : []
+  const importedAt = new Date().toISOString()
+  const importedBy = await getActorName(userId)
+  const nextDocuments = documents.map((document) =>
+    document.id === documentId
+      ? {
+          ...document,
+          importedAt,
+          importedBy,
+        }
+      : document
+  )
+
+  await prisma.settings.update({
+    where: { id: settings.id },
+    data: { menuDocuments: nextDocuments as unknown as Prisma.InputJsonValue },
+  })
+
+  return { importedAt, importedBy }
 }
 
 const resolveImportDocument = async (input: ImportDocumentInput) => {
@@ -767,9 +817,15 @@ export const menuRouter = router({
         archiveMissingIds: z.array(z.string().uuid()).default([]),
       }),
     )
-    .mutation(async ({ input }) => {
-      const { type, parsedItems } = await getParsedImportItems(input)
-      return saveMenuImportItems(type, parsedItems, input.archiveMissingIds)
+    .mutation(async ({ input, ctx }) => {
+      const { type, documentId, parsedItems } = await getParsedImportItems(input)
+      const result = await saveMenuImportItems(type, parsedItems, input.archiveMissingIds)
+      const documentImportMeta = await markMenuDocumentImported(documentId, ctx.user?.id)
+
+      return {
+        ...result,
+        documentImportMeta,
+      }
     }),
 
   importReviewedMenuItems: publicProcedure
@@ -778,9 +834,15 @@ export const menuRouter = router({
         archiveMissingIds: z.array(z.string().uuid()).default([]),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const document = await resolveImportDocument(input)
       const items = normalizeReviewedItems(input.items)
-      return saveMenuImportItems(document.type, items, input.archiveMissingIds)
+      const result = await saveMenuImportItems(document.type, items, input.archiveMissingIds)
+      const documentImportMeta = await markMenuDocumentImported(document.documentId, ctx.user?.id)
+
+      return {
+        ...result,
+        documentImportMeta,
+      }
     }),
 })
