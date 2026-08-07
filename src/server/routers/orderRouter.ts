@@ -51,6 +51,11 @@ export const orderRouter = router({
           z.object({
             menuItemId: z.string(),
             quantity: z.number(),
+            selectedOptions: z.array(z.object({
+              group: z.string(),
+              label: z.string(),
+              price: z.number(),
+            })).optional(),
           }),
         ),
         totalAmount: z.number(),
@@ -81,6 +86,7 @@ export const orderRouter = router({
           create: input.items.map((item) => ({
             menuItemId: item.menuItemId,
             quantity: item.quantity,
+            selectedOptions: item.selectedOptions ?? [],
           })),
         },
         comment: input.comment,

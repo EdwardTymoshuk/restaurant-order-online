@@ -464,6 +464,7 @@ const Order = () => {
                       orientation="horizontal"
                       isOrderingActive={isOrderingOpen}
                       isPizzaAvailable={settings?.pizzaCategoryEnabled}
+                      optionGroups={item.optionGroups as MenuItemType['optionGroups']}
                     />
                   ))}
                 </div>

@@ -5,11 +5,13 @@ import { MenuItemCategory } from '../types/types'
 
 interface CartItem {
 	id: string
+	menuItemId?: string
 	name: string
 	category: MenuItemCategory
 	price: number
 	quantity: number
 	image: string
+	selectedOptions?: Array<{ group: string; label: string; price: number }>
 }
 
 interface DiscountInfo {

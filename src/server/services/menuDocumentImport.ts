@@ -14,6 +14,18 @@ export type ParsedMenuImportItem = {
   name: string
   price: number
   description: string | null
+  optionGroups?: MenuOptionGroup[]
+}
+
+export type MenuOption = {
+  label: string
+  price: number
+}
+
+export type MenuOptionGroup = {
+  name: string
+  required: boolean
+  options: MenuOption[]
 }
 
 export type OcrMenuImportResult = {
@@ -32,12 +44,19 @@ type AiMenuVariant = {
   price: number
 }
 
+type AiMenuOptionGroup = {
+  name: string
+  required: boolean
+  options: AiMenuVariant[]
+}
+
 type AiMenuItem = {
   category: string
   name: string
   description: string | null
   price: number | null
   variants: AiMenuVariant[]
+  optionGroups: AiMenuOptionGroup[]
 }
 
 type AiMenuPageResponse = {
@@ -560,8 +579,32 @@ const MENU_AI_RESPONSE_SCHEMA = {
               required: ['label', 'price'],
             },
           },
+          optionGroups: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                name: { type: 'string' },
+                required: { type: 'boolean' },
+                options: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    additionalProperties: false,
+                    properties: {
+                      label: { type: 'string' },
+                      price: { type: 'number' },
+                    },
+                    required: ['label', 'price'],
+                  },
+                },
+              },
+              required: ['name', 'required', 'options'],
+            },
+          },
         },
-        required: ['category', 'name', 'description', 'price', 'variants'],
+        required: ['category', 'name', 'description', 'price', 'variants', 'optionGroups'],
       },
     },
   },
@@ -570,9 +613,10 @@ const MENU_AI_RESPONSE_SCHEMA = {
 
 const MENU_AI_SYSTEM_PROMPT = `Jestes ekspertem od przepisywania menu restauracji z PDF/obrazu do danych strukturalnych.
 Zadanie: odczytaj pozycje menu z pojedynczej strony PDF restauracji Spoko Sopot.
-Zwracaj wylacznie pozycje sprzedazowe: kategorie, nazwe, opis i ceny.
+Zwracaj wylacznie pozycje sprzedazowe: kategorie, nazwe, opis, ceny i grupy wyboru.
 Ignoruj dekoracje, zdjecia, numery stron, stopki, teksty promocyjne i angielskie tlumaczenia kategorii.
-Jesli pozycja ma jedna cene, wpisz ja w price i zostaw variants jako pusta tablice.
+Nie tworz osobnych pozycji dla konfiguratorow, skladnikow i dodatkow. Jesli pod daniem jest sekcja wyboru, zapisz ja w optionGroups. Przyklad: danie "Surówka 150 g" z opcjami "z białej kapusty", "z buraka" itd. ma jedna pozycje bazowa i optionGroups:[{"name":"Wybierz rodzaj","required":true,"options":[{"label":"z białej kapusty","price":9}]}]. To samo dotyczy "Sałatka w formie bowl" z opcjami bazy i dodatkow.
+Jesli pozycja ma jedna cene, wpisz ja w price i zostaw variants jako pusta tablice. W optionGroups umieszczaj tylko wybory klienta, nie warianty rozmiaru/pojemności.
 Jesli ten sam produkt ma kilka wariantow cenowych, np. kolumny 40 ml i 500 ml, wpisz nazwe produktu raz, price ustaw na null, a warianty dodaj jako [{"label":"40 ml","price":18},{"label":"500 ml","price":139}].
 Przy napojach i alkoholu zawsze zachowuj widoczna objetosc w nazwie albo wariancie: 40 ml, 200 ml, 330 ml, 500 ml, 700 ml, 1 l. Nie zostawiaj samej nazwy napoju, jesli PDF pokazuje objetosc.
 Jesli objetosc dotyczy calej sekcji/kolumny, przenies ja do wariantu lub nazwy kazdej pozycji z tej sekcji. Przyklad: "Wyborowa" pod kolumna "40 ml" => wariant "40 ml"; "Lech 500 ml" => nazwa "Lech 500 ml".
@@ -593,12 +637,54 @@ const canonicalizeAiCategory = (value: unknown) => {
   return getCanonicalMenuImportCategory(cleaned) || cleaned
 }
 
+const IGNORED_AI_CATEGORY_NAMES = new Set([
+  'sałatka w formie bowl',
+  'salatka w formie bowl',
+])
+
+const IGNORED_AI_ITEM_NAMES = new Set([
+  'nasza baza',
+  'falafel 5 szt',
+  'grillowany kurczak 100 g',
+  'krewetki 5 szt',
+])
+
+const shouldIgnoreAiMenuItem = (category: string, name: string) => {
+  const normalizedCategory = normalize(category)
+  const normalizedName = normalize(name)
+  return (
+    IGNORED_AI_CATEGORY_NAMES.has(normalizedCategory) ||
+    IGNORED_AI_ITEM_NAMES.has(normalizedName)
+  )
+}
+
 const normalizeVariantLabel = (value: unknown) => {
   const cleaned = cleanAiValue(value)
   if (!cleaned) return ''
   return cleaned
     .replace(/([0-9])\s*(ml|l|g|kg|szt\.?|os\.?)$/i, '$1 $2')
     .replace(/\.$/, '')
+}
+
+const normalizeOptionGroups = (groups: unknown): MenuOptionGroup[] => {
+  if (!Array.isArray(groups)) return []
+  return groups.flatMap((group) => {
+    if (!group || typeof group !== 'object') return []
+    const source = group as Record<string, unknown>
+    const name = cleanAiValue(source.name)
+    const options = Array.isArray(source.options)
+      ? source.options.flatMap((option) => {
+          if (!option || typeof option !== 'object') return []
+          const sourceOption = option as Record<string, unknown>
+          const label = cleanAiValue(sourceOption.label)
+          const price = Number(sourceOption.price)
+          return label && isValidAiPrice(price) ? [{ label, price }] : []
+        })
+      : []
+    return name && options.length > 0
+      ? [{ name, required: source.required !== false, options }]
+      : []
+  })
 }
 
 const appendVariantLabel = (name: string, label: string) => {
@@ -620,14 +706,16 @@ const normalizeAiItems = (items: AiMenuItem[]) => {
     const category = canonicalizeAiCategory(item.category)
     const name = cleanAiValue(item.name)
     const description = cleanAiValue(item.description) || null
+    const optionGroups = normalizeOptionGroups(item.optionGroups)
 
     if (!name) continue
+    if (shouldIgnoreAiMenuItem(category, name) && optionGroups.length === 0) continue
 
     if (Array.isArray(item.variants) && item.variants.length > 0) {
       for (const variant of item.variants) {
         if (!isValidAiPrice(variant.price)) continue
         const variantName = appendVariantLabel(name, normalizeVariantLabel(variant.label))
-        const parsedItem = { category, name: variantName, price: variant.price, description }
+        const parsedItem = { category, name: variantName, price: variant.price, description, optionGroups }
         const key = getMenuImportKey(parsedItem)
         if (seen.has(key)) continue
         seen.add(key)
@@ -637,7 +725,7 @@ const normalizeAiItems = (items: AiMenuItem[]) => {
     }
 
     if (!isValidAiPrice(item.price)) continue
-    const parsedItem = { category, name, price: item.price, description }
+    const parsedItem = { category, name, price: item.price, description, optionGroups }
     const key = getMenuImportKey(parsedItem)
     if (seen.has(key)) continue
     seen.add(key)

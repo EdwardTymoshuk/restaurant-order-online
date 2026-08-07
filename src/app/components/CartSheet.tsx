@@ -107,7 +107,12 @@ const CartSheet = ({ onClose }: { onClose: () => void }) => {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="line-clamp-2 text-sm font-semibold leading-5 text-slate-950">{item.name}</p>
+                        <p className="line-clamp-2 text-sm font-semibold leading-5 text-slate-950">{item.name}</p>
+                        {item.selectedOptions && item.selectedOptions.length > 0 && (
+                          <p className="mt-1 text-xs leading-5 text-slate-500">
+                            {item.selectedOptions.map((option) => option.label).join(' · ')}
+                          </p>
+                        )}
                           <p className="mt-1 text-xs text-slate-400">{item.category}</p>
                         </div>
                         <p className="shrink-0 text-sm font-semibold text-secondary">{item.price * item.quantity} zł</p>

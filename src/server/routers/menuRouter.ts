@@ -39,6 +39,14 @@ const reviewedImportItemInput = z.object({
   name: z.string().trim().min(1),
   description: z.string().trim().nullable().optional(),
   price: z.number().finite().min(0),
+  optionGroups: z.array(z.object({
+    name: z.string().trim().min(1),
+    required: z.boolean().default(true),
+    options: z.array(z.object({
+      label: z.string().trim().min(1),
+      price: z.number().finite().positive(),
+    })).min(1),
+  })).optional(),
 })
 
 const reviewedImportInput = importDocumentInput.extend({
@@ -129,6 +137,7 @@ const normalizeReviewedItems = (items: z.infer<typeof reviewedImportItemInput>[]
       name: item.name.trim(),
       price: Number(item.price),
       description: item.description?.trim() ? item.description.trim() : null,
+      optionGroups: item.optionGroups ?? [],
     }))
     .filter((item) => item.category && item.name && Number.isFinite(item.price))
 
@@ -258,6 +267,7 @@ const buildMenuImportPreviewFromItems = async (
       name: true,
       price: true,
       description: true,
+      optionGroups: true,
     },
   })
 
@@ -272,6 +282,7 @@ const buildMenuImportPreviewFromItems = async (
       name: item.name,
       price: item.price,
       description: item.description,
+      optionGroups: item.optionGroups ?? [],
     }))
 
   const updated = parsedItems
@@ -281,7 +292,7 @@ const buildMenuImportPreviewFromItems = async (
 
       const currentDescription = existing.description ?? null
       const nextDescription = item.description ?? null
-      const changed = existing.price !== item.price || currentDescription !== nextDescription
+      const changed = existing.price !== item.price || currentDescription !== nextDescription || JSON.stringify(existing.optionGroups ?? []) !== JSON.stringify(item.optionGroups ?? [])
       if (!changed) return null
 
       return {
@@ -291,6 +302,7 @@ const buildMenuImportPreviewFromItems = async (
         price: item.price,
         currentPrice: existing.price,
         description: item.description,
+        optionGroups: item.optionGroups ?? [],
       }
     })
     .filter(isPresent)
@@ -299,7 +311,7 @@ const buildMenuImportPreviewFromItems = async (
     .filter((item) => {
       const existing = existingByKey.get(getMenuImportKey(item))
       if (!existing) return false
-      return existing.price === item.price && (existing.description ?? null) === (item.description ?? null)
+      return existing.price === item.price && (existing.description ?? null) === (item.description ?? null) && JSON.stringify(existing.optionGroups ?? []) === JSON.stringify(item.optionGroups ?? [])
     })
     .map((item) => ({
       category: item.category,
@@ -344,6 +356,7 @@ const saveMenuImportItems = async (
       id: true,
       category: true,
       name: true,
+      optionGroups: true,
     },
   })
 
@@ -364,6 +377,7 @@ const saveMenuImportItems = async (
         data: {
           price: item.price,
           description: item.description,
+          optionGroups: item.optionGroups ?? [],
           isActive: true,
           isOrderable: !isAlcoholMenuCategory(item.category),
           isArchived: false,
@@ -379,6 +393,7 @@ const saveMenuImportItems = async (
         name: item.name,
         price: item.price,
         description: item.description,
+        optionGroups: item.optionGroups ?? [],
         image: null,
         isActive: true,
         isOrderable: !isAlcoholMenuCategory(item.category),
@@ -390,6 +405,7 @@ const saveMenuImportItems = async (
         id: true,
         category: true,
         name: true,
+        optionGroups: true,
       },
     })
 
@@ -537,6 +553,7 @@ export const menuRouter = router({
         isOrderable: z.boolean().default(false),
         isRecommended: z.boolean().default(false),
         isOnMainPage: z.boolean().default(false),
+        optionGroups: reviewedImportItemInput.shape.optionGroups,
       }),
     )
     .mutation(async ({ input }) => {
@@ -571,6 +588,7 @@ export const menuRouter = router({
         isOrderable: z.boolean().optional(),
         isOnMainPage: z.boolean().optional(),
         isArchived: z.boolean().optional(),
+        optionGroups: reviewedImportItemInput.shape.optionGroups,
       }),
     )
     .mutation(async ({ input }) => {

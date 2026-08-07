@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/app/components/ui/switch'
 import { Textarea } from '@/app/components/ui/textarea'
 import { MenuDownloadDocument } from '@/app/types/types'
+import type { MenuOptionGroup } from '@/app/types/types'
 import { sanitizeImageFilename } from '@/utils/sanitizeImageFilename'
 import { cn } from '@/utils/utils'
 import { trpc } from '@/utils/trpc'
@@ -50,6 +51,7 @@ type OcrReviewItem = {
   name: string
   price: number
   description: string
+  optionGroups?: MenuOptionGroup[]
 }
 
 type OcrReview = ImportPreview & {
@@ -181,6 +183,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
           name: item.name,
           price: item.price,
           description: item.description ?? '',
+          optionGroups: item.optionGroups,
         })),
       })
       setSelectedArchiveIds(job.result.missing.map((item) => item.id))
@@ -511,6 +514,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
             name: '',
             price: 0,
             description: '',
+            optionGroups: [],
           },
         ],
       }
@@ -534,6 +538,7 @@ const MenuPdfSettings = ({ menuDocuments }: { menuDocuments: MenuDownloadDocumen
         name: item.name.trim(),
         price: Number(item.price),
         description: item.description.trim() || null,
+        optionGroups: item.optionGroups ?? [],
       }))
       .filter((item) => item.category && item.name && Number.isFinite(item.price))
 

@@ -145,8 +145,9 @@ export default function CheckoutTakeOutForm({
 						? new Date().toISOString()
 						: data.deliveryTime.toISOString(),
 				items: state.items.map((item) => ({
-					menuItemId: item.id,
+					menuItemId: item.menuItemId ?? item.id.split(':')[0],
 					quantity: item.quantity,
+					selectedOptions: item.selectedOptions,
 				})),
 				totalAmount,
 				finalAmount,

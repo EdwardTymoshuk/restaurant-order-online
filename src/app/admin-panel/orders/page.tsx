@@ -453,7 +453,14 @@ const Orders = () => {
                               <span className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[10px] font-normal text-muted-foreground shrink-0">
                                 {item.quantity}
                               </span>
-                              {item.menuItem?.name || 'Nieznana pozycja'}
+                              <>
+                                {item.menuItem?.name || 'Nieznana pozycja'}
+                                {Array.isArray(item.selectedOptions) && item.selectedOptions.length > 0 && (
+                                  <span className="block text-xs text-muted-foreground">
+                                    {(item.selectedOptions as Array<{ label: string }>).map((option) => option.label).join(' · ')}
+                                  </span>
+                                )}
+                              </>
                             </li>
                           ))}
                         </ul>

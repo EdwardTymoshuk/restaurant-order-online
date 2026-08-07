@@ -80,6 +80,24 @@ export interface MenuItemType {
 	isOrderable?: boolean,
 	createdAt: Date,
 	updatedAt: Date,
+	optionGroups?: MenuOptionGroup[] | null,
+}
+
+export interface SelectedMenuOption {
+	group: string,
+	label: string,
+	price: number,
+}
+
+export interface MenuOption {
+	label: string,
+	price: number,
+}
+
+export interface MenuOptionGroup {
+	name: string,
+	required: boolean,
+	options: MenuOption[],
 }
 
 // Тип для статусу замовлення

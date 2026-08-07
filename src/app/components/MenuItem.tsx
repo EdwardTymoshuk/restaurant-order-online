@@ -1,7 +1,7 @@
 'use client'
 
 import { useCart } from '@/app/context/CartContext'
-import { MenuItemCategory, MenuItemType } from '@/app/types/types'
+import { MenuItemCategory, MenuItemType, MenuOptionGroup, SelectedMenuOption } from '@/app/types/types'
 import { cn } from '@/utils/utils'
 import { Check, Minus, Plus, ShoppingBasket } from 'lucide-react'
 import Image from 'next/image'
@@ -28,6 +28,7 @@ type MenuItemProps = Partial<MenuItemType> & {
   className?: string
   isOrderingActive: boolean | undefined
   isPizzaAvailable: boolean | undefined
+  optionGroups?: MenuOptionGroup[] | null
 }
 
 const MenuItem: React.FC<MenuItemProps> = ({
@@ -41,9 +42,12 @@ const MenuItem: React.FC<MenuItemProps> = ({
   category,
   isOrderingActive,
   isPizzaAvailable,
+  optionGroups = [],
 }) => {
   const [addedToCart, setAddedToCart] = useState(false)
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
+  const [isOptionsOpen, setIsOptionsOpen] = useState(false)
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, SelectedMenuOption>>({})
   const { state, dispatch } = useCart()
   const isVertical = orientation === 'vertical'
   const canExpandDescription = Boolean(description && description.length > 90)
@@ -63,24 +67,57 @@ const MenuItem: React.FC<MenuItemProps> = ({
     return true
   }
 
-  const addToCart = () => {
+  const normalizedOptionGroups = optionGroups ?? []
+  const hasRequiredOptions = normalizedOptionGroups.every((group) => !group.required || selectedOptions[group.name])
+
+  const addConfiguredItemToCart = () => {
     if (!name || !price) return
     if (!checkCategoryConflict()) return
+
+    if (!hasRequiredOptions) {
+      toast.error('Wybierz wszystkie wymagane opcje.')
+      return
+    }
+
+    const chosenOptions = Object.values(selectedOptions)
+    const cartId = chosenOptions.length > 0
+      ? `${id}:${chosenOptions.map((option) => `${option.group}=${option.label}`).join('|')}`
+      : id
 
     dispatch({
       type: 'ADD_ITEM',
       payload: {
-        id,
+        id: cartId,
+        menuItemId: id,
         name,
         category,
         price,
         quantity: 1,
         image,
+        selectedOptions: chosenOptions,
       },
     })
 
     setAddedToCart(true)
     setTimeout(() => setAddedToCart(false), 650)
+    setIsOptionsOpen(false)
+  }
+
+  const addToCart = () => {
+    if (normalizedOptionGroups.length > 0) {
+      setSelectedOptions((current) => {
+        if (Object.keys(current).length > 0) return current
+        return Object.fromEntries(normalizedOptionGroups.map((group) => [
+          group.name,
+          group.required && group.options.length === 1
+            ? { group: group.name, label: group.options[0].label, price: group.options[0].price }
+            : undefined,
+        ]).filter(([, value]) => value))
+      })
+      setIsOptionsOpen(true)
+      return
+    }
+    addConfiguredItemToCart()
   }
 
   const incrementQuantity = () => {
@@ -203,6 +240,15 @@ const MenuItem: React.FC<MenuItemProps> = ({
               )}
             </div>
           )}
+
+          {normalizedOptionGroups.length > 0 && (
+            <div className="mt-3 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2.5">
+              <p className="text-xs font-semibold text-slate-800">Możesz wybrać dodatki</p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {normalizedOptionGroups.map((group) => group.name).join(' · ')}
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-3">
@@ -251,6 +297,52 @@ const MenuItem: React.FC<MenuItemProps> = ({
           )}
         </div>
       </div>
+
+      {normalizedOptionGroups.length > 0 && (
+        <Dialog open={isOptionsOpen} onOpenChange={setIsOptionsOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogTitle className="font-sans text-xl">Wybierz opcje</DialogTitle>
+            <DialogDescription>{name}</DialogDescription>
+            <div className="space-y-5 py-2">
+              {normalizedOptionGroups.map((group) => (
+                <fieldset key={group.name} className="space-y-2">
+                  <legend className="text-sm font-semibold text-slate-900">
+                    {group.name}{group.required ? ' *' : ''}
+                  </legend>
+                  <div className="grid gap-2">
+                    {group.options.map((option) => {
+                      const isSelected = selectedOptions[group.name]?.label === option.label
+                      return (
+                        <label key={option.label} className={cn(
+                          'flex cursor-pointer items-center justify-between rounded-xl border px-3 py-2.5 text-sm transition',
+                          isSelected ? 'border-secondary bg-secondary/5' : 'border-border bg-white hover:border-secondary/40'
+                        )}>
+                          <span className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name={`${id}-${group.name}`}
+                              checked={isSelected}
+                              onChange={() => setSelectedOptions((current) => ({
+                                ...current,
+                                [group.name]: { group: group.name, label: option.label, price: option.price },
+                              }))}
+                            />
+                            {option.label}
+                          </span>
+                          <span className="font-semibold text-secondary">{option.price} zł</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </fieldset>
+              ))}
+            </div>
+            <Button type="button" onClick={addConfiguredItemToCart} disabled={!hasRequiredOptions}>
+              Dodaj do koszyka · {price} zł
+            </Button>
+          </DialogContent>
+        </Dialog>
+      )}
     </article>
   )
 }
