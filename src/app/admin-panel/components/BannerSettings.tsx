@@ -82,6 +82,7 @@ const BannerSettings = () => {
                 multiple={false}
                 aspectRatio={1056 / 384}
                 currentImages={[]}
+                uploadPreset="banner"
               />
               <p className="text-text-foreground italic">
                 *Zalecany rozmiar banera - to{' '}

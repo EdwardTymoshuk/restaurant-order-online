@@ -434,6 +434,7 @@ const EventSettings = () => {
                 multiple={false}
                 aspectRatio={16 / 9}
                 currentImages={form.image ? [form.image] : []}
+                uploadPreset="banner"
               />
             </div>
 
@@ -445,6 +446,7 @@ const EventSettings = () => {
                 multiple
                 skipCrop
                 currentImages={form.galleryImages}
+                uploadPreset="gallery"
               />
             </div>
 

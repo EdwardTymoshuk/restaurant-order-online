@@ -190,6 +190,7 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
             multiple={false}
             aspectRatio={1}
             currentImages={image ? [image] : []}
+            uploadPreset="menu"
           />
         </Card>
 

@@ -397,6 +397,7 @@ const GallerySettings = () => {
                 multiple={false}
                 skipCrop
                 currentImages={form.src ? [form.src] : []}
+                uploadPreset="gallery"
               />
             </div>
 

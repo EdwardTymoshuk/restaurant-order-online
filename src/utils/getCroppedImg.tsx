@@ -31,7 +31,7 @@ export const getCroppedImg = async (imageSrc: string, pixelCrop: Area): Promise<
       } else {
         reject(new Error('Nie udało się utworzyć Blob z canvas'))
       }
-    }, 'image/jpeg')
+    }, 'image/jpeg', 0.92)
   })
 }
 

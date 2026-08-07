@@ -4,10 +4,18 @@ import { useCart } from '@/app/context/CartContext'
 import { MenuItemCategory, MenuItemType } from '@/app/types/types'
 import { cn } from '@/utils/utils'
 import { Check, Minus, Plus, ShoppingBasket } from 'lucide-react'
+import Image from 'next/image'
 import React, { useState } from 'react'
 import { toast } from 'sonner'
 import ImageWithFallback from './ImageWithFallback'
 import { Button } from './ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from './ui/dialog'
 
 type MenuItemProps = Partial<MenuItemType> & {
   id: string
@@ -104,14 +112,54 @@ const MenuItem: React.FC<MenuItemProps> = ({
           isVertical ? 'aspect-[4/3] w-full' : 'h-auto w-32 sm:w-40'
         )}
       >
-        <ImageWithFallback
-          src={image}
-          alt={name}
-          width={isVertical ? 520 : 180}
-          height={isVertical ? 390 : 180}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-          containerClassName="h-full w-full"
-        />
+        {image ? (
+          <Dialog>
+            <DialogTrigger asChild>
+              <button
+                type="button"
+                className="h-full w-full cursor-zoom-in overflow-hidden text-left"
+                aria-label={`Pokaż większe zdjęcie: ${name}`}
+              >
+                <ImageWithFallback
+                  src={image}
+                  alt={name}
+                  width={isVertical ? 520 : 180}
+                  height={isVertical ? 390 : 180}
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                  containerClassName="h-full w-full"
+                />
+              </button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl gap-0 overflow-hidden p-0">
+              <div className="relative aspect-[4/3] w-full bg-muted sm:aspect-[16/10]">
+                <Image
+                  src={image}
+                  alt={name}
+                  fill
+                  sizes="(min-width: 768px) 720px, calc(100vw - 2rem)"
+                  className="object-cover"
+                  unoptimized
+                />
+              </div>
+              <div className="space-y-2 p-5 sm:p-6">
+                <DialogTitle className="font-sans text-xl">{name}</DialogTitle>
+                <DialogDescription>
+                  {category} · {price} zł
+                </DialogDescription>
+                {description && <p className="text-sm leading-6 text-slate-600">{description}</p>}
+              </div>
+            </DialogContent>
+          </Dialog>
+        ) : (
+          <ImageWithFallback
+            src={image}
+            alt={name}
+            width={isVertical ? 520 : 180}
+            height={isVertical ? 390 : 180}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            containerClassName="h-full w-full"
+          />
+        )}
         {isDisabled && (
           <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-slate-600 shadow-sm">
             Niedostępne

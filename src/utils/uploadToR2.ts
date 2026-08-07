@@ -7,6 +7,7 @@ export const uploadToR2 = async (buffer: Buffer, key: string, contentType: strin
 		Key: key,
 		Body: buffer,
 		ContentType: contentType,
+		CacheControl: 'public, max-age=31536000, immutable',
 	}
 
 	const command = new PutObjectCommand(params)

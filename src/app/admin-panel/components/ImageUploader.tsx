@@ -17,6 +17,7 @@ interface ImageUploaderProps {
   aspectRatio?: number
   currentImages?: string[]
   skipCrop?: boolean
+  uploadPreset?: 'default' | 'menu' | 'gallery' | 'banner'
 }
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({
@@ -26,6 +27,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   aspectRatio = 1,
   currentImages = [],
   skipCrop = false,
+  uploadPreset = 'default',
 }) => {
   const uniqueId = useId()
 
@@ -60,6 +62,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
           file.name || `image-${Date.now()}.jpg`
         )
         formData.append('file', file, sanitizedFilename)
+        formData.append('preset', uploadPreset)
 
         const response = await fetch('/api/upload', {
           method: 'POST',
@@ -135,6 +138,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     const formData = new FormData()
     const sanitizedFilename = sanitizeImageFilename(`image-${Date.now()}.jpg`)
     formData.append('file', imageBlob, sanitizedFilename)
+    formData.append('preset', uploadPreset)
 
     try {
       const response = await fetch('/api/upload', {

@@ -183,6 +183,7 @@ const MainPageBannerSettings = () => {
             currentImages={
               newBanner.desktopImageUrl ? [newBanner.desktopImageUrl] : []
             }
+            uploadPreset="banner"
           />
 
           {/* Mobile Image */}
@@ -196,6 +197,7 @@ const MainPageBannerSettings = () => {
             currentImages={
               newBanner.mobileImageUrl ? [newBanner.mobileImageUrl] : []
             }
+            uploadPreset="banner"
           />
 
           {/* Link Input */}

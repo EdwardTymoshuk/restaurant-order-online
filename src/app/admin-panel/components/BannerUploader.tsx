@@ -52,6 +52,7 @@ const BannerUploader: React.FC<BannerUploaderProps> = ({ onImageUpload, currentI
 		const formData = new FormData()
 		const sanitizedFilename = sanitizeImageFilename(`banner-${Date.now()}.jpg`)
 		formData.append('file', imageBlob, sanitizedFilename)
+		formData.append('preset', 'banner')
 
 		try {
 			const response = await fetch('/api/upload', {
