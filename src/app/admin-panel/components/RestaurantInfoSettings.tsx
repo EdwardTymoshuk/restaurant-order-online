@@ -11,7 +11,7 @@ import type { OpeningHour, OpeningHourOverride, RestaurantInfo } from '@/app/typ
 import { trpc } from '@/utils/trpc'
 import { format, parseISO } from 'date-fns'
 import { pl } from 'date-fns/locale'
-import { CalendarDays, Mail, MapPin, Phone, Plus, Save, Trash2 } from 'lucide-react'
+import { CalendarDays, Check, Mail, MapPin, Pencil, Phone, Plus, Save, Trash2, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -52,6 +52,8 @@ const parseOverrides = (value: unknown): OpeningHourOverride[] =>
 const TIME_HOURS = Array.from({ length: 24 }, (_, value) => String(value).padStart(2, '0'))
 const TIME_MINUTES = ['00', '30']
 
+const formatHourRange = (item: OpeningHour) => item.isClosed ? 'Zamknięte' : `${item.start} - ${item.end}`
+
 const DateSelect = ({ value, onChange, label }: { value: string; onChange: (value: string) => void; label: string }) => {
   const selected = value ? parseISO(value) : undefined
   return (
@@ -74,7 +76,7 @@ const TimeSelect = ({ value, onChange, disabled, label }: { value: string; onCha
   const update = (nextHours: string, nextMinutes: string) => onChange(`${nextHours}:${nextMinutes}`)
 
   return (
-    <div className="flex gap-1.5" aria-label={label}>
+    <div className="flex min-w-[132px] gap-1.5" aria-label={label}>
       <Select value={hours} disabled={disabled} onValueChange={(next) => update(next, minutes)}>
         <SelectTrigger className="h-10 min-w-0 flex-1 bg-white px-2.5 font-medium tabular-nums"><SelectValue /></SelectTrigger>
         <SelectContent>{TIME_HOURS.map((hour) => <SelectItem key={hour} value={hour}>{hour}</SelectItem>)}</SelectContent>
@@ -91,6 +93,7 @@ const RestaurantInfoSettings = ({ settingsData, refetchSettings }: Props) => {
   const [info, setInfo] = useState<RestaurantInfo>(DEFAULT_INFO)
   const [hours, setHours] = useState<OpeningHour[]>(DEFAULT_HOURS)
   const [overrides, setOverrides] = useState<OpeningHourOverride[]>([])
+  const [hoursEditing, setHoursEditing] = useState(false)
   const updateSettings = trpc.settings.updateRestaurantInfo.useMutation()
 
   useEffect(() => {
@@ -153,25 +156,42 @@ const RestaurantInfoSettings = ({ settingsData, refetchSettings }: Props) => {
         </div>
 
         <div className="space-y-3">
-        <div>
-          <h3 className="text-sm font-semibold text-slate-950">Stałe godziny otwarcia</h3>
-          <p className="text-xs text-muted-foreground">Godziny będą grupowane na stronie, jeśli są takie same dla kolejnych dni.</p>
-        </div>
-        <div className="overflow-hidden rounded-xl border border-border bg-white">
-          <div className="divide-y divide-border">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-950">Stałe godziny otwarcia</h3>
+              <p className="mt-1 text-xs text-muted-foreground">Takie same dni zostaną połączone na stronie.</p>
+            </div>
+            <Button type="button" variant={hoursEditing ? 'default' : 'outline'} size="sm" className="shrink-0 gap-1.5" onClick={() => setHoursEditing((current) => !current)}>
+              {hoursEditing ? <X className="size-4" /> : <Pencil className="size-4" />}
+              {hoursEditing ? 'Zakończ edycję' : 'Edytuj godziny'}
+            </Button>
+          </div>
+          <div className="rounded-xl bg-muted/25 p-2">
             {hours.map((item, index) => (
-              <div key={item.day} className="grid items-center gap-3 px-3 py-3 sm:grid-cols-[minmax(130px,1fr)_auto_96px_96px]">
+              <div key={item.day} className={hoursEditing
+                ? 'grid items-center gap-3 rounded-lg px-2 py-2.5 sm:grid-cols-[minmax(130px,1fr)_auto_minmax(132px,0.7fr)_minmax(132px,0.7fr)]'
+                : 'grid items-center gap-3 rounded-lg px-3 py-2.5 sm:grid-cols-[minmax(130px,1fr)_auto_minmax(150px,0.7fr)]'}>
                 <span className="text-sm font-medium text-slate-900">{DAY_NAMES[index]}</span>
-                <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <input className="size-4 accent-primary" type="checkbox" checked={item.isClosed} onChange={(event) => updateHour(item.day, { isClosed: event.target.checked })} />
-                  Zamknięte
-                </label>
-                <TimeSelect value={item.start} disabled={item.isClosed} onChange={(value) => updateHour(item.day, { start: value })} label={`${DAY_NAMES[index]} otwarcie`} />
-                <TimeSelect value={item.end} disabled={item.isClosed} onChange={(value) => updateHour(item.day, { end: value })} label={`${DAY_NAMES[index]} zamknięcie`} />
+                {!hoursEditing ? (
+                  <span className={item.isClosed ? 'text-xs text-slate-400' : 'text-xs font-medium text-slate-700'}>{item.isClosed ? 'Nieczynne' : 'Otwarte'}</span>
+                ) : (
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <input className="size-4 accent-primary" type="checkbox" checked={item.isClosed} onChange={(event) => updateHour(item.day, { isClosed: event.target.checked })} />
+                    Zamknięte
+                  </label>
+                )}
+                {hoursEditing ? (
+                  <TimeSelect value={item.start} disabled={item.isClosed} onChange={(value) => updateHour(item.day, { start: value })} label={`${DAY_NAMES[index]} otwarcie`} />
+                ) : null}
+                {hoursEditing ? (
+                  <TimeSelect value={item.end} disabled={item.isClosed} onChange={(value) => updateHour(item.day, { end: value })} label={`${DAY_NAMES[index]} zamknięcie`} />
+                ) : (
+                  <span className="text-right text-sm font-semibold tabular-nums text-slate-800">{formatHourRange(item)}</span>
+                )}
               </div>
             ))}
           </div>
-        </div>
+          {hoursEditing && <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Check className="size-3.5 text-primary" /> Zapisz zmiany przyciskiem na dole panelu.</p>}
         </div>
       </div>
 
