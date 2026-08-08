@@ -134,6 +134,9 @@ model Settings {
   menuDocuments        Json     @default("[]")
   pizzaCategoryEnabled Boolean  @default(true)
   pizzaAvailability    Json     @default("[]")
+  restaurantInfo       Json     @default("{}")
+  openingHours         Json     @default("[]")
+  openingHourOverrides Json     @default("[]")
   updatedAt            DateTime @updatedAt
   createdAt            DateTime @default(now())
 }

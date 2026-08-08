@@ -13,6 +13,7 @@ import { trpc } from '@/utils/trpc'
 import { useEffect, useState } from 'react'
 
 import DeliveryZonesSettings from '@/app/admin-panel/components/DeliveryZonesSettings'
+import RestaurantInfoSettings from '@/app/admin-panel/components/RestaurantInfoSettings'
 import { useIsAdmin, useIsManager } from '@/hooks/useRole'
 import {
   BadgePercent,
@@ -24,6 +25,7 @@ import {
   BellRing,
   Settings2,
   ShoppingBag,
+  Store,
   Timer,
 } from 'lucide-react'
 import BannerSettings from '../components/BannerSettings' // Import the new component
@@ -122,6 +124,23 @@ const Settings = () => {
       <PageHeader title="Ustawienia" />
 
       <div className="space-y-5 p-4 md:p-6 lg:p-8">
+        {isManager && (
+          <SettingsModule
+            title="Informacje restauracji"
+            description="Dane kontaktowe, stałe godziny oraz czasowe zmiany widoczne na spokosopot.pl."
+            icon={Store}
+          >
+            <RestaurantInfoSettings
+              settingsData={{
+                restaurantInfo: settingsData?.restaurantInfo,
+                openingHours: settingsData?.openingHours,
+                openingHourOverrides: settingsData?.openingHourOverrides,
+              }}
+              refetchSettings={refetchSettings}
+            />
+          </SettingsModule>
+        )}
+
         <section className="grid gap-5 xl:grid-cols-3">
           <Card className="border-border shadow-sm">
             <CardContent className="p-5">

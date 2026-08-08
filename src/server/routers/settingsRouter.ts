@@ -18,6 +18,40 @@ const getActorName = async (userId?: string | null) => {
   return user?.name || user?.username || user?.email || 'Administrator'
 }
 
+const restaurantInfoInput = z.object({
+  name: z.string().trim().min(1).max(120),
+  phone: z.string().trim().max(40),
+  email: z.string().trim().email().or(z.literal('')),
+  address: z.string().trim().max(200),
+})
+
+const openingHoursInput = z.array(z.object({
+  day: z.number().int().min(1).max(7),
+  isClosed: z.boolean(),
+  start: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  end: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+}))
+
+const openingHourOverridesInput = z.array(z.object({
+  id: z.string().min(1),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  type: z.enum(['hours', 'closed']),
+  start: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
+  end: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
+  title: z.string().trim().max(120),
+  message: z.string().trim().max(300),
+})).superRefine((items, ctx) => {
+  items.forEach((item, index) => {
+    if (item.startDate > item.endDate) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: [index, 'endDate'], message: 'Data końcowa nie może być wcześniejsza.' })
+    }
+    if (item.type === 'hours' && (!item.start || !item.end)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: [index, 'start'], message: 'Podaj godziny wyjątku.' })
+    }
+  })
+})
+
 export const settingsRouter = router({
   // Get all settings
   getSettings: publicProcedure.query(async () => {
@@ -29,6 +63,26 @@ export const settingsRouter = router({
 
     return settings
   }),
+
+  updateRestaurantInfo: publicProcedure
+    .input(z.object({
+      restaurantInfo: restaurantInfoInput,
+      openingHours: openingHoursInput,
+      openingHourOverrides: openingHourOverridesInput,
+    }))
+    .mutation(async ({ input }) => {
+      const settings = await prisma.settings.findFirst()
+      if (!settings) throw new Error('Settings not found')
+
+      return prisma.settings.update({
+        where: { id: settings.id },
+        data: {
+          restaurantInfo: input.restaurantInfo,
+          openingHours: input.openingHours,
+          openingHourOverrides: input.openingHourOverrides,
+        },
+      })
+    }),
 
   // Update ordering state
   updateOrderingState: publicProcedure

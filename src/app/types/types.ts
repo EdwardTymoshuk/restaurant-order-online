@@ -223,3 +223,28 @@ export interface MenuDownloadDocument {
 	importedAt?: string
 	importedBy?: string
 }
+
+export interface RestaurantInfo {
+	name: string
+	phone: string
+	email: string
+	address: string
+}
+
+export interface OpeningHour {
+	day: number
+	isClosed: boolean
+	start: string
+	end: string
+}
+
+export interface OpeningHourOverride {
+	id: string
+	startDate: string
+	endDate: string
+	type: 'hours' | 'closed'
+	start?: string
+	end?: string
+	title: string
+	message: string
+}
