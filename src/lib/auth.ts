@@ -52,6 +52,13 @@ export const authOptions: AuthOptions = {
 				token.permissions = Array.isArray(user.permissions) ? user.permissions as string[] : []
 				token.accessToken = user.accessToken // Додаємо accessToken
 			}
+			if (token.id && !token.permissions) {
+				const currentUser = await prisma.user.findUnique({ where: { id: token.id }, select: { permissions: true, role: true } })
+				token.role = currentUser?.role ?? token.role
+				token.permissions = Array.isArray(currentUser?.permissions)
+					? (currentUser.permissions as unknown[]).filter((value): value is string => typeof value === 'string')
+					: []
+			}
 			return token
 		},
 	},
