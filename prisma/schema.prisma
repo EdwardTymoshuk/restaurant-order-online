@@ -14,6 +14,7 @@ model User {
   name      String?
   password  String
   role      String   @default("user")
+  permissions Json     @default("[]")
   createdAt DateTime @default(now())
 
   createdReservations Reservation[] @relation("ReservationCreatedBy")

@@ -6,6 +6,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/app/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select'
 import { trpc } from '@/utils/trpc'
+import { ALL_PERMISSIONS, PERMISSION_LABELS } from '@/lib/roles'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
 import { getQueryKey } from '@trpc/react-query'
@@ -15,9 +16,11 @@ import { z } from 'zod'
 // Валідація через Zod
 const userSchema = z.object({
 	username: z.string().min(2, 'Wymagana nazwa użytkownika'),
+	email: z.string().email('Podaj prawidłowy email'),
 	password: z.string().min(6, 'Wymagane hasło o długości co najmniej 6 znaków'),
 	name: z.string().optional(),
 	role: z.enum(['user', 'manager', 'admin'], { required_error: 'Wymagana rola' }),
+	permissions: z.array(z.string()).default([]),
 })
 
 type UserFormData = z.infer<typeof userSchema>
@@ -29,6 +32,7 @@ interface AddUserDialogProps {
 const AddUserDialog = ({ onSuccess }: AddUserDialogProps) => {
 	const form = useForm<UserFormData>({
 		resolver: zodResolver(userSchema),
+		defaultValues: { username: '', email: '', password: '', name: '', role: 'user', permissions: [] },
 	})
 
 	const queryClient = useQueryClient()
@@ -51,12 +55,24 @@ const AddUserDialog = ({ onSuccess }: AddUserDialogProps) => {
 			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" autoComplete="off">
 				<FormField
 					control={form.control}
+					name="email"
+					render={({ field }) => (
+						<FormItem>
+							<FormLabel>Email logowania</FormLabel>
+							<FormControl><Input {...field} type="email" placeholder="np. kelner@spokosopot.pl" autoComplete="email" /></FormControl>
+							<FormMessage />
+						</FormItem>
+					)}
+				/>
+
+				<FormField
+					control={form.control}
 					name="username"
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>Nazwa użytkownika</FormLabel>
+							<FormLabel>Nazwa wyświetlana</FormLabel>
 							<FormControl>
-								<Input {...field} placeholder="Wprowadź nazwę użytkownika" autoComplete="off" />
+								<Input {...field} placeholder="np. Kasia" autoComplete="off" />
 							</FormControl>
 							<FormMessage />
 						</FormItem>
@@ -72,6 +88,25 @@ const AddUserDialog = ({ onSuccess }: AddUserDialogProps) => {
 							<FormControl>
 								<Input type="password" {...field} placeholder="Wprowadź hasło" autoComplete="new-password" />
 							</FormControl>
+							<FormMessage />
+						</FormItem>
+					)}
+				/>
+
+				<FormField
+					control={form.control}
+					name="permissions"
+					render={({ field }) => (
+						<FormItem>
+							<FormLabel>Uprawnienia</FormLabel>
+							<div className="grid gap-2 rounded-lg border border-border p-3 sm:grid-cols-2">
+								{ALL_PERMISSIONS.map((permission) => (
+									<label key={permission} className="flex items-center gap-2 text-sm text-slate-700">
+										<input type="checkbox" className="size-4 accent-primary" checked={field.value.includes(permission)} onChange={(event) => field.onChange(event.target.checked ? [...field.value, permission] : field.value.filter((item) => item !== permission))} />
+										{PERMISSION_LABELS[permission]}
+									</label>
+								))}
+							</div>
 							<FormMessage />
 						</FormItem>
 					)}

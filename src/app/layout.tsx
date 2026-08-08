@@ -20,6 +20,7 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'Spoko Admin',
   },
+  other: { 'mobile-web-app-capable': 'yes' },
   icons: {
     icon: [
       { url: '/icons/spoko-icon-192.png', sizes: '192x192', type: 'image/png' },

@@ -39,17 +39,9 @@ export const userRouter = router({
 		}),
 
 	login: publicProcedure
-		.input(z.object({ identifier: z.string(), password: z.string() }))
+		.input(z.object({ email: z.string().email(), password: z.string() }))
 		.mutation(async ({ input }) => {
-			// Перевірка, чи `identifier` є email чи username
-			const isEmail = input.identifier.includes('@')
-
-			// Використовуємо різний пошук залежно від ролі
-			const user = await prisma.user.findFirst({
-				where: isEmail
-					? { email: input.identifier, role: USER_ROLES.ADMIN } // Логін через email для адміністратора
-					: { username: input.identifier }, // Логін через username для звичайного користувача
-			})
+			const user = await prisma.user.findFirst({ where: { email: input.email.toLowerCase() } })
 
 			// Перевірка пароля
 
@@ -64,7 +56,7 @@ export const userRouter = router({
 		}),
 
 	createUser: publicProcedure
-		.input(z.object({ username: z.string(), password: z.string(), name: z.string().optional(), role: z.enum(["user", "manager", "admin"]) }))
+		.input(z.object({ username: z.string(), email: z.string().email(), password: z.string().min(6), name: z.string().optional(), role: z.enum(["user", "manager", "admin"]), permissions: z.array(z.string()).default([]) }))
 		.mutation(async ({ input, ctx }) => {
 			const decodedToken = ctx.token
 
@@ -76,15 +68,23 @@ export const userRouter = router({
 			return await prisma.user.create({
 				data: {
 					username: input.username,
+					email: input.email.toLowerCase(),
 					password: hashedPassword,
 					name: input.name,
 					role: input.role,
+					permissions: input.permissions,
 				},
 			})
 		}),
-	getAllUsers: publicProcedure.query(async () => {
+	getAllUsers: publicProcedure.query(async ({ ctx }) => {
+		if (!ctx.token || ctx.token.role !== USER_ROLES.ADMIN) {
+			throw new TRPCError({ code: 'FORBIDDEN', message: 'Brak uprawnień.' })
+		}
 		try {
-			const users = await prisma.user.findMany()
+			const users = await prisma.user.findMany({
+				select: { id: true, username: true, email: true, name: true, role: true, permissions: true },
+				orderBy: { email: 'asc' },
+			})
 			return users
 		} catch (error) {
 			throw new Error('Failed to fetch users')
@@ -108,14 +108,16 @@ export const userRouter = router({
 		.input(z.object({
 			userId: z.string(),
 			name: z.string().optional(),
+			email: z.string().email().optional(),
 			role: z.enum(['user', 'manager', 'admin']).optional(),
+			permissions: z.array(z.string()).optional(),
 		}))
 		.mutation(async ({ input, ctx }) => {
 			if (!ctx.token || ctx.token.role !== USER_ROLES.ADMIN) {
 				throw new TRPCError({ code: 'FORBIDDEN', message: 'Brak uprawnień.' })
 			}
 			const { userId, ...data } = input
-			return await prisma.user.update({ where: { id: userId }, data })
+			return await prisma.user.update({ where: { id: userId }, data: { ...data, email: data.email?.toLowerCase() } })
 		}),
 
 	resetPassword: publicProcedure

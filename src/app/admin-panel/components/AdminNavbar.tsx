@@ -8,7 +8,7 @@ import {
 	DropdownMenuTrigger,
 } from '@/app/components/ui/dropdown-menu'
 import { cn } from '@/utils/utils'
-import { canAccessMenu, ROLE_LABELS } from '@/lib/roles'
+import { hasPermission, ROLE_LABELS, type Permission } from '@/lib/roles'
 import { CalendarDays, ChefHat, ClipboardList, LayoutDashboard, LogOut, Settings } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import Image from 'next/image'
@@ -31,11 +31,11 @@ const fetcher = async (url: string) => {
 }
 
 const navItems = [
-	{ label: 'Pulpit', key: 'dashboard', icon: LayoutDashboard },
-	{ label: 'Zamówienia', key: 'orders', icon: ClipboardList },
-	{ label: 'Rezerwacje', key: 'reservations', icon: CalendarDays },
-	{ label: 'Menu', key: 'menu', icon: ChefHat },
-	{ label: 'Ustawienia', key: 'settings', icon: Settings },
+	{ label: 'Pulpit', key: 'dashboard', permission: 'dashboard.view' as Permission, icon: LayoutDashboard },
+	{ label: 'Zamówienia', key: 'orders', permission: 'orders.view' as Permission, icon: ClipboardList },
+	{ label: 'Rezerwacje', key: 'reservations', permission: 'reservations.view' as Permission, icon: CalendarDays },
+	{ label: 'Menu', key: 'menu', permission: 'menu.view' as Permission, icon: ChefHat },
+	{ label: 'Ustawienia', key: 'settings', permission: 'settings.view' as Permission, icon: Settings },
 ]
 
 interface AdminNavbarProps {
@@ -57,7 +57,7 @@ export const AdminNavbar = ({ className, activeTab }: AdminNavbarProps) => {
 	const email = session?.user?.email || ''
 	const rawRole = session?.user?.role as string | undefined
 	const role = ROLE_LABELS[rawRole ?? ''] ?? 'Admin'
-	const visibleNavItems = navItems.filter(({ key }) => key !== 'menu' || canAccessMenu(rawRole))
+	const visibleNavItems = navItems.filter(({ permission }) => hasPermission(rawRole, session?.user?.permissions, permission))
 	const initial = displayName.charAt(0).toUpperCase()
 	const getBadgeCount = (key: string) => {
 		if (key === 'orders') return badges?.orders ?? 0

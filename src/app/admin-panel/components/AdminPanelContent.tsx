@@ -1,6 +1,8 @@
 'use client'
 
 import LoadingScreen from '@/app/components/LoadingScreen'
+import { hasPermission, type Permission } from '@/lib/roles'
+import { useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect } from 'react'
 import Dashboard from '../dashboard/page'
@@ -27,11 +29,21 @@ const renderTabContent = (tab: string) => {
 	}
 }
 
+const TAB_PERMISSIONS: Record<string, Permission> = {
+	 dashboard: 'dashboard.view',
+	 orders: 'orders.view',
+	 reservations: 'reservations.view',
+	 menu: 'menu.view',
+	 settings: 'settings.view',
+}
+
 const AdminPanelContent = () => {
 	const searchParams = useSearchParams()
+	const { data: session } = useSession()
 	const tabParam = searchParams?.get('tab')
 	const validTabs = ['dashboard', 'orders', 'reservations', 'menu', 'settings']
 	const tab = tabParam && validTabs.includes(tabParam) ? tabParam : 'dashboard'
+	const canAccessTab = hasPermission(session?.user?.role, session?.user?.permissions, TAB_PERMISSIONS[tab])
 
 	useEffect(() => {
 		document.documentElement.classList.add('admin-panel-document')
@@ -51,7 +63,9 @@ const AdminPanelContent = () => {
 
 			<main className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden">
 				<Suspense fallback={<LoadingScreen fullScreen />}>
-					{renderTabContent(tab)}
+					{canAccessTab ? renderTabContent(tab) : (
+						<div className="flex min-h-full items-center justify-center p-8"><div className="max-w-md rounded-2xl border border-border bg-white p-8 text-center shadow-sm"><h2 className="text-lg font-semibold text-slate-900">Brak uprawnień</h2><p className="mt-2 text-sm text-muted-foreground">Twoje konto nie ma dostępu do tego obszaru panelu.</p></div></div>
+					)}
 				</Suspense>
 			</main>
 		</div>

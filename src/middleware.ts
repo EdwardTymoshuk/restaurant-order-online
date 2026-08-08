@@ -7,6 +7,7 @@ const ORDER_HOST = process.env.ORDER_HOST || 'order.spokosopot.pl'
 
 const ADMIN_PREFIX = '/admin-panel'
 const CLEAN_LOGIN_PATH = '/auth/login'
+const PUBLIC_AUTH_PATHS = ['/auth/login', '/auth/forgot-password', '/auth/reset-password']
 const ADMIN_LOGIN_PATH = `${ADMIN_PREFIX}/auth/login`
 
 function getHostname(req: NextRequest) {
@@ -67,7 +68,7 @@ export async function middleware(req: NextRequest) {
 	})
 
 	if (onAdminHost) {
-		if (pathname !== CLEAN_LOGIN_PATH && !token) {
+		if (!PUBLIC_AUTH_PATHS.includes(pathname) && !token) {
 			const loginUrl = req.nextUrl.clone()
 			loginUrl.pathname = CLEAN_LOGIN_PATH
 			loginUrl.search = ''
@@ -81,7 +82,7 @@ export async function middleware(req: NextRequest) {
 
 	const loginUrl = new URL(ADMIN_LOGIN_PATH, req.url)
 
-	if (pathname.startsWith(ADMIN_LOGIN_PATH)) {
+	if ([ADMIN_LOGIN_PATH, `${ADMIN_PREFIX}/auth/forgot-password`, `${ADMIN_PREFIX}/auth/reset-password`].some((path) => pathname.startsWith(path))) {
 		return NextResponse.next()
 	}
 

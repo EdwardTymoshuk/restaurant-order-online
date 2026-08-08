@@ -15,7 +15,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 const loginSchema = z.object({
-	identifier: z.string().nonempty('Wprowadź nazwę użytkownika lub email'),
+	identifier: z.string().email('Podaj prawidłowy email'),
 	password: z.string().min(6, 'Wprowadź hasło o długości co najmniej 6 znaków'),
 })
 
@@ -123,7 +123,7 @@ const LoginPage = () => {
 											control={form.control}
 											render={({ field }) => (
 												<FormItem>
-													<FormLabel className="text-slate-700">Nazwa użytkownika lub email</FormLabel>
+															<FormLabel className="text-slate-700">Email</FormLabel>
 													<FormControl>
 														<Input
 															{...field}

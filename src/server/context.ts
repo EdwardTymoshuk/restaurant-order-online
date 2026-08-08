@@ -6,6 +6,7 @@ import { decode } from 'next-auth/jwt'
 interface CustomJwtPayload extends JwtPayload {
 	id: string
 	role: "user" | "manager" | "admin"
+	permissions?: string[]
 }
 
 const parseCookies = (cookieHeader: string) =>
@@ -39,7 +40,8 @@ export async function createContext({ req }: { req: Request }) {
 				if (decoded?.id) {
 					token = {
 						id: decoded.id as string,
-						role: (decoded.role as "user" | "admin") ?? 'user',
+					role: (decoded.role as "user" | "manager" | "admin") ?? 'user',
+					permissions: Array.isArray(decoded.permissions) ? decoded.permissions as string[] : [],
 						iat: (decoded.iat as number) ?? 0,
 						exp: (decoded.exp as number) ?? 0,
 					}

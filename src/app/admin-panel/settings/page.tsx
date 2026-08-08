@@ -14,7 +14,9 @@ import { useEffect, useState } from 'react'
 
 import DeliveryZonesSettings from '@/app/admin-panel/components/DeliveryZonesSettings'
 import RestaurantInfoSettings from '@/app/admin-panel/components/RestaurantInfoSettings'
-import { useIsAdmin, useIsManager } from '@/hooks/useRole'
+import { useIsAdmin } from '@/hooks/useRole'
+import { useHasPermission } from '@/hooks/usePermission'
+import { PERMISSIONS } from '@/lib/roles'
 import {
   BadgePercent,
   Bike,
@@ -79,7 +81,7 @@ const SettingsModule = ({
 const Settings = () => {
   // Check if the user is an admin
   const isAdmin = useIsAdmin()
-  const isManager = useIsManager()
+  const canViewSettings = useHasPermission(PERMISSIONS.SETTINGS_VIEW)
 
   // === Fetch general settings ===
   const { data: settingsData, refetch: refetchSettings } =
@@ -124,7 +126,7 @@ const Settings = () => {
       <PageHeader title="Ustawienia" />
 
       <div className="space-y-5 p-4 md:p-6 lg:p-8">
-        {isManager && (
+        {canViewSettings && (
           <SettingsModule
             title="Informacje restauracji"
             description="Dane kontaktowe, stałe godziny oraz czasowe zmiany widoczne na spokosopot.pl."
@@ -221,7 +223,7 @@ const Settings = () => {
           </Card>
         </section>
 
-        {isManager && (
+          {canViewSettings && (
           <>
             <section>
               <SettingsModule title="Strefy dostaw" description="Promienie i ceny dostawy dla zamówień online." icon={Bike} count={deliveryZones.length}>
@@ -280,7 +282,7 @@ const Settings = () => {
 
         {isAdmin && (
           <section>
-            <SettingsModule title="Użytkownicy" description="Konta panelu." icon={Settings2} count={usersData.length}>
+            <SettingsModule title="Użytkownicy" description="Konta panelu i ich uprawnienia." icon={Settings2} count={usersData.length}>
               <UserList />
             </SettingsModule>
           </section>

@@ -12,28 +12,24 @@ export const authOptions: AuthOptions = {
 		CredentialsProvider({
 			name: 'Credentials',
 			credentials: {
-				identifier: { label: 'Username or Email', type: 'text' },
+				identifier: { label: 'Email', type: 'email' },
 				password: { label: 'Password', type: 'password' },
 			},
 			async authorize(credentials) {
 				if (!credentials?.identifier || !credentials?.password) return null
 
 				const user = await prisma.user.findFirst({
-					where: {
-						OR: [
-							{ email: credentials.identifier, role: 'admin' },
-							{ username: credentials.identifier },
-						],
-					},
+					where: { email: credentials.identifier.trim().toLowerCase() },
 				})
 
 				if (user && bcrypt.compareSync(credentials.password, user.password)) {
 					const accessToken = jwt.sign(
-						{ id: user.id, role: user.role },
+						{ id: user.id, role: user.role, permissions: user.permissions },
 						JWT_SECRET,
 						{ expiresIn: '2h' }
 					)
-					return { id: user.id, name: user.username || user.email, email: user.email, role: user.role, accessToken }
+					const permissions = Array.isArray(user.permissions) ? (user.permissions as unknown[]).filter((value): value is string => typeof value === 'string') : []
+					return { id: user.id, name: user.name || user.email, email: user.email, role: user.role, permissions, accessToken }
 				}
 				return null
 			},
@@ -44,6 +40,7 @@ export const authOptions: AuthOptions = {
 			if (token && session.user) {
 				session.user.id = token.id as string
 				session.user.role = token.role
+				session.user.permissions = Array.isArray(token.permissions) ? token.permissions as string[] : []
 				session.user.accessToken = token.accessToken as string
 			}
 			return session
@@ -52,6 +49,7 @@ export const authOptions: AuthOptions = {
 			if (user) {
 				token.id = user.id
 				token.role = user.role
+				token.permissions = Array.isArray(user.permissions) ? user.permissions as string[] : []
 				token.accessToken = user.accessToken // Додаємо accessToken
 			}
 			return token

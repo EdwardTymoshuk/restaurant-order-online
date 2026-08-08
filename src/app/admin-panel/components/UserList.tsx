@@ -25,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/app/components/ui/table'
-import { ROLE_LABELS } from '@/lib/roles'
+import { ALL_PERMISSIONS, PERMISSION_LABELS, ROLE_LABELS, type Permission } from '@/lib/roles'
 import { trpc } from '@/utils/trpc'
 import { useQueryClient } from '@tanstack/react-query'
 import { getQueryKey } from '@trpc/react-query'
@@ -34,7 +34,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import AddUserDialog from './AddUserDialog'
 
-type User = { id: string; username: string; name: string | null; role: string }
+type User = { id: string; username: string; email: string | null; name: string | null; role: string; permissions: unknown }
 
 const UserList = () => {
   const queryClient = useQueryClient()
@@ -56,14 +56,18 @@ const UserList = () => {
   const [deleteUser_, setDeleteUser] = useState<User | null>(null)
   const [editUser, setEditUser] = useState<User | null>(null)
   const [editName, setEditName] = useState('')
+  const [editEmail, setEditEmail] = useState('')
   const [editRole, setEditRole] = useState<'user' | 'manager' | 'admin'>('user')
+  const [editPermissions, setEditPermissions] = useState<Permission[]>([])
   const [passwordUser, setPasswordUser] = useState<User | null>(null)
   const [newPassword, setNewPassword] = useState('')
 
   const openEdit = (u: User) => {
     setEditUser(u)
     setEditName(u.name ?? '')
+    setEditEmail(u.email ?? '')
     setEditRole(u.role as 'user' | 'manager' | 'admin')
+    setEditPermissions(Array.isArray(u.permissions) ? u.permissions as Permission[] : [])
   }
 
   const openPasswordReset = (u: User) => {
@@ -81,10 +85,11 @@ const UserList = () => {
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <Table className="min-w-[480px]">
+            <Table className="min-w-[680px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Użytkownik</TableHead>
+                <TableHead>Email logowania</TableHead>
                 <TableHead>Imię</TableHead>
                 <TableHead>Rola</TableHead>
                 <TableHead>Akcje</TableHead>
@@ -94,6 +99,7 @@ const UserList = () => {
               {users?.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.username}</TableCell>
+                  <TableCell className="text-muted-foreground">{user.email ?? '—'}</TableCell>
                   <TableCell className="text-muted-foreground">{user.name ?? '—'}</TableCell>
                   <TableCell>
                     <span className="rounded-full bg-primary/8 px-2 py-0.5 text-xs font-medium text-primary">
@@ -158,12 +164,27 @@ const UserList = () => {
               <p className="text-sm text-muted-foreground">{editUser?.username}</p>
             </div>
             <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">Email logowania</label>
+              <Input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+            </div>
+            <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-700">Imię</label>
               <Input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 placeholder="Imię (opcjonalne)"
               />
+            </div>
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-slate-700">Uprawnienia</p>
+              <div className="grid gap-2 rounded-lg border border-border p-3 sm:grid-cols-2">
+                {ALL_PERMISSIONS.map((permission) => (
+                  <label key={permission} className="flex items-center gap-2 text-xs text-slate-700">
+                    <input type="checkbox" className="size-4 accent-primary" checked={editPermissions.includes(permission)} onChange={(event) => setEditPermissions((current) => event.target.checked ? [...current, permission] : current.filter((item) => item !== permission))} />
+                    {PERMISSION_LABELS[permission]}
+                  </label>
+                ))}
+              </div>
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-700">Rola</label>
@@ -181,7 +202,7 @@ const UserList = () => {
           </div>
           <DialogFooter className="gap-2">
             <Button
-              onClick={() => updateUser.mutate({ userId: editUser!.id, name: editName || undefined, role: editRole })}
+              onClick={() => updateUser.mutate({ userId: editUser!.id, name: editName || undefined, email: editEmail, role: editRole, permissions: editPermissions })}
               disabled={updateUser.isLoading}
             >
               Zapisz
