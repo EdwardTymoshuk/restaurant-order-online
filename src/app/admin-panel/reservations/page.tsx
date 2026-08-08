@@ -14,6 +14,8 @@ import { Input } from '@/app/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select'
 import { Skeleton } from '@/app/components/ui/skeleton'
 import { Textarea } from '@/app/components/ui/textarea'
+import { Calendar as DateCalendar } from '@/app/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/app/components/ui/popover'
 import { trpc } from '@/utils/trpc'
 import { cn } from '@/utils/utils'
 import { EventType, PackageCode, Prisma, ReservationExtraType, ReservationStatus } from '@prisma/client'
@@ -29,10 +31,12 @@ import {
   startOfMonth,
   startOfWeek,
   subMonths,
+  parseISO,
 } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import {
   Calendar,
+  CalendarDays,
   CalendarPlus,
   CalendarRange,
   ChevronDown,
@@ -116,6 +120,23 @@ const PACKAGES: { code: PackageCode; label: string; desc: string }[] = [
   { code: 'GOLD',     label: 'Gold',     desc: 'Rozszerzony' },
   { code: 'PLATINUM', label: 'Platinum', desc: 'Premium' },
 ]
+
+const DatePickerField = ({ value, onChange, label }: { value: string; onChange: (value: string) => void; label: string }) => {
+  const selected = value ? parseISO(value) : undefined
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" aria-label={label} className="h-10 w-full justify-start gap-2 bg-white text-left font-normal">
+          <CalendarDays className="size-4 text-muted-foreground" />
+          <span className={value ? 'text-slate-800' : 'text-muted-foreground'}>{selected ? format(selected, 'd MMM yyyy', { locale: pl }) : 'Wybierz datę'}</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <DateCalendar mode="single" selected={selected} onSelect={(date) => date && onChange(format(date, 'yyyy-MM-dd'))} initialFocus locale={pl} />
+      </PopoverContent>
+    </Popover>
+  )
+}
 
 // ─── Time options ──────────────────────────────────────────────────────────────
 
@@ -1707,11 +1728,11 @@ const Reservations = () => {
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="space-y-1 text-sm font-medium text-slate-700">
                 Od
-                <Input type="date" value={rangeFrom} onChange={(event) => setRangeFrom(event.target.value)} />
+                <DatePickerField value={rangeFrom} onChange={setRangeFrom} label="Data początkowa zakresu" />
               </label>
               <label className="space-y-1 text-sm font-medium text-slate-700">
                 Do
-                <Input type="date" value={rangeTo} onChange={(event) => setRangeTo(event.target.value)} />
+                <DatePickerField value={rangeTo} onChange={setRangeTo} label="Data końcowa zakresu" />
               </label>
             </div>
             <label className="block space-y-1 text-sm font-medium text-slate-700">
