@@ -232,6 +232,43 @@ export const reservationsRouter = router({
       })
     }),
 
+  upsertBlockedDateRange: protectedProcedure
+    .input(z.object({
+      dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      notes: z.string().trim().max(200).nullable().optional(),
+    }).refine((input) => input.dateFrom <= input.dateTo, {
+      message: 'Data końcowa musi być późniejsza lub równa dacie początkowej.',
+      path: ['dateTo'],
+    }).refine((input) => {
+      const from = new Date(`${input.dateFrom}T00:00:00.000Z`).getTime()
+      const to = new Date(`${input.dateTo}T00:00:00.000Z`).getTime()
+      return Number.isFinite(from) && Number.isFinite(to) && (to - from) / 86400000 <= 366
+    }, {
+      message: 'Jednym wpisem można zablokować maksymalnie 367 dni.',
+      path: ['dateTo'],
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const notes = input.notes ?? 'Zakres zablokowany'
+      const from = new Date(`${input.dateFrom}T00:00:00.000Z`)
+      const to = new Date(`${input.dateTo}T00:00:00.000Z`)
+      const dates: Date[] = []
+
+      for (const cursor = new Date(from); cursor <= to; cursor.setUTCDate(cursor.getUTCDate() + 1)) {
+        dates.push(new Date(cursor))
+      }
+
+      await ctx.prisma.$transaction(
+        dates.map((date) => ctx.prisma.calendarAvailability.upsert({
+          where: { date },
+          create: { date, isBlocked: true, notes },
+          update: { isBlocked: true, notes },
+        }))
+      )
+
+      return { success: true, count: dates.length }
+    }),
+
   deleteBlockedDate: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {

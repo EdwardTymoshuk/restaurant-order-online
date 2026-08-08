@@ -34,6 +34,7 @@ import { pl } from 'date-fns/locale'
 import {
   Calendar,
   CalendarPlus,
+  CalendarRange,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -1360,6 +1361,10 @@ const Reservations = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [confirmDialog, setConfirmDialog] = useState<{ id: string; action: 'confirm' | 'cancel' } | null>(null)
   const [blockConfirmDate, setBlockConfirmDate] = useState<Date | null>(null)
+  const [rangeOpen, setRangeOpen] = useState(false)
+  const [rangeFrom, setRangeFrom] = useState('')
+  const [rangeTo, setRangeTo] = useState('')
+  const [rangeNotes, setRangeNotes] = useState('Zakres zablokowany')
 
   const { data: reservations, isLoading, refetch } = trpc.reservations.getReservationsList.useQuery({}, { enabled })
   const { data: blockedDates, refetch: refetchBlocked } = trpc.reservations.getBlockedDates.useQuery(undefined, { enabled })
@@ -1378,6 +1383,14 @@ const Reservations = () => {
   })
   const upsertBlocked = trpc.reservations.upsertBlockedDate.useMutation({
     onSuccess: () => void refetchBlocked(),
+  })
+  const upsertBlockedRange = trpc.reservations.upsertBlockedDateRange.useMutation({
+    onSuccess: () => {
+      void refetchBlocked()
+      setRangeOpen(false)
+      setRangeFrom('')
+      setRangeTo('')
+    },
   })
   const deleteBlocked = trpc.reservations.deleteBlockedDate.useMutation({
     onSuccess: () => void refetchBlocked(),
@@ -1500,9 +1513,14 @@ const Reservations = () => {
   }
 
   const actionsNode = (
-    <Button size="sm" onClick={() => setAddOpen(true)} className="h-9 gap-2 rounded-xl px-4 text-white">
-      <CalendarPlus size={14} /> Dodaj rezerwację
-    </Button>
+    <div className="flex flex-wrap gap-2">
+      <Button size="sm" variant="outline" onClick={() => setRangeOpen(true)} className="h-9 gap-2 rounded-xl px-4">
+        <CalendarRange size={14} /> Zablokuj zakres
+      </Button>
+      <Button size="sm" onClick={() => setAddOpen(true)} className="h-9 gap-2 rounded-xl px-4 text-white">
+        <CalendarPlus size={14} /> Dodaj rezerwację
+      </Button>
+    </div>
   )
 
   if (isLoading) {
@@ -1678,6 +1696,40 @@ const Reservations = () => {
         blockedKeys={blockedDateKeys}
         takenKeys={takenDateKeys}
       />
+
+      <Dialog open={rangeOpen} onOpenChange={setRangeOpen}>
+        <DialogContent className="rounded-2xl sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-semibold text-slate-800">Zablokuj zakres dat</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-slate-500">Wszystkie dni w podanym zakresie zostaną oznaczone jako niedostępne dla nowych rezerwacji.</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="space-y-1 text-sm font-medium text-slate-700">
+                Od
+                <Input type="date" value={rangeFrom} onChange={(event) => setRangeFrom(event.target.value)} />
+              </label>
+              <label className="space-y-1 text-sm font-medium text-slate-700">
+                Do
+                <Input type="date" value={rangeTo} onChange={(event) => setRangeTo(event.target.value)} />
+              </label>
+            </div>
+            <label className="block space-y-1 text-sm font-medium text-slate-700">
+              Powód / notatka
+              <Textarea value={rangeNotes} onChange={(event) => setRangeNotes(event.target.value)} placeholder="np. Urlop restauracji" />
+            </label>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setRangeOpen(false)}>Anuluj</Button>
+              <Button
+                disabled={!rangeFrom || !rangeTo || rangeFrom > rangeTo || upsertBlockedRange.isLoading}
+                onClick={() => upsertBlockedRange.mutate({ dateFrom: rangeFrom, dateTo: rangeTo, notes: rangeNotes || null })}
+              >
+                {upsertBlockedRange.isLoading ? 'Blokowanie…' : 'Zablokuj zakres'}
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete confirm */}
       <ConfirmDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
