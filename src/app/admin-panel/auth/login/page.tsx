@@ -7,6 +7,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/app/components/ui/input'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Image from 'next/image'
+import Link from 'next/link'
 import { getSession, signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -166,6 +167,9 @@ const LoginPage = () => {
 										>
 											Zaloguj się
 										</LoadingButton>
+										<Link href="/admin-panel/auth/forgot-password" className="block text-center text-sm font-medium text-primary hover:underline">
+											Nie pamiętasz hasła?
+										</Link>
 									</form>
 								</Form>
 							</CardContent>
