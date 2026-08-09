@@ -188,7 +188,7 @@ const Settings = () => {
           </SettingsModule>
         )}
 
-        {activeTab === 'operations' && <section className="grid items-start gap-4 xl:grid-cols-3">
+        {activeTab === 'operations' && <section className="grid items-stretch gap-4 xl:grid-cols-4">
           <Card className="border-border shadow-sm">
             <CardContent className="p-5">
               <div className="mb-4 flex items-start gap-3">
@@ -266,6 +266,27 @@ const Settings = () => {
               </>}
             </CardContent>
           </Card>
+
+          <Card className="border-border shadow-sm">
+            <CardContent className="p-5">
+              <div className="mb-4 flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Pizza size={20} /></div>
+                <div>
+                  <h2 className="text-base font-semibold text-slate-950">Pizza</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">Dostępność kategorii i godziny sprzedaży.</p>
+                </div>
+              </div>
+              <PizzaSettings
+                settingsData={{
+                  pizzaCategoryEnabled: settingsData?.pizzaCategoryEnabled ?? false,
+                  pizzaAvailability: Array.isArray(settingsData?.pizzaAvailability)
+                    ? (settingsData?.pizzaAvailability as { day: number; startHour: number; endHour: number }[])
+                    : [],
+                }}
+                refetchSettings={refetchSettings}
+              />
+            </CardContent>
+          </Card>
         </section>}
 
           {canViewSettings && activeTab === 'operations' && (
@@ -279,23 +300,6 @@ const Settings = () => {
               </SettingsModule>
             </section>
 
-            <section>
-              <SettingsModule title="Pizza" description="Dostępność kategorii pizzy oraz harmonogram sprzedaży." icon={Pizza} count={settingsData?.pizzaAvailability && Array.isArray(settingsData.pizzaAvailability) ? settingsData.pizzaAvailability.length : 0}>
-                <PizzaSettings
-                  settingsData={{
-                    pizzaCategoryEnabled: settingsData?.pizzaCategoryEnabled ?? false,
-                    pizzaAvailability: Array.isArray(settingsData?.pizzaAvailability)
-                      ? (settingsData?.pizzaAvailability as {
-                          day: number
-                          startHour: number
-                          endHour: number
-                        }[])
-                      : [],
-                  }}
-                  refetchSettings={refetchSettings}
-                />
-              </SettingsModule>
-            </section>
           </>
         )}
 
