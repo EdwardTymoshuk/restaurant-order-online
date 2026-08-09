@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useSession } from 'next-auth/react'
 
 type AdminRealtimeHandlers = {
   onOrdersChanged?: () => void
@@ -9,11 +10,12 @@ type AdminRealtimeHandlers = {
 }
 
 export const useAdminRealtime = (handlers: AdminRealtimeHandlers, enabled = true) => {
+  const { status } = useSession()
   const handlersRef = useRef(handlers)
   handlersRef.current = handlers
 
   useEffect(() => {
-    if (!enabled) return
+    if (!enabled || status !== 'authenticated') return
 
     const source = new EventSource('/api/admin-realtime')
 
@@ -31,5 +33,5 @@ export const useAdminRealtime = (handlers: AdminRealtimeHandlers, enabled = true
       source.removeEventListener('badges_changed', handleBadgesChanged)
       source.close()
     }
-  }, [enabled])
+  }, [enabled, status])
 }

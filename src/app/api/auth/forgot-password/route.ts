@@ -15,8 +15,8 @@ export async function POST(request: Request) {
     if (!identifier) return genericResponse()
 
     const user = await prisma.user.findFirst({
-      where: { OR: [{ email: identifier }, { username: identifier }], role: 'admin' },
-      select: { id: true, email: true, username: true },
+      where: { email: identifier },
+      select: { id: true, email: true },
     })
 
     if (!user?.email) return genericResponse()

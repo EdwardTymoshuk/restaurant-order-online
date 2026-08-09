@@ -41,8 +41,8 @@ export default function ForgotPasswordPage() {
         <CardContent>
           {message ? <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-700">{message}</p> : (
             <form onSubmit={submit} className="space-y-4">
-              <p className="text-sm leading-6 text-slate-500">Podaj email lub nazwę użytkownika. Jeśli konto ma przypisany email, wyślemy instrukcję resetu.</p>
-              <Input value={identifier} onChange={(event) => setIdentifier(event.target.value)} placeholder="Email lub nazwa użytkownika" autoComplete="username" required />
+              <p className="text-sm leading-6 text-slate-500">Podaj email przypisany do konta. Wyślemy na niego instrukcję resetu hasła.</p>
+              <Input type="email" value={identifier} onChange={(event) => setIdentifier(event.target.value)} placeholder="Adres email" autoComplete="email" required />
               {error && <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
               <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Wysyłanie...' : 'Wyślij link resetujący'}</Button>
             </form>
