@@ -183,7 +183,7 @@ const Settings = () => {
           </SettingsModule>
         )}
 
-        {activeTab === 'operations' && <section className="grid gap-5 xl:grid-cols-3">
+        {activeTab === 'operations' && <section className="grid gap-4 xl:grid-cols-4">
           <Card className="border-border shadow-sm">
             <CardContent className="p-5">
               <div className="mb-4 flex items-start gap-3">
@@ -275,7 +275,7 @@ const Settings = () => {
                   <p className="mt-1 text-sm text-muted-foreground">Wspólna pojemność dla formularza klienta i panelu.</p>
                 </div>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <label className="space-y-1.5 text-sm font-medium text-slate-700">
                   Maksymalnie jednocześnie
                   <Input disabled={!canManageSettings} type="number" min={1} max={500} value={reservationCapacity} onChange={(event) => setReservationCapacity(Number(event.target.value))} />
@@ -310,7 +310,7 @@ const Settings = () => {
               </SettingsModule>
             </section>
 
-            <section className="grid gap-5 xl:grid-cols-2">
+            <section>
               <SettingsModule title="Pizza" description="Dostępność kategorii pizzy oraz harmonogram sprzedaży." icon={Pizza} count={settingsData?.pizzaAvailability && Array.isArray(settingsData.pizzaAvailability) ? settingsData.pizzaAvailability.length : 0}>
                 <PizzaSettings
                   settingsData={{

@@ -137,7 +137,6 @@ const Settings: React.FC<SettingsProps> = ({
 
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-4">Dostępność kategorii pizzy</h2>
 
       {/* Switch for enabling/disabling  category */}
       <div className="flex items-center space-x-4 mb-4">
@@ -192,7 +191,7 @@ const Settings: React.FC<SettingsProps> = ({
 
           {/* New entry row */}
           {isAdding && newEntry && (
-            <div className="flex flex-col md:flex-row gap-4 w-3/4 justify-self-center pt-4">
+            <div className="grid gap-3 pt-4 md:grid-cols-[1fr_1fr_1fr_auto] md:items-center">
               <Select
                 value={newEntry.day.toString()}
                 onValueChange={(value) =>

@@ -97,8 +97,7 @@ const DeliveryZonesSettings = ({
   }, [memoizedDeliveryZones])
 
   return (
-    <div className="">
-      <h2 className="text-xl font-semibold mb-4">Strefy dostawy</h2>
+    <div>
       <Table>
         <TableHeader>
           <TableRow>
@@ -129,11 +128,11 @@ const DeliveryZonesSettings = ({
         </TableBody>
       </Table>
 
-      <Separator className="w-3/4 justify-self-center color" />
+      <Separator className="my-4" />
 
       {/* Display new zone as a table row */}
       {isAdding && newZone && (
-        <div className="flex flex-col md:flex-row gap-4 w-3/4 justify-self-center pt-4">
+        <div className="grid gap-3 pt-4 md:grid-cols-[1fr_1fr_1fr_auto] md:items-center">
           <div className="w-full">
             <Input type="number" value={newZone.minRadius} disabled />
           </div>
