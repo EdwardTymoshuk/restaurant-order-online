@@ -136,36 +136,36 @@ const Settings = () => {
     onSuccess: () => refetchSettings(),
   })
 
+  const settingsTabs = (
+    <div className="flex items-center gap-1">
+      {[
+        { id: 'company' as const, label: 'Firma', icon: Store },
+        { id: 'operations' as const, label: 'Operacje', icon: Settings2 },
+        { id: 'content' as const, label: 'Treści', icon: Images },
+        ...(isAdmin ? [{ id: 'users' as const, label: 'Użytkownicy', icon: Settings2 }] : []),
+      ].map(({ id, label, icon: Icon }) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => setActiveTab(id)}
+          className={`inline-flex h-9 items-center gap-2 whitespace-nowrap border-b-2 px-3 text-sm font-medium transition-colors ${
+            activeTab === id
+              ? 'border-primary text-slate-950'
+              : 'border-transparent text-muted-foreground hover:text-slate-900'
+          }`}
+        >
+          <Icon className="size-4" />
+          {label}
+        </button>
+      ))}
+    </div>
+  )
+
   return (
     <>
-      <PageHeader title="Ustawienia" />
+      <PageHeader title="Ustawienia" tabs={settingsTabs} />
 
       <div className="space-y-5 p-4 md:p-6 lg:p-8">
-        <nav className="-mx-4 border-b border-border bg-white px-4 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8" aria-label="Sekcje ustawień">
-          <div className="flex min-w-max gap-6 overflow-x-auto">
-            {[
-              { id: 'company' as const, label: 'Firma', icon: Store },
-              { id: 'operations' as const, label: 'Operacje', icon: Settings2 },
-              { id: 'content' as const, label: 'Treści', icon: Images },
-              ...(isAdmin ? [{ id: 'users' as const, label: 'Użytkownicy', icon: Settings2 }] : []),
-            ].map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setActiveTab(id)}
-                className={`relative flex items-center gap-2 border-b-2 px-1 pb-3 pt-1 text-sm font-medium transition-colors ${
-                  activeTab === id
-                    ? 'border-primary text-slate-950'
-                    : 'border-transparent text-muted-foreground hover:text-slate-900'
-                }`}
-              >
-                <Icon className="size-4" />
-                {label}
-              </button>
-            ))}
-          </div>
-        </nav>
-
         {canViewSettings && activeTab === 'company' && (
           <SettingsModule
             title="Informacje restauracji"
