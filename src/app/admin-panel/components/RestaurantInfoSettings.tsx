@@ -96,6 +96,7 @@ const RestaurantInfoSettings = ({ settingsData, refetchSettings }: Props) => {
   const [info, setInfo] = useState<RestaurantInfo>(DEFAULT_INFO)
   const [hours, setHours] = useState<OpeningHour[]>(DEFAULT_HOURS)
   const [overrides, setOverrides] = useState<OpeningHourOverride[]>([])
+  const [infoEditing, setInfoEditing] = useState(false)
   const [hoursEditing, setHoursEditing] = useState(false)
   const updateSettings = trpc.settings.updateRestaurantInfo.useMutation()
 
@@ -110,6 +111,8 @@ const RestaurantInfoSettings = ({ settingsData, refetchSettings }: Props) => {
     try {
       await updateSettings.mutateAsync({ restaurantInfo: info, openingHours: hours, openingHourOverrides: overrides })
       await refetchSettings()
+      setInfoEditing(false)
+      setHoursEditing(false)
       toast.success('Informacje restauracji zostały zapisane.')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Nie udało się zapisać ustawień.')
@@ -137,26 +140,27 @@ const RestaurantInfoSettings = ({ settingsData, refetchSettings }: Props) => {
     <div className="space-y-6">
       <div className="grid gap-8 xl:grid-cols-[minmax(260px,0.72fr)_minmax(620px,1.28fr)] xl:items-start">
         <div className="space-y-4">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-950">Dane kontaktowe</h3>
-            <p className="mt-1 text-xs text-muted-foreground">Informacje wyświetlane na stronie restauracji.</p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-950">Dane kontaktowe</h3>
+              <p className="mt-1 text-xs text-muted-foreground">Informacje wyświetlane na stronie restauracji.</p>
+            </div>
+            {canManageSettings && <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5" onClick={() => { if (infoEditing) setInfo(parseInfo(settingsData?.restaurantInfo)); setInfoEditing((current) => !current) }}>
+              {infoEditing ? <X className="size-4" /> : <Pencil className="size-4" />}
+              {infoEditing ? 'Anuluj' : 'Edytuj dane'}
+            </Button>}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="restaurant-name">Nazwa restauracji</Label>
-            <Input id="restaurant-name" value={info.name} onChange={(event) => setInfo({ ...info, name: event.target.value })} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="restaurant-address"><MapPin className="mr-1 inline size-4" />Adres</Label>
-            <Input id="restaurant-address" value={info.address} onChange={(event) => setInfo({ ...info, address: event.target.value })} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="restaurant-phone"><Phone className="mr-1 inline size-4" />Telefon</Label>
-            <Input id="restaurant-phone" value={info.phone} onChange={(event) => setInfo({ ...info, phone: event.target.value })} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="restaurant-email"><Mail className="mr-1 inline size-4" />Email</Label>
-            <Input id="restaurant-email" type="email" value={info.email} onChange={(event) => setInfo({ ...info, email: event.target.value })} />
-          </div>
+          {infoEditing ? <div className="space-y-3">
+            <div className="space-y-1.5"><Label htmlFor="restaurant-name">Nazwa restauracji</Label><Input id="restaurant-name" value={info.name} onChange={(event) => setInfo({ ...info, name: event.target.value })} /></div>
+            <div className="space-y-1.5"><Label htmlFor="restaurant-address"><MapPin className="mr-1 inline size-4" />Adres</Label><Input id="restaurant-address" value={info.address} onChange={(event) => setInfo({ ...info, address: event.target.value })} /></div>
+            <div className="space-y-1.5"><Label htmlFor="restaurant-phone"><Phone className="mr-1 inline size-4" />Telefon</Label><Input id="restaurant-phone" value={info.phone} onChange={(event) => setInfo({ ...info, phone: event.target.value })} /></div>
+            <div className="space-y-1.5"><Label htmlFor="restaurant-email"><Mail className="mr-1 inline size-4" />Email</Label><Input id="restaurant-email" type="email" value={info.email} onChange={(event) => setInfo({ ...info, email: event.target.value })} /></div>
+          </div> : <dl className="divide-y divide-border/70 rounded-xl border border-border bg-muted/20 px-4">
+            <div className="flex items-center justify-between gap-4 py-3"><dt className="text-xs text-muted-foreground">Nazwa</dt><dd className="text-right text-sm font-medium text-slate-900">{info.name}</dd></div>
+            <div className="flex items-center justify-between gap-4 py-3"><dt className="text-xs text-muted-foreground">Adres</dt><dd className="text-right text-sm font-medium text-slate-900">{info.address}</dd></div>
+            <div className="flex items-center justify-between gap-4 py-3"><dt className="text-xs text-muted-foreground">Telefon</dt><dd className="text-right text-sm font-medium text-slate-900">{info.phone}</dd></div>
+            <div className="flex items-center justify-between gap-4 py-3"><dt className="text-xs text-muted-foreground">Email</dt><dd className="text-right text-sm font-medium text-slate-900">{info.email}</dd></div>
+          </dl>}
         </div>
 
         <div className="space-y-3">
@@ -228,7 +232,7 @@ const RestaurantInfoSettings = ({ settingsData, refetchSettings }: Props) => {
         )}
       </div>
 
-          <Button type="button" onClick={save} disabled={!canManageSettings || updateSettings.isLoading}><Save className="mr-2 size-4" />{updateSettings.isLoading ? 'Zapisywanie...' : 'Zapisz informacje i godziny'}</Button>
+          {(infoEditing || hoursEditing || overrides.length > 0) && <Button type="button" onClick={save} disabled={!canManageSettings || updateSettings.isLoading}><Save className="mr-2 size-4" />{updateSettings.isLoading ? 'Zapisywanie...' : 'Zapisz zmiany'}</Button>}
     </div>
   )
 }

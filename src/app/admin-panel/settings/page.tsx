@@ -34,6 +34,8 @@ import {
   ShoppingBag,
   Store,
   Timer,
+  Pencil,
+  X,
 } from 'lucide-react'
 import BannerSettings from '../components/BannerSettings' // Import the new component
 import EventSettings from '../components/EventSettings'
@@ -88,7 +90,9 @@ const Settings = () => {
   const isAdmin = useIsAdmin()
   const canViewSettings = useHasPermission(PERMISSIONS.SETTINGS_VIEW)
   const canManageSettings = useHasPermission(PERMISSIONS.SETTINGS_MANAGE)
-  const [activeTab, setActiveTab] = useState<'company' | 'operations' | 'content' | 'users'>('company')
+  const [activeTab, setActiveTab] = useState<'company' | 'operations' | 'content' | 'users' | 'notifications'>('company')
+  const [editingWaitTime, setEditingWaitTime] = useState(false)
+  const [editingReservationLimits, setEditingReservationLimits] = useState(false)
 
   // === Fetch general settings ===
   const { data: settingsData, refetch: refetchSettings } =
@@ -143,6 +147,7 @@ const Settings = () => {
         { id: 'operations' as const, label: 'Operacje', icon: Settings2 },
         { id: 'content' as const, label: 'Treści', icon: Images },
         ...(isAdmin ? [{ id: 'users' as const, label: 'Użytkownicy', icon: Settings2 }] : []),
+        { id: 'notifications' as const, label: 'Powiadomienia', icon: BellRing },
       ].map(({ id, label, icon: Icon }) => (
         <button
           key={id}
@@ -183,7 +188,7 @@ const Settings = () => {
           </SettingsModule>
         )}
 
-        {activeTab === 'operations' && <section className="grid gap-4 xl:grid-cols-4">
+        {activeTab === 'operations' && <section className="grid items-start gap-4 xl:grid-cols-3">
           <Card className="border-border shadow-sm">
             <CardContent className="p-5">
               <div className="mb-4 flex items-start gap-3">
@@ -195,13 +200,8 @@ const Settings = () => {
                   <p className="mt-1 text-sm text-muted-foreground">Podstawowa dostępność zamówień dla klientów.</p>
                 </div>
               </div>
-              <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/30 px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-slate-900">Przyjmowanie zamówień</p>
-                  <p className="text-xs text-muted-foreground">
-                    Status: {isOrderingOpen ? 'Aktywne' : 'Wyłączone'}
-                  </p>
-                </div>
+              <div className="flex min-h-12 items-center justify-between gap-4 rounded-xl border border-border bg-muted/30 px-4 py-2.5">
+                <p className="text-sm font-medium text-slate-900">Przyjmowanie zamówień</p>
                 <Switch
                   disabled={!canManageSettings}
                   checked={isOrderingOpen}
@@ -216,85 +216,54 @@ const Settings = () => {
 
           <Card className="border-border shadow-sm">
             <CardContent className="p-5">
-              <div className="mb-4 flex items-start gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <BellRing size={20} />
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><Timer size={20} /></div>
+                  <div>
+                    <h2 className="text-base font-semibold text-slate-950">Czas oczekiwania</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">Domyślny czas realizacji zamówienia.</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-base font-semibold text-slate-950">Powiadomienia</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">Alerty o nowych zamówieniach i rezerwacjach na tym urządzeniu.</p>
-                </div>
+                {canManageSettings && <Button type="button" variant="outline" size="sm" onClick={() => { if (editingWaitTime) setOrderWaitTime(settingsData?.orderWaitTime ?? 30); setEditingWaitTime((current) => !current) }}>
+                  {editingWaitTime ? <X className="mr-1.5 size-4" /> : <Pencil className="mr-1.5 size-4" />}
+                  {editingWaitTime ? 'Anuluj' : 'Zmień'}
+                </Button>}
               </div>
-              <PushNotificationsSettings />
+              {editingWaitTime ? <div className="flex gap-2">
+                <Select value={orderWaitTime.toString()} onValueChange={(value) => setOrderWaitTime(Number(value))}>
+                  <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>{['30', '45', '60', '75', '90', '120'].map((value) => <SelectItem key={value} value={value}>{value} minut</SelectItem>)}</SelectContent>
+                </Select>
+                <Button size="sm" onClick={() => { updateOrderWaitTime.mutate({ orderWaitTime }); setEditingWaitTime(false) }}>Zapisz</Button>
+              </div> : <p className="text-2xl font-semibold tabular-nums text-slate-950">{orderWaitTime} <span className="text-sm font-medium text-muted-foreground">minut</span></p>}
             </CardContent>
           </Card>
 
           <Card className="border-border shadow-sm">
             <CardContent className="p-5">
-              <div className="mb-4 flex items-start gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Timer size={20} />
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><CalendarCheck size={20} /></div>
+                  <div>
+                    <h2 className="text-base font-semibold text-slate-950">Rezerwacje online</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">Zasady przyjmowania rezerwacji.</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-base font-semibold text-slate-950">Czas oczekiwania</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">Domyślny czas realizacji zamówienia online.</p>
-                </div>
+                {canManageSettings && <Button type="button" variant="outline" size="sm" onClick={() => { if (editingReservationLimits) { setReservationCapacity(settingsData?.reservationCapacity ?? 40); setReservationMinGuests(settingsData?.reservationMinGuests ?? 12) }; setEditingReservationLimits((current) => !current) }}>
+                  {editingReservationLimits ? <X className="mr-1.5 size-4" /> : <Pencil className="mr-1.5 size-4" />}
+                  {editingReservationLimits ? 'Anuluj' : 'Zmień'}
+                </Button>}
               </div>
-              <Select
-                disabled={!canManageSettings}
-                value={orderWaitTime.toString()}
-                onValueChange={(value) => {
-                  const newTime = Number(value)
-                  setOrderWaitTime(newTime)
-                  updateOrderWaitTime.mutate({ orderWaitTime: newTime })
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Wybierz czas oczekiwania" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="30">30 minut</SelectItem>
-                  <SelectItem value="45">45 minut</SelectItem>
-                  <SelectItem value="60">60 minut</SelectItem>
-                  <SelectItem value="75">75 minut</SelectItem>
-                  <SelectItem value="90">90 minut</SelectItem>
-                  <SelectItem value="120">120 minut</SelectItem>
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border shadow-sm">
-            <CardContent className="p-5">
-              <div className="mb-4 flex items-start gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <CalendarCheck size={20} />
+              {!editingReservationLimits ? <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-lg bg-muted/30 px-3 py-2.5"><p className="text-xs text-muted-foreground">Maksymalna liczba gości jednocześnie</p><p className="mt-1 text-lg font-semibold text-slate-950">{reservationCapacity} <span className="text-sm font-medium text-muted-foreground">osób</span></p></div>
+                <div className="rounded-lg bg-muted/30 px-3 py-2.5"><p className="text-xs text-muted-foreground">Minimalna liczba osób w rezerwacji</p><p className="mt-1 text-lg font-semibold text-slate-950">{reservationMinGuests} <span className="text-sm font-medium text-muted-foreground">osób</span></p></div>
+              </div> : <>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="space-y-1.5 text-sm font-medium text-slate-700">Maksymalna liczba gości jednocześnie<Input type="number" min={1} max={500} value={reservationCapacity} onChange={(event) => setReservationCapacity(Number(event.target.value))} /></label>
+                  <label className="space-y-1.5 text-sm font-medium text-slate-700">Minimalna liczba osób w rezerwacji<Input type="number" min={1} max={500} value={reservationMinGuests} onChange={(event) => setReservationMinGuests(Number(event.target.value))} /></label>
                 </div>
-                <div>
-                  <h2 className="text-base font-semibold text-slate-950">Rezerwacje</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">Wspólna pojemność dla formularza klienta i panelu.</p>
-                </div>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="space-y-1.5 text-sm font-medium text-slate-700">
-                  Maksymalnie jednocześnie
-                  <Input disabled={!canManageSettings} type="number" min={1} max={500} value={reservationCapacity} onChange={(event) => setReservationCapacity(Number(event.target.value))} />
-                  <span className="block text-xs font-normal text-muted-foreground">Liczba gości możliwa w tym samym czasie.</span>
-                </label>
-                <label className="space-y-1.5 text-sm font-medium text-slate-700">
-                  Minimum online
-                  <Input disabled={!canManageSettings} type="number" min={1} max={500} value={reservationMinGuests} onChange={(event) => setReservationMinGuests(Number(event.target.value))} />
-                  <span className="block text-xs font-normal text-muted-foreground">Minimalna liczba gości w formularzu eventowym.</span>
-                </label>
-              </div>
-              <Button
-                size="sm"
-                className="mt-4"
-                disabled={!canManageSettings || updateReservationCapacity.isLoading || reservationMinGuests > reservationCapacity}
-                onClick={() => updateReservationCapacity.mutate({ reservationCapacity, reservationMinGuests })}
-              >
-                {updateReservationCapacity.isLoading ? 'Zapisywanie...' : 'Zapisz limity'}
-              </Button>
+                <Button size="sm" className="mt-3" disabled={reservationMinGuests > reservationCapacity || updateReservationCapacity.isLoading} onClick={() => { updateReservationCapacity.mutate({ reservationCapacity, reservationMinGuests }); setEditingReservationLimits(false) }}>Zapisz</Button>
+              </>}
             </CardContent>
           </Card>
         </section>}
@@ -359,6 +328,16 @@ const Settings = () => {
               </SettingsModule>
             </section>
           </>
+        )}
+
+        {activeTab === 'notifications' && (
+          <SettingsModule
+            title="Powiadomienia"
+            description="Włącz alerty o nowych zamówieniach i rezerwacjach na tym urządzeniu."
+            icon={BellRing}
+          >
+            <PushNotificationsSettings />
+          </SettingsModule>
         )}
 
         {isAdmin && activeTab === 'users' && (
