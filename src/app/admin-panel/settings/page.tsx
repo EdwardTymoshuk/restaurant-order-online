@@ -301,9 +301,12 @@ const Settings = () => {
 
         {canViewSettings && activeTab === 'content' && (
           <>
-            <section>
+            <section className="grid gap-4 xl:grid-cols-2">
               <SettingsModule title="Kody promocyjne" description="Rabaty, daty ważności i jednorazowe kody." icon={BadgePercent} count={promoCodesData.length}>
                 <PromoCodeSettings />
+              </SettingsModule>
+              <SettingsModule title="Wydarzenia" description="Aktualności i komunikaty widoczne na stronie restauracji." icon={Newspaper} count={eventsData.length}>
+                <EventSettings />
               </SettingsModule>
             </section>
             <section className="grid gap-5 xl:grid-cols-2">
@@ -322,11 +325,6 @@ const Settings = () => {
               </SettingsModule>
             </section>
 
-            <section>
-              <SettingsModule title="Wydarzenia" description="Aktualności widoczne na stronie." icon={Newspaper} count={eventsData.length}>
-                <EventSettings />
-              </SettingsModule>
-            </section>
           </>
         )}
 
