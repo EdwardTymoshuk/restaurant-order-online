@@ -88,6 +88,7 @@ const Settings = () => {
   const isAdmin = useIsAdmin()
   const canViewSettings = useHasPermission(PERMISSIONS.SETTINGS_VIEW)
   const canManageSettings = useHasPermission(PERMISSIONS.SETTINGS_MANAGE)
+  const [activeTab, setActiveTab] = useState<'company' | 'operations' | 'content' | 'users'>('company')
 
   // === Fetch general settings ===
   const { data: settingsData, refetch: refetchSettings } =
@@ -140,7 +141,32 @@ const Settings = () => {
       <PageHeader title="Ustawienia" />
 
       <div className="space-y-5 p-4 md:p-6 lg:p-8">
-        {canViewSettings && (
+        <nav className="-mx-4 border-b border-border bg-white px-4 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8" aria-label="Sekcje ustawień">
+          <div className="flex min-w-max gap-6 overflow-x-auto">
+            {[
+              { id: 'company' as const, label: 'Firma', icon: Store },
+              { id: 'operations' as const, label: 'Operacje', icon: Settings2 },
+              { id: 'content' as const, label: 'Treści', icon: Images },
+              ...(isAdmin ? [{ id: 'users' as const, label: 'Użytkownicy', icon: Settings2 }] : []),
+            ].map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setActiveTab(id)}
+                className={`relative flex items-center gap-2 border-b-2 px-1 pb-3 pt-1 text-sm font-medium transition-colors ${
+                  activeTab === id
+                    ? 'border-primary text-slate-950'
+                    : 'border-transparent text-muted-foreground hover:text-slate-900'
+                }`}
+              >
+                <Icon className="size-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </nav>
+
+        {canViewSettings && activeTab === 'company' && (
           <SettingsModule
             title="Informacje restauracji"
             description="Dane kontaktowe, stałe godziny oraz czasowe zmiany widoczne na spokosopot.pl."
@@ -157,7 +183,7 @@ const Settings = () => {
           </SettingsModule>
         )}
 
-        <section className="grid gap-5 xl:grid-cols-3">
+        {activeTab === 'operations' && <section className="grid gap-5 xl:grid-cols-3">
           <Card className="border-border shadow-sm">
             <CardContent className="p-5">
               <div className="mb-4 flex items-start gap-3">
@@ -271,9 +297,9 @@ const Settings = () => {
               </Button>
             </CardContent>
           </Card>
-        </section>
+        </section>}
 
-          {canViewSettings && (
+          {canViewSettings && activeTab === 'operations' && (
           <>
             <section>
               <SettingsModule title="Strefy dostaw" description="Promienie i ceny dostawy dla zamówień online." icon={Bike} count={deliveryZones.length}>
@@ -300,12 +326,17 @@ const Settings = () => {
                   refetchSettings={refetchSettings}
                 />
               </SettingsModule>
+            </section>
+          </>
+        )}
 
+        {canViewSettings && activeTab === 'content' && (
+          <>
+            <section>
               <SettingsModule title="Kody promocyjne" description="Rabaty, daty ważności i jednorazowe kody." icon={BadgePercent} count={promoCodesData.length}>
                 <PromoCodeSettings />
               </SettingsModule>
             </section>
-
             <section className="grid gap-5 xl:grid-cols-2">
               <SettingsModule title="Banery order.spokosopot.pl" description="Banery reklamowe widoczne w systemie zamówień." icon={ImageIcon} count={orderBannersData.length}>
                 <BannerSettings />
@@ -330,7 +361,7 @@ const Settings = () => {
           </>
         )}
 
-        {isAdmin && (
+        {isAdmin && activeTab === 'users' && (
           <section>
             <SettingsModule title="Użytkownicy" description="Konta panelu i ich uprawnienia." icon={Settings2} count={usersData.length}>
               <UserList />
