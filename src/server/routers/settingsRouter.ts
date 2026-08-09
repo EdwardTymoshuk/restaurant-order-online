@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
+import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
-import { publicProcedure, router } from '../trpc'
+import { permissionProcedure, publicProcedure, router } from '../trpc'
 
 const getActorName = async (userId?: string | null) => {
   if (!userId) return 'Administrator'
@@ -64,7 +65,7 @@ export const settingsRouter = router({
     return settings
   }),
 
-  updateRestaurantInfo: publicProcedure
+  updateRestaurantInfo: permissionProcedure('settings.manage')
     .input(z.object({
       restaurantInfo: restaurantInfoInput,
       openingHours: openingHoursInput,
@@ -85,7 +86,7 @@ export const settingsRouter = router({
     }),
 
   // Update ordering state
-  updateOrderingState: publicProcedure
+  updateOrderingState: permissionProcedure('settings.manage')
     .input(
       z.object({
         isOrderingOpen: z.boolean(),
@@ -105,7 +106,7 @@ export const settingsRouter = router({
     }),
 
   // Update order wait time
-  updateOrderWaitTime: publicProcedure
+  updateOrderWaitTime: permissionProcedure('settings.manage')
     .input(
       z.object({
         orderWaitTime: z.number(),
@@ -124,8 +125,25 @@ export const settingsRouter = router({
       })
     }),
 
+  updateReservationCapacity: permissionProcedure('settings.manage')
+    .input(z.object({
+      reservationCapacity: z.number().int().min(1).max(500),
+      reservationMinGuests: z.number().int().min(1).max(500),
+    }))
+    .mutation(async ({ input }) => {
+      if (input.reservationMinGuests > input.reservationCapacity) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Minimalna liczba gości nie może przekraczać pojemności.' })
+      }
+      const settings = await prisma.settings.findFirst()
+      if (!settings) throw new Error('Settings not found')
+      return prisma.settings.update({
+        where: { id: settings.id },
+        data: input,
+      })
+    }),
+
   // Update delivery cost
-  updateDeliveryCost: publicProcedure
+  updateDeliveryCost: permissionProcedure('settings.manage')
     .input(
       z.object({
         deliveryCost: z.number(),
@@ -145,7 +163,7 @@ export const settingsRouter = router({
     }),
 
   // Update delivery zone prices
-  updateDeliveryZonePrices: publicProcedure
+  updateDeliveryZonePrices: permissionProcedure('settings.manage')
     .input(
       z.array(
         z.object({
@@ -184,7 +202,7 @@ export const settingsRouter = router({
         data: { deliveryZones: input }, // Зберігаємо як масив зон
       })
     }),
-  updateMenuDocuments: publicProcedure
+  updateMenuDocuments: permissionProcedure('menu.manage')
     .input(
       z.array(
         z.object({
@@ -246,7 +264,7 @@ export const settingsRouter = router({
         data: { menuDocuments: documentsWithMetadata as unknown as Prisma.InputJsonValue },
       })
     }),
-  updatePizzaAvailability: publicProcedure
+  updatePizzaAvailability: permissionProcedure('settings.manage')
     .input(
       z.object({
         enabled: z.boolean(), // Увімкнення/вимкнення категорії

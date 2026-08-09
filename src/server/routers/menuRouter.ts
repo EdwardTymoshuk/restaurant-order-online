@@ -12,7 +12,7 @@ import {
 import type { MenuDownloadDocument } from '@/app/types/types'
 import { randomUUID } from 'crypto'
 import { z } from 'zod'
-import { publicProcedure, router } from '../trpc'
+import { permissionProcedure, publicProcedure, router } from '../trpc'
 
 const getImportScopeCategories = (type: ImportDocumentType, parsedCategories: string[] = []) => {
   const baseCategories =
@@ -541,7 +541,7 @@ export const menuRouter = router({
       return item
     }),
 
-  createMenuItem: publicProcedure
+  createMenuItem: permissionProcedure('menu.manage')
     .input(
       z.object({
         name: z.string(),
@@ -574,7 +574,7 @@ export const menuRouter = router({
       return newItem
     }),
 
-  updateMenuItem: publicProcedure
+  updateMenuItem: permissionProcedure('menu.manage')
     .input(
       z.object({
         id: z.string().uuid(),
@@ -609,7 +609,7 @@ export const menuRouter = router({
       return updatedItem
     }),
 
-  updateMenuCategory: publicProcedure
+  updateMenuCategory: permissionProcedure('menu.manage')
     .input(
       z.object({
         category: z.string(),
@@ -639,7 +639,7 @@ export const menuRouter = router({
       })
     }),
 
-  deleteMenuItem: publicProcedure
+  deleteMenuItem: permissionProcedure('menu.manage')
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ input }) => {
       const { id } = input
@@ -658,13 +658,13 @@ export const menuRouter = router({
       return deletedItem
     }),
 
-  previewMenuDocumentImport: publicProcedure
+  previewMenuDocumentImport: permissionProcedure('menu.manage')
     .input(importDocumentInput)
     .mutation(async ({ input }) => {
       return buildMenuImportPreview(input)
     }),
 
-  recognizeMenuDocumentWithOcr: publicProcedure
+  recognizeMenuDocumentWithOcr: permissionProcedure('menu.manage')
     .input(importDocumentInput)
     .mutation(async ({ input }) => {
       const document = await resolveImportDocument(input)
@@ -684,7 +684,7 @@ export const menuRouter = router({
       }
     }),
 
-  startMenuDocumentOcr: publicProcedure
+  startMenuDocumentOcr: permissionProcedure('menu.manage')
     .input(importDocumentInput)
     .mutation(async ({ input }) => {
       cleanupMenuOcrJobs()
@@ -743,7 +743,7 @@ export const menuRouter = router({
       }
     }),
 
-  startMenuDocumentAiImport: publicProcedure
+  startMenuDocumentAiImport: permissionProcedure('menu.manage')
     .input(importDocumentInput)
     .mutation(async ({ input }) => {
       cleanupMenuOcrJobs()
@@ -803,7 +803,7 @@ export const menuRouter = router({
       }
     }),
 
-  getMenuDocumentOcrJob: publicProcedure
+  getMenuDocumentOcrJob: permissionProcedure('menu.manage')
     .input(z.object({ jobId: z.string().uuid() }))
     .query(({ input }) => {
       cleanupMenuOcrJobs()
@@ -821,7 +821,7 @@ export const menuRouter = router({
       return expireMenuOcrJobIfNeeded(input.jobId, job)
     }),
 
-  previewReviewedMenuImport: publicProcedure
+  previewReviewedMenuImport: permissionProcedure('menu.manage')
     .input(reviewedImportInput)
     .mutation(async ({ input }) => {
       const document = await resolveImportDocument(input)
@@ -829,7 +829,7 @@ export const menuRouter = router({
       return buildMenuImportPreviewFromItems(document.type, items, document.documentId)
     }),
 
-  importMenuFromDocument: publicProcedure
+  importMenuFromDocument: permissionProcedure('menu.manage')
     .input(
       importDocumentInput.extend({
         archiveMissingIds: z.array(z.string().uuid()).default([]),
@@ -846,7 +846,7 @@ export const menuRouter = router({
       }
     }),
 
-  importReviewedMenuItems: publicProcedure
+  importReviewedMenuItems: permissionProcedure('menu.manage')
     .input(
       reviewedImportInput.extend({
         archiveMissingIds: z.array(z.string().uuid()).default([]),

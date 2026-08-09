@@ -1,6 +1,10 @@
 'use client'
 
 import {
+  Button,
+} from '@/app/components/ui/button'
+import { Input } from '@/app/components/ui/input'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -20,6 +24,7 @@ import { PERMISSIONS } from '@/lib/roles'
 import {
   BadgePercent,
   Bike,
+  CalendarCheck,
   Image as ImageIcon,
   Images,
   Newspaper,
@@ -82,6 +87,7 @@ const Settings = () => {
   // Check if the user is an admin
   const isAdmin = useIsAdmin()
   const canViewSettings = useHasPermission(PERMISSIONS.SETTINGS_VIEW)
+  const canManageSettings = useHasPermission(PERMISSIONS.SETTINGS_MANAGE)
 
   // === Fetch general settings ===
   const { data: settingsData, refetch: refetchSettings } =
@@ -108,11 +114,15 @@ const Settings = () => {
   const [isOrderingOpen, setIsOrderingOpen] = useState<boolean>(false)
   const [orderWaitTime, setOrderWaitTime] = useState<number>(30)
   const [deliveryZones, setDeliveryZones] = useState<any[]>([])
+  const [reservationCapacity, setReservationCapacity] = useState(40)
+  const [reservationMinGuests, setReservationMinGuests] = useState(12)
 
   useEffect(() => {
     if (settingsData) {
       setIsOrderingOpen(settingsData.isOrderingOpen)
       setOrderWaitTime(settingsData.orderWaitTime)
+      setReservationCapacity(settingsData.reservationCapacity ?? 40)
+      setReservationMinGuests(settingsData.reservationMinGuests ?? 12)
       setDeliveryZones(
         Array.isArray(settingsData.deliveryZones)
           ? settingsData.deliveryZones
@@ -120,6 +130,10 @@ const Settings = () => {
       )
     }
   }, [settingsData])
+
+  const updateReservationCapacity = trpc.settings.updateReservationCapacity.useMutation({
+    onSuccess: () => refetchSettings(),
+  })
 
   return (
     <>
@@ -163,6 +177,7 @@ const Settings = () => {
                   </p>
                 </div>
                 <Switch
+                  disabled={!canManageSettings}
                   checked={isOrderingOpen}
                   onCheckedChange={(checked) => {
                     setIsOrderingOpen(checked)
@@ -200,6 +215,7 @@ const Settings = () => {
                 </div>
               </div>
               <Select
+                disabled={!canManageSettings}
                 value={orderWaitTime.toString()}
                 onValueChange={(value) => {
                   const newTime = Number(value)
@@ -219,6 +235,40 @@ const Settings = () => {
                   <SelectItem value="120">120 minut</SelectItem>
                 </SelectContent>
               </Select>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border shadow-sm">
+            <CardContent className="p-5">
+              <div className="mb-4 flex items-start gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <CalendarCheck size={20} />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-slate-950">Rezerwacje</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">Wspólna pojemność dla formularza klienta i panelu.</p>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                <label className="space-y-1.5 text-sm font-medium text-slate-700">
+                  Maksymalnie jednocześnie
+                  <Input disabled={!canManageSettings} type="number" min={1} max={500} value={reservationCapacity} onChange={(event) => setReservationCapacity(Number(event.target.value))} />
+                  <span className="block text-xs font-normal text-muted-foreground">Liczba gości możliwa w tym samym czasie.</span>
+                </label>
+                <label className="space-y-1.5 text-sm font-medium text-slate-700">
+                  Minimum online
+                  <Input disabled={!canManageSettings} type="number" min={1} max={500} value={reservationMinGuests} onChange={(event) => setReservationMinGuests(Number(event.target.value))} />
+                  <span className="block text-xs font-normal text-muted-foreground">Minimalna liczba gości w formularzu eventowym.</span>
+                </label>
+              </div>
+              <Button
+                size="sm"
+                className="mt-4"
+                disabled={!canManageSettings || updateReservationCapacity.isLoading || reservationMinGuests > reservationCapacity}
+                onClick={() => updateReservationCapacity.mutate({ reservationCapacity, reservationMinGuests })}
+              >
+                {updateReservationCapacity.isLoading ? 'Zapisywanie...' : 'Zapisz limity'}
+              </Button>
             </CardContent>
           </Card>
         </section>

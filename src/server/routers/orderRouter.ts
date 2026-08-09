@@ -3,7 +3,7 @@ import { notifyNewOrder } from '@/lib/pushNotifications'
 import { OrderStatus, Prisma } from '@prisma/client' // Додаємо Prisma для типів
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
-import { publicProcedure, router } from '../trpc'
+import { permissionProcedure, publicProcedure, router } from '../trpc'
 
 const getOrderDayRange = (date: Date) => {
   const start = new Date(date)
@@ -133,7 +133,7 @@ export const orderRouter = router({
     }),
 
   // Отримання всіх замовлень
-  getAllOrders: publicProcedure.query(async () => {
+  getAllOrders: permissionProcedure('orders.view').query(async () => {
     const orders = await prisma.order.findMany({
       include: {
         items: {
@@ -199,7 +199,7 @@ export const orderRouter = router({
       }
     }),
 
-  updateStatus: publicProcedure
+  updateStatus: permissionProcedure('orders.manage')
     .input(
       z.object({
         orderId: z.string(),
@@ -225,7 +225,7 @@ export const orderRouter = router({
       })
     }),
 
-  deleteOrder: publicProcedure
+  deleteOrder: permissionProcedure('orders.manage')
     .input(
       z.object({
         orderId: z.string(),
@@ -245,7 +245,7 @@ export const orderRouter = router({
       return order
     }),
 
-  markNotified: publicProcedure
+  markNotified: permissionProcedure('orders.manage')
     .input(
       z.object({
         orderIds: z.array(z.string()),
@@ -262,7 +262,7 @@ export const orderRouter = router({
       return { success: true }
     }),
 
-  updateDeliveryTime: publicProcedure
+  updateDeliveryTime: permissionProcedure('orders.manage')
     .input(
       z.object({
         orderId: z.string(),

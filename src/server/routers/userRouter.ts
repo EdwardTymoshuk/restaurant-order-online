@@ -1,6 +1,6 @@
 // server/trpc/routers/user.ts
 import { prisma } from "@/lib/prisma"
-import { publicProcedure, router } from "@/server/trpc"
+import { adminProcedure, publicProcedure, router } from "@/server/trpc"
 import { TRPCError } from "@trpc/server"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
@@ -19,7 +19,7 @@ function generateToken(payload: { id: string; role: string }): string {
 }
 
 export const userRouter = router({
-	register: publicProcedure
+	register: adminProcedure
 		.input(
 			z.object({
 				username: z.string(),
@@ -55,7 +55,7 @@ export const userRouter = router({
 			return { token, role: user.role }
 		}),
 
-	createUser: publicProcedure
+	createUser: adminProcedure
 		.input(z.object({ username: z.string(), email: z.string().email(), password: z.string().min(6), name: z.string().optional(), role: z.enum(["user", "manager", "admin"]), permissions: z.array(z.string()).default([]) }))
 		.mutation(async ({ input, ctx }) => {
 			const decodedToken = ctx.token
@@ -76,7 +76,7 @@ export const userRouter = router({
 				},
 			})
 		}),
-	getAllUsers: publicProcedure.query(async ({ ctx }) => {
+	getAllUsers: adminProcedure.query(async ({ ctx }) => {
 		if (!ctx.token || ctx.token.role !== USER_ROLES.ADMIN) {
 			throw new TRPCError({ code: 'FORBIDDEN', message: 'Brak uprawnień.' })
 		}
@@ -90,7 +90,7 @@ export const userRouter = router({
 			throw new Error('Failed to fetch users')
 		}
 	}),
-	deleteUser: publicProcedure
+	deleteUser: adminProcedure
 		.input(z.object({ userId: z.string() }))
 		.mutation(async ({ input, ctx }) => {
 			if (!ctx.token || ctx.token.role !== USER_ROLES.ADMIN) {
@@ -104,7 +104,7 @@ export const userRouter = router({
 			}
 		}),
 
-	updateUser: publicProcedure
+	updateUser: adminProcedure
 		.input(z.object({
 			userId: z.string(),
 			name: z.string().optional(),

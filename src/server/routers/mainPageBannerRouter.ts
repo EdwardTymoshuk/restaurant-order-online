@@ -1,10 +1,10 @@
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { publicProcedure, router } from '../trpc'
+import { permissionProcedure, publicProcedure, router } from '../trpc'
 
 export const mainPageBannerRouter = router({
   // ✅ Create a new main banner
-  createMainBanner: publicProcedure
+  createMainBanner: permissionProcedure('settings.manage')
     .input(
       z.object({
         desktopImageUrl: z.string(),
@@ -30,7 +30,7 @@ export const mainPageBannerRouter = router({
   }),
 
   // ✅ Update an existing banner
-  updateMainBanner: publicProcedure
+  updateMainBanner: permissionProcedure('settings.manage')
     .input(
       z.object({
         id: z.string(),
@@ -49,7 +49,7 @@ export const mainPageBannerRouter = router({
     }),
 
   // ✅ Delete a banner
-  deleteMainBanner: publicProcedure
+  deleteMainBanner: permissionProcedure('settings.manage')
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       await prisma.mainBanner.delete({

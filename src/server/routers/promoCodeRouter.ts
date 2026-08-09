@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { TRPCError } from '@trpc/server'
 import jwt from 'jsonwebtoken'
 import { z } from 'zod'
-import { publicProcedure, router } from '../trpc'
+import { permissionProcedure, publicProcedure, router } from '../trpc'
 
 const JWT_SECRET = process.env.JWT_SECRET!
 
@@ -16,7 +16,7 @@ function generateToken(payload: { id: string; role: string }): string {
 }
 
 export const promoCodeRouter = router({
-  createPromoCode: publicProcedure
+  createPromoCode: permissionProcedure('settings.manage')
     .input(
       z.object({
         code: z.string(),
@@ -53,7 +53,7 @@ export const promoCodeRouter = router({
     })
   }),
 
-  updatePromoCode: publicProcedure
+  updatePromoCode: permissionProcedure('settings.manage')
     .input(
       z.object({
         id: z.string(),
@@ -79,7 +79,7 @@ export const promoCodeRouter = router({
       return promoCode
     }),
 
-  deletePromoCode: publicProcedure
+  deletePromoCode: permissionProcedure('settings.manage')
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       await prisma.promoCode.delete({

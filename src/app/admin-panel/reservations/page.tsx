@@ -57,6 +57,7 @@ import {
 import { useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { useAdminRealtime } from '../hooks/useAdminRealtime'
 import { PageHeader } from '../components/PageHeader'
 
@@ -229,6 +230,51 @@ const DOT_COLOR: Record<ReservationStatus, string> = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const toDateKey = (date: Date) => format(date, 'yyyy-MM-dd')
+const parseTimeMinutes = (value: string | null | undefined) => {
+  if (!value) return null
+  const [hours, minutes] = value.split(':').map(Number)
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null
+  return hours * 60 + minutes
+}
+
+const reservationRange = (start: string | null | undefined, end: string | null | undefined) => ({
+  start: parseTimeMinutes(start) ?? 10 * 60,
+  end: parseTimeMinutes(end) ?? 23 * 60,
+})
+
+const rangesOverlap = (a: { start: number; end: number }, b: { start: number; end: number }) =>
+  a.start < b.end && b.start < a.end
+
+const hasReservationCapacityConflict = (
+  existing: ReservationListItem[],
+  date: Date,
+  start: string | null,
+  end: string | null,
+  guests: number,
+  capacity: number,
+) => {
+  const dateKey = toDateKey(date)
+  const incomingRange = reservationRange(start, end)
+  const sameDay = existing.filter((reservation) =>
+    reservation.status !== 'CANCELLED' && toDateKey(new Date(reservation.eventDate)) === dateKey
+  )
+  const boundaries = new Set<number>([incomingRange.start, incomingRange.end])
+  const ranges = sameDay.map((reservation) => {
+    const range = reservationRange(reservation.startTime, reservation.endTime)
+    boundaries.add(range.start)
+    boundaries.add(range.end)
+    return { range, guests: reservation.adultsCount + (reservation.childrenCount ?? 0) }
+  })
+  const sorted = [...boundaries].sort((a, b) => a - b)
+  for (let index = 0; index < sorted.length - 1; index += 1) {
+    const slot = { start: sorted[index], end: sorted[index + 1] }
+    if (!rangesOverlap(slot, incomingRange)) continue
+    const occupied = ranges.reduce((total, item) => total + (rangesOverlap(slot, item.range) ? item.guests : 0), 0)
+    if (occupied + guests > capacity) return { occupied, capacity }
+  }
+  return null
+}
+
 const formatDate = (date: Date | string) =>
   new Date(date).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' })
 const formatDateTime = (date: Date | string) =>
@@ -318,7 +364,7 @@ const MiniCalendar = ({
           const isPast = date < today
           const isBlocked = blockedKeys.has(key)
           const isTaken = takenKeys.has(key)
-          const isDisabled = isPast || isBlocked || isTaken
+          const isDisabled = isPast || isBlocked
           const isSelected = value ? isSameDay(date, value) : false
           const isCurMonth = isSameMonth(date, month)
           const _isToday = isToday(date)
@@ -328,12 +374,12 @@ const MiniCalendar = ({
               type="button"
               disabled={isDisabled}
               onClick={() => onChange(date)}
-              title={isBlocked ? 'Zablokowane' : isTaken ? 'Termin zajęty' : undefined}
+              title={isBlocked ? 'Zablokowane' : isTaken ? 'Częściowo zajęte — wybierz godziny' : undefined}
               className={cn(
                 'py-1.5 text-xs font-medium transition-colors border-r border-b border-border/30 last:border-r-0 relative',
                 isSelected ? 'bg-primary text-white' :
                 isBlocked ? 'bg-red-100 text-red-400 cursor-not-allowed' :
-                isTaken ? 'bg-amber-50 text-amber-600 cursor-not-allowed' :
+                isTaken ? 'bg-amber-50 text-amber-600' :
                 _isToday ? 'bg-primary/10 text-primary font-bold' :
                 !isCurMonth || isPast ? 'text-muted-foreground/40 cursor-not-allowed' :
                 'hover:bg-muted text-slate-700'
@@ -1388,6 +1434,7 @@ const Reservations = () => {
   const [rangeNotes, setRangeNotes] = useState('Zakres zablokowany')
 
   const { data: reservations, isLoading, refetch } = trpc.reservations.getReservationsList.useQuery({}, { enabled })
+  const { data: settingsData } = trpc.settings.getSettings.useQuery(undefined, { enabled })
   const { data: blockedDates, refetch: refetchBlocked } = trpc.reservations.getBlockedDates.useQuery(undefined, { enabled })
   const { data: detail } = trpc.reservations.getReservationById.useQuery(
     { id: expandedId! }, { enabled: !!expandedId && enabled }
@@ -1513,6 +1560,24 @@ const Reservations = () => {
 
   const handleAddSave = (f: AddForm) => {
     if (!f.date) return
+    const dateKey = toDateKey(f.date)
+    if (blockedByDate.has(dateKey)) {
+      toast.error('Ten dzień jest całkowicie zablokowany.')
+      return
+    }
+    const guests = f.adults + f.children
+    const conflict = hasReservationCapacityConflict(
+      reservations ?? [],
+      f.date,
+      f.startTime || null,
+      f.endTime || null,
+      guests,
+      settingsData?.reservationCapacity ?? 40,
+    )
+    if (conflict) {
+      toast.error(`Brak pojemności w wybranych godzinach. Zajęte: ${conflict.occupied}, limit: ${conflict.capacity}.`)
+      return
+    }
     createReservation.mutate({
       eventDate: toDateKey(f.date),
       startTime: f.startTime || null,

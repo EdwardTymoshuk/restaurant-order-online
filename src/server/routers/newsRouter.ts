@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { publicProcedure, router } from '../trpc'
+import { permissionProcedure, publicProcedure, router } from '../trpc'
 
 const slugify = (value: string) =>
   value
@@ -58,7 +58,7 @@ export const newsRouter = router({
   }),
 
   // Create a new event
-  createNews: publicProcedure
+  createNews: permissionProcedure('settings.manage')
     .input(newsInput)
     .mutation(async ({ input }) => {
       const slug = await createUniqueSlug(input.title)
@@ -80,7 +80,7 @@ export const newsRouter = router({
     }),
 
   // Update an existing event
-  updateNews: publicProcedure
+  updateNews: permissionProcedure('settings.manage')
     .input(
       newsInput.partial().extend({
         id: z.string(),
@@ -120,7 +120,7 @@ export const newsRouter = router({
     }),
 
   // Delete an event by ID
-  deleteNews: publicProcedure
+  deleteNews: permissionProcedure('settings.manage')
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       return await prisma.news.delete({ where: { id: input.id } })

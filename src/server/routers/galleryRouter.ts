@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { publicProcedure, router } from '../trpc'
+import { permissionProcedure, publicProcedure, router } from '../trpc'
 
 const galleryCategorySchema = z.enum([
   'dishes',
@@ -31,7 +31,7 @@ export const galleryRouter = router({
     })
   }),
 
-  createGalleryImage: publicProcedure
+  createGalleryImage: permissionProcedure('settings.manage')
     .input(galleryImageInput)
     .mutation(async ({ input }) => {
       return prisma.galleryImage.create({
@@ -43,7 +43,7 @@ export const galleryRouter = router({
       })
     }),
 
-  updateGalleryImage: publicProcedure
+  updateGalleryImage: permissionProcedure('settings.manage')
     .input(galleryImageInput.partial().extend({ id: z.string() }))
     .mutation(async ({ input }) => {
       const { id, ...data } = input
@@ -60,7 +60,7 @@ export const galleryRouter = router({
       })
     }),
 
-  deleteGalleryImage: publicProcedure
+  deleteGalleryImage: permissionProcedure('settings.manage')
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       await prisma.galleryImage.update({

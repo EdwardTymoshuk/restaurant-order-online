@@ -9,6 +9,8 @@ import { Calendar } from '@/app/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/app/components/ui/popover'
 import type { OpeningHour, OpeningHourOverride, RestaurantInfo } from '@/app/types/types'
 import { trpc } from '@/utils/trpc'
+import { useHasPermission } from '@/hooks/usePermission'
+import { PERMISSIONS } from '@/lib/roles'
 import { format, parseISO } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { CalendarDays, Check, Mail, MapPin, Pencil, Phone, Plus, Save, Trash2, X } from 'lucide-react'
@@ -90,6 +92,7 @@ const TimeSelect = ({ value, onChange, disabled, label }: { value: string; onCha
 }
 
 const RestaurantInfoSettings = ({ settingsData, refetchSettings }: Props) => {
+  const canManageSettings = useHasPermission(PERMISSIONS.SETTINGS_MANAGE)
   const [info, setInfo] = useState<RestaurantInfo>(DEFAULT_INFO)
   const [hours, setHours] = useState<OpeningHour[]>(DEFAULT_HOURS)
   const [overrides, setOverrides] = useState<OpeningHourOverride[]>([])
@@ -103,6 +106,7 @@ const RestaurantInfoSettings = ({ settingsData, refetchSettings }: Props) => {
   }, [settingsData])
 
   const save = async () => {
+    if (!canManageSettings) return
     try {
       await updateSettings.mutateAsync({ restaurantInfo: info, openingHours: hours, openingHourOverrides: overrides })
       await refetchSettings()
@@ -224,7 +228,7 @@ const RestaurantInfoSettings = ({ settingsData, refetchSettings }: Props) => {
         )}
       </div>
 
-      <Button type="button" onClick={save} disabled={updateSettings.isLoading}><Save className="mr-2 size-4" />{updateSettings.isLoading ? 'Zapisywanie...' : 'Zapisz informacje i godziny'}</Button>
+          <Button type="button" onClick={save} disabled={!canManageSettings || updateSettings.isLoading}><Save className="mr-2 size-4" />{updateSettings.isLoading ? 'Zapisywanie...' : 'Zapisz informacje i godziny'}</Button>
     </div>
   )
 }
