@@ -1,8 +1,7 @@
-import { Analytics } from '@vercel/analytics/react'
 import { Metadata, Viewport } from 'next'
 import { Roboto } from 'next/font/google'
-import Script from 'next/script'
 import ClientRoutingHandler from './components/ClientRoutingHandler'
+import CookieConsentBanner from './components/CookieConsentBanner'
 import PageLoader from './components/PageLoader'
 import Providers from './components/Providers'
 import './globals.css'
@@ -60,28 +59,13 @@ export const viewport: Viewport = {
 function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pl">
-      <head>
-        <Script
-          strategy="afterInteractive"
-          src="https://www.googletagmanager.com/gtag/js?id=G-JJXBY09736"
-        />
-        <Script strategy="afterInteractive" id="gtag-init">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            
-            gtag('config', 'G-JJXBY09736');
-          `}
-        </Script>
-      </head>
       <body className={roboto.className}>
         <Providers>
           <PageLoader>
             <ClientRoutingHandler>{children}</ClientRoutingHandler>
           </PageLoader>
         </Providers>
-        <Analytics />
+        <CookieConsentBanner />
       </body>
     </html>
   )

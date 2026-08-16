@@ -101,6 +101,7 @@ export async function GET(request: Request) {
     menuItems,
     latestOrders,
     latestReservations,
+    analyticsEvents,
   ] = await Promise.all([
     prisma.order.findMany({
       where: {
@@ -155,6 +156,18 @@ export async function GET(request: Request) {
       orderBy: { createdAt: 'desc' },
       take: 5,
       include: { contact: true, offerSnapshot: true },
+    }),
+    prisma.analyticsEvent.findMany({
+      where: { ...(dateWhere ? { createdAt: dateWhere } : {}) },
+      select: {
+        site: true,
+        path: true,
+        referrerHost: true,
+        visitorHash: true,
+        country: true,
+        city: true,
+        device: true,
+      },
     }),
   ])
 
@@ -240,6 +253,79 @@ export async function GET(request: Request) {
     .sort((a, b) => b.orders - a.orders || b.spent - a.spent)
     .slice(0, 5)
 
+  const analyticsBySite = new Map<string, {
+    site: string
+    pageViews: number
+    visitors: Set<string>
+  }>()
+  const pathStats = new Map<string, { path: string; site: string; views: number }>()
+  const referrerStats = new Map<string, number>()
+  const locationStats = new Map<string, { label: string; views: number }>()
+  const deviceStats = new Map<string, number>()
+  const allVisitors = new Set<string>()
+
+  const normalizeSite = (site: string) => site.replace(/^www\./, '')
+
+  for (const event of analyticsEvents) {
+    const site = normalizeSite(event.site)
+    const currentSite = analyticsBySite.get(site) ?? {
+      site,
+      pageViews: 0,
+      visitors: new Set<string>(),
+    }
+
+    currentSite.pageViews += 1
+    if (event.visitorHash) {
+      currentSite.visitors.add(event.visitorHash)
+      allVisitors.add(event.visitorHash)
+    }
+    analyticsBySite.set(site, currentSite)
+
+    const pathKey = `${site}:${event.path}`
+    const currentPath = pathStats.get(pathKey) ?? { site, path: event.path, views: 0 }
+    currentPath.views += 1
+    pathStats.set(pathKey, currentPath)
+
+    const referrerLabel =
+      event.referrerHost && !event.referrerHost.includes('spokosopot.pl')
+        ? normalizeSite(event.referrerHost)
+        : 'Direct / własna strona'
+    referrerStats.set(referrerLabel, (referrerStats.get(referrerLabel) ?? 0) + 1)
+
+    const locationLabel = [event.city, event.country].filter(Boolean).join(', ') || 'Nieznana'
+    const currentLocation = locationStats.get(locationLabel) ?? { label: locationLabel, views: 0 }
+    currentLocation.views += 1
+    locationStats.set(locationLabel, currentLocation)
+
+    const deviceLabel = event.device || 'unknown'
+    deviceStats.set(deviceLabel, (deviceStats.get(deviceLabel) ?? 0) + 1)
+  }
+
+  const analyticsSiteRows = Array.from(analyticsBySite.values())
+    .map((site) => ({
+      site: site.site,
+      pageViews: site.pageViews,
+      visitors: site.visitors.size,
+    }))
+    .sort((a, b) => b.pageViews - a.pageViews)
+
+  const analyticsTopPaths = Array.from(pathStats.values())
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 6)
+
+  const analyticsTopReferrers = Array.from(referrerStats.entries())
+    .map(([label, views]) => ({ label, views }))
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 5)
+
+  const analyticsTopLocations = Array.from(locationStats.values())
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 5)
+
+  const analyticsDevices = Array.from(deviceStats.entries())
+    .map(([label, views]) => ({ label, views }))
+    .sort((a, b) => b.views - a.views)
+
   return NextResponse.json({
     range,
     generatedAt: now.toISOString(),
@@ -272,6 +358,15 @@ export async function GET(request: Request) {
     customers: {
       uniqueCount: customerStats.size,
       topCustomers,
+    },
+    analytics: {
+      pageViews: analyticsEvents.length,
+      visitors: allVisitors.size,
+      sites: analyticsSiteRows,
+      topPaths: analyticsTopPaths,
+      topReferrers: analyticsTopReferrers,
+      topLocations: analyticsTopLocations,
+      devices: analyticsDevices,
     },
     operations: {
       activeOrders: activeOrders.map((order) => ({

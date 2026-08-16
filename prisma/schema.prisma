@@ -193,6 +193,35 @@ model GalleryImage {
   @@index([category, sortOrder])
 }
 
+model AnalyticsEvent {
+  id           String   @id @default(uuid())
+  site         String
+  eventName    String   @default("page_view")
+  path         String
+  url          String?
+  title        String?
+  referrer     String?
+  referrerHost String?
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  visitorHash  String?
+  sessionHash  String?
+  country      String?
+  region       String?
+  city         String?
+  device       String?
+  browser      String?
+  os           String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  @@index([site, createdAt])
+  @@index([eventName, createdAt])
+  @@index([visitorHash, createdAt])
+  @@index([path, createdAt])
+}
+
 //RESERVATION 
 model Reservation {
   id             String            @id @default(uuid())
