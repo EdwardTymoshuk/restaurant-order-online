@@ -9,7 +9,7 @@ import {
 } from '@/app/components/ui/dropdown-menu'
 import { cn } from '@/utils/utils'
 import { hasPermission, ROLE_LABELS, type Permission } from '@/lib/roles'
-import { CalendarDays, ChefHat, ClipboardList, LayoutDashboard, LogOut, Settings } from 'lucide-react'
+import { BarChart3, CalendarDays, ChefHat, ClipboardList, LayoutDashboard, LogOut, Settings } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -32,6 +32,7 @@ const fetcher = async (url: string) => {
 
 const navItems = [
 	{ label: 'Pulpit', key: 'dashboard', permission: 'dashboard.view' as Permission, icon: LayoutDashboard },
+	{ label: 'Statystyki', key: 'analytics', permission: 'dashboard.view' as Permission, icon: BarChart3 },
 	{ label: 'Zamówienia', key: 'orders', permission: 'orders.view' as Permission, icon: ClipboardList },
 	{ label: 'Rezerwacje', key: 'reservations', permission: 'reservations.view' as Permission, icon: CalendarDays },
 	{ label: 'Menu', key: 'menu', permission: 'menu.view' as Permission, icon: ChefHat },

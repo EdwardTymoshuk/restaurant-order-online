@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect } from 'react'
 import Dashboard from '../dashboard/page'
+import Analytics from '../analytics/page'
 import MenuTable from '../menu/page'
 import Orders from '../orders/page'
 import Reservations from '../reservations/page'
@@ -24,6 +25,7 @@ const renderTabContent = (tab: string) => {
 		case 'reservations': return <Reservations />
 		case 'menu':         return <MenuTable />
 		case 'dashboard':    return withScroll(<Dashboard />)
+		case 'analytics':    return withScroll(<Analytics />)
 		case 'settings':     return withScroll(<Settings />)
 		default:             return withScroll(<Dashboard />)
 	}
@@ -31,6 +33,7 @@ const renderTabContent = (tab: string) => {
 
 const TAB_PERMISSIONS: Record<string, Permission> = {
 	 dashboard: 'dashboard.view',
+	 analytics: 'dashboard.view',
 	 orders: 'orders.view',
 	 reservations: 'reservations.view',
 	 menu: 'menu.view',
@@ -41,7 +44,7 @@ const AdminPanelContent = () => {
 	const searchParams = useSearchParams()
 	const { data: session } = useSession()
 	const tabParam = searchParams?.get('tab')
-	const validTabs = ['dashboard', 'orders', 'reservations', 'menu', 'settings']
+	const validTabs = ['dashboard', 'analytics', 'orders', 'reservations', 'menu', 'settings']
 	const tab = tabParam && validTabs.includes(tabParam) ? tabParam : 'dashboard'
 	const canAccessTab = hasPermission(session?.user?.role, session?.user?.permissions, TAB_PERMISSIONS[tab])
 

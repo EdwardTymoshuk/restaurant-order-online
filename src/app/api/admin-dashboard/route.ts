@@ -289,7 +289,7 @@ export async function GET(request: Request) {
     const referrerLabel =
       event.referrerHost && !event.referrerHost.includes('spokosopot.pl')
         ? normalizeSite(event.referrerHost)
-        : 'Direct / własna strona'
+        : 'Wejście bezpośrednie / własna domena'
     referrerStats.set(referrerLabel, (referrerStats.get(referrerLabel) ?? 0) + 1)
 
     const locationLabel = [event.city, event.country].filter(Boolean).join(', ') || 'Nieznana'

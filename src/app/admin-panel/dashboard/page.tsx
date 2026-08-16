@@ -12,14 +12,12 @@ import {
   CalendarCheck,
   Globe2,
   Check,
-  ChefHat,
   ChevronDown,
   Clock,
   CreditCard,
   Crown,
   ChevronRight,
   PackageCheck,
-  MapPin,
   MousePointerClick,
   ShoppingBag,
   TrendingDown,
@@ -499,9 +497,6 @@ export default function DashboardPage() {
 
   const maxTopItemQty = Math.max(...data.menu.topItems.map((item) => item.quantity), 0)
   const maxWeakItemQty = Math.max(...data.menu.weakestItems.map((item) => item.quantity), 0)
-  const maxAnalyticsPathViews = Math.max(...data.analytics.topPaths.map((item) => item.views), 0)
-  const maxReferrerViews = Math.max(...data.analytics.topReferrers.map((item) => item.views), 0)
-  const maxLocationViews = Math.max(...data.analytics.topLocations.map((item) => item.views), 0)
   const totalRevenue = data.orders.revenue + data.reservations.revenue
   const nextReservation = data.operations.upcomingReservations[0]
   const nextOrder = data.operations.activeOrders[0]
@@ -560,7 +555,16 @@ export default function DashboardPage() {
         </section>
 
         <section>
-          <SectionTitle title="Ruch na stronach" description="Anonimowe statystyki zebrane po zgodzie użytkowników." />
+          <div className="mb-3 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <SectionTitle title="Ruch na stronach" description="Szybki licznik wejść. Szczegółowe podstrony, źródła i urządzenia są w osobnej zakładce." />
+            <Link
+              href="/admin-panel?tab=analytics"
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-muted/40"
+            >
+              Szczegóły statystyk
+              <ChevronRight size={16} />
+            </Link>
+          </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <StatCard title="Odsłony" value={number(data.analytics.pageViews)} helper="Strona reprezentacyjna i zamówienia online" icon={Globe2} />
             <StatCard title="Odwiedzający" value={number(data.analytics.visitors)} helper="Anonimowi unikalni użytkownicy" icon={Users} />
@@ -577,81 +581,6 @@ export default function DashboardPage() {
               icon={ShoppingBag}
               tone="success"
             />
-          </div>
-
-          <div className="mt-5 grid gap-5 xl:grid-cols-[1.2fr_0.8fr_0.8fr]">
-            <Card className="border-border shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <TrendingUp className="text-primary" size={20} />
-                  Najpopularniejsze podstrony
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {data.analytics.topPaths.length === 0 ? (
-                  <EmptyState text="Brak danych analitycznych w wybranym zakresie." />
-                ) : (
-                  data.analytics.topPaths.map((item) => (
-                    <ProgressRow
-                      key={`${item.site}:${item.path}`}
-                      label={item.path}
-                      sublabel={item.site}
-                      value={item.views}
-                      valueLabel={`${number(item.views)} odsłon`}
-                      max={maxAnalyticsPathViews}
-                    />
-                  ))
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="border-border shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <MousePointerClick className="text-primary" size={20} />
-                  Źródła wejść
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {data.analytics.topReferrers.length === 0 ? (
-                  <EmptyState text="Brak źródeł wejść." />
-                ) : (
-                  data.analytics.topReferrers.map((item) => (
-                    <ProgressRow
-                      key={item.label}
-                      label={item.label}
-                      value={item.views}
-                      valueLabel={number(item.views)}
-                      max={maxReferrerViews}
-                    />
-                  ))
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="border-border shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <MapPin className="text-primary" size={20} />
-                  Lokalizacje
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {data.analytics.topLocations.length === 0 ? (
-                  <EmptyState text="Brak danych lokalizacji." />
-                ) : (
-                  data.analytics.topLocations.map((item) => (
-                    <ProgressRow
-                      key={item.label}
-                      label={item.label}
-                      value={item.views}
-                      valueLabel={number(item.views)}
-                      max={maxLocationViews}
-                    />
-                  ))
-                )}
-              </CardContent>
-            </Card>
           </div>
         </section>
 
