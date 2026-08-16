@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { createHash } from 'crypto'
+import geoip from 'geoip-lite'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -99,6 +100,47 @@ function getClientIp(headers: Headers) {
   return headers.get('cf-connecting-ip') || headers.get('x-real-ip') || forwardedFor || undefined
 }
 
+function normalizeIp(ip?: string) {
+  if (!ip) return undefined
+  const normalized = ip.trim().replace(/^::ffff:/, '')
+  return normalized || undefined
+}
+
+function isPrivateIp(ip?: string) {
+  if (!ip) return true
+  if (ip === '::1' || ip === '127.0.0.1' || ip === 'localhost') return true
+  if (/^(10|127)\./.test(ip)) return true
+  if (/^192\.168\./.test(ip)) return true
+  if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(ip)) return true
+  if (/^(fc|fd)[0-9a-f]{2}:/i.test(ip)) return true
+  if (/^fe80:/i.test(ip)) return true
+  return false
+}
+
+function getHeaderLocation(headers: Headers) {
+  return {
+    country: headers.get('cf-ipcountry') || headers.get('x-vercel-ip-country') || undefined,
+    region: headers.get('x-vercel-ip-country-region') || undefined,
+    city: headers.get('x-vercel-ip-city') || undefined,
+  }
+}
+
+function getGeoLocation(headers: Headers, ip?: string) {
+  const headerLocation = getHeaderLocation(headers)
+  const hasHeaderLocation = Boolean(headerLocation.country || headerLocation.region || headerLocation.city)
+  if (hasHeaderLocation) return headerLocation
+
+  const normalizedIp = normalizeIp(ip)
+  if (!normalizedIp || isPrivateIp(normalizedIp)) return headerLocation
+
+  const lookup = geoip.lookup(normalizedIp)
+  return {
+    country: lookup?.country || undefined,
+    region: lookup?.region || undefined,
+    city: lookup?.city || undefined,
+  }
+}
+
 export async function OPTIONS(request: Request) {
   return new NextResponse(null, { status: 204, headers: corsHeaders(request.headers.get('origin')) })
 }
@@ -132,6 +174,7 @@ export async function POST(request: Request) {
 
   const referrer = safeString(body.referrer, 1000)
   const ip = getClientIp(request.headers)
+  const location = getGeoLocation(request.headers, ip)
 
   await prisma.analyticsEvent.create({
     data: {
@@ -147,9 +190,9 @@ export async function POST(request: Request) {
       utmCampaign: parsedUrl?.searchParams.get('utm_campaign')?.slice(0, 160),
       visitorHash: hash(body.visitorId || `${ip ?? ''}:${userAgent}`),
       sessionHash: hash(body.sessionId),
-      country: request.headers.get('cf-ipcountry') || request.headers.get('x-vercel-ip-country'),
-      region: request.headers.get('x-vercel-ip-country-region'),
-      city: request.headers.get('x-vercel-ip-city'),
+      country: location.country,
+      region: location.region,
+      city: location.city,
       device: detectDevice(userAgent),
       browser: detectBrowser(userAgent),
       os: detectOs(userAgent),
