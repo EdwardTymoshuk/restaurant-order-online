@@ -336,8 +336,10 @@ export default function AnalyticsPage() {
     )
   }
 
-  const websiteViews = data.analytics.sites.find((site) => site.site === 'spokosopot.pl')?.pageViews ?? 0
-  const orderViews = data.analytics.sites.find((site) => site.site === 'order.spokosopot.pl')?.pageViews ?? 0
+  const websiteStats = data.analytics.sites.find((site) => site.site === 'spokosopot.pl')
+  const orderStats = data.analytics.sites.find((site) => site.site === 'order.spokosopot.pl')
+  const websiteViews = websiteStats?.pageViews ?? 0
+  const orderViews = orderStats?.pageViews ?? 0
   const maxPathViews = Math.max(...data.analytics.topPaths.map((item) => item.views), 0)
   const maxReferrerViews = Math.max(...data.analytics.topReferrers.map((item) => item.views), 0)
   const maxLocationViews = Math.max(...data.analytics.topLocations.map((item) => item.views), 0)
@@ -365,8 +367,8 @@ export default function AnalyticsPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <StatCard title="Odsłony razem" value={number(data.analytics.pageViews)} helper="Wszystkie zarejestrowane wejścia" icon={Globe2} />
             <StatCard title="Odwiedzający" value={number(data.analytics.visitors)} helper="Anonimowi unikalni użytkownicy" icon={Users} />
-            <StatCard title="spokosopot.pl" value={number(websiteViews)} helper="Strona reprezentacyjna" icon={MousePointerClick} />
-            <StatCard title="order.spokosopot.pl" value={number(orderViews)} helper="Strona zamówień online" icon={BarChart3} />
+            <StatCard title="spokosopot.pl" value={number(websiteViews)} helper={`${number(websiteStats?.visitors ?? 0)} odwiedzających stronę reprezentacyjną`} icon={MousePointerClick} />
+            <StatCard title="order.spokosopot.pl" value={number(orderViews)} helper={`${number(orderStats?.visitors ?? 0)} odwiedzających stronę zamówień`} icon={BarChart3} />
           </div>
         </section>
 

@@ -500,6 +500,8 @@ export default function DashboardPage() {
   const totalRevenue = data.orders.revenue + data.reservations.revenue
   const nextReservation = data.operations.upcomingReservations[0]
   const nextOrder = data.operations.activeOrders[0]
+  const websiteStats = data.analytics.sites.find((site) => site.site === 'spokosopot.pl')
+  const orderStats = data.analytics.sites.find((site) => site.site === 'order.spokosopot.pl')
 
   return (
     <div className="w-full min-w-0 max-w-full overflow-x-hidden">
@@ -570,14 +572,14 @@ export default function DashboardPage() {
             <StatCard title="Odwiedzający" value={number(data.analytics.visitors)} helper="Anonimowi unikalni użytkownicy" icon={Users} />
             <StatCard
               title="spokosopot.pl"
-              value={number(data.analytics.sites.find((site) => site.site === 'spokosopot.pl')?.pageViews ?? 0)}
-              helper="Odsłony strony reprezentacyjnej"
+              value={number(websiteStats?.pageViews ?? 0)}
+              helper={`${number(websiteStats?.visitors ?? 0)} odwiedzających stronę reprezentacyjną`}
               icon={MousePointerClick}
             />
             <StatCard
               title="order.spokosopot.pl"
-              value={number(data.analytics.sites.find((site) => site.site === 'order.spokosopot.pl')?.pageViews ?? 0)}
-              helper="Odsłony strony zamówień"
+              value={number(orderStats?.pageViews ?? 0)}
+              helper={`${number(orderStats?.visitors ?? 0)} odwiedzających stronę zamówień`}
               icon={ShoppingBag}
               tone="success"
             />
