@@ -120,14 +120,14 @@ const StatCard = ({
   helper: string
   icon: React.ElementType
 }) => (
-  <Card className="border-border shadow-sm">
-    <CardContent className="flex items-start justify-between gap-4 p-5">
-      <div>
+  <Card className="min-w-0 border-border shadow-sm">
+    <CardContent className="flex min-w-0 items-start justify-between gap-3 p-4 sm:gap-4 sm:p-5">
+      <div className="min-w-0">
         <p className="text-sm font-medium text-muted-foreground">{title}</p>
-        <p className="mt-2 text-2xl font-semibold text-slate-950">{value}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{helper}</p>
+        <p className="mt-2 break-words text-2xl font-semibold text-slate-950">{value}</p>
+        <p className="mt-1 break-words text-xs text-muted-foreground">{helper}</p>
       </div>
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:h-10 sm:w-10">
         <Icon size={20} />
       </div>
     </CardContent>
@@ -151,12 +151,12 @@ const ProgressRow = ({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-slate-800">{label}</p>
-          {sublabel && <p className="text-xs text-muted-foreground">{sublabel}</p>}
+          {sublabel && <p className="break-words text-xs text-muted-foreground">{sublabel}</p>}
         </div>
-        <span className="shrink-0 text-sm font-semibold text-slate-900">{valueLabel ?? value}</span>
+        <span className="shrink-0 text-right text-sm font-semibold text-slate-900">{valueLabel ?? value}</span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-muted">
         <div className="h-full rounded-full bg-primary" style={{ width: `${width}%` }} />
@@ -186,19 +186,19 @@ export default function AnalyticsPage() {
 
   const datePickerSlot = range === 'month' || range === 'year'
     ? (
-      <div className={cn('flex h-9 shrink-0 justify-end', range === 'month' ? 'w-[150px]' : 'w-[116px]')}>
+      <div className={cn('flex h-9 shrink-0 justify-end', range === 'month' ? 'w-[132px] sm:w-[150px]' : 'w-[92px] sm:w-[116px]')}>
         {range === 'month' && (
           <Popover>
             <PopoverTrigger asChild>
               <button
                 type="button"
-                className="flex h-9 w-[150px] items-center justify-between gap-2 rounded-lg border border-border bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-muted/40"
+                className="flex h-9 w-[132px] items-center justify-between gap-2 rounded-lg border border-border bg-white px-2 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-muted/40 sm:w-[150px] sm:px-3 sm:text-sm"
               >
                 {getMonthLabel(selectedMonth)}
                 <ChevronDown size={15} className="text-muted-foreground" />
               </button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-[310px] p-3">
+            <PopoverContent align="end" className="w-[min(calc(100vw-2rem),310px)] p-3">
               <div className="mb-3 flex items-center justify-between">
                 <button
                   type="button"
@@ -246,7 +246,7 @@ export default function AnalyticsPage() {
             <PopoverTrigger asChild>
               <button
                 type="button"
-                className="flex h-9 w-[116px] items-center justify-between gap-2 rounded-lg border border-border bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-muted/40"
+                className="flex h-9 w-[92px] items-center justify-between gap-2 rounded-lg border border-border bg-white px-2 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-muted/40 sm:w-[116px] sm:px-3 sm:text-sm"
               >
                 {selectedYear}
                 <ChevronDown size={15} className="text-muted-foreground" />
@@ -279,7 +279,7 @@ export default function AnalyticsPage() {
     : null
 
   const rangeTabs = (
-    <div className="flex flex-nowrap items-center gap-2">
+    <div className="flex min-w-0 flex-nowrap items-center gap-2">
       {datePickerSlot}
       <div className="grid h-9 shrink-0 grid-cols-5 rounded-lg border border-border bg-muted p-1">
         {[
@@ -294,7 +294,7 @@ export default function AnalyticsPage() {
             type="button"
             onClick={() => setRange(option.value as Range)}
             className={cn(
-              'min-w-[82px] rounded-md px-3 text-sm font-medium transition-colors',
+              'min-w-[56px] rounded-md px-2 text-xs font-medium transition-colors sm:min-w-[82px] sm:px-3 sm:text-sm',
               range === option.value
                 ? 'bg-white text-slate-950 shadow-sm'
                 : 'text-slate-500 hover:text-slate-900'
@@ -312,7 +312,7 @@ export default function AnalyticsPage() {
       <div className="w-full min-w-0 max-w-full overflow-x-hidden">
         <PageHeader title="Statystyki" toolbar={rangeTabs} />
         <div className="space-y-5 p-4 md:p-6 lg:p-8">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             {[...Array(4)].map((_, index) => (
               <Skeleton key={index} className="h-28 w-full rounded-2xl" />
             ))}
@@ -364,7 +364,7 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <StatCard title="Odsłony razem" value={number(data.analytics.pageViews)} helper="Wszystkie zarejestrowane wejścia" icon={Globe2} />
             <StatCard title="Odwiedzający" value={number(data.analytics.visitors)} helper="Anonimowi unikalni użytkownicy" icon={Users} />
             <StatCard title="spokosopot.pl" value={number(websiteViews)} helper={`${number(websiteStats?.visitors ?? 0)} odwiedzających stronę reprezentacyjną`} icon={MousePointerClick} />
@@ -372,8 +372,8 @@ export default function AnalyticsPage() {
           </div>
         </section>
 
-        <section className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-          <Card className="border-border shadow-sm">
+        <section className="grid min-w-0 gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+          <Card className="min-w-0 border-border shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <MousePointerClick className="text-primary" size={20} />
@@ -398,7 +398,7 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-border shadow-sm">
+          <Card className="min-w-0 border-border shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Globe2 className="text-primary" size={20} />
@@ -410,8 +410,8 @@ export default function AnalyticsPage() {
                 <EmptyState text="Brak danych dla domen." />
               ) : (
                 data.analytics.sites.map((site) => (
-                  <div key={site.site} className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-3">
-                    <div className="min-w-0">
+                  <div key={site.site} className="flex min-w-0 flex-col items-start justify-between gap-2 rounded-xl border border-border px-3 py-3 sm:flex-row sm:items-center sm:gap-3">
+                    <div className="min-w-0 max-w-full">
                       <p className="truncate text-sm font-semibold text-slate-900">{site.site}</p>
                       <p className="text-xs text-muted-foreground">{number(site.visitors)} odwiedzających</p>
                     </div>
@@ -423,8 +423,8 @@ export default function AnalyticsPage() {
           </Card>
         </section>
 
-        <section className="grid gap-5 xl:grid-cols-3">
-          <Card className="border-border shadow-sm">
+        <section className="grid min-w-0 gap-5 xl:grid-cols-3">
+          <Card className="min-w-0 border-border shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <MousePointerClick className="text-primary" size={20} />
@@ -448,16 +448,16 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-border shadow-sm">
+          <Card className="min-w-0 border-border shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <MapPin className="text-primary" size={20} />
-                Lokalizacje
+                Szacowana lokalizacja IP
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {data.analytics.topLocations.length === 0 ? (
-                <EmptyState text="Brak danych lokalizacji." />
+                <EmptyState text="Brak danych lokalizacji IP." />
               ) : (
                 data.analytics.topLocations.map((item) => (
                   <ProgressRow
@@ -472,7 +472,7 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-border shadow-sm">
+          <Card className="min-w-0 border-border shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Laptop className="text-primary" size={20} />
